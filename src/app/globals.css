@@ -1,26 +1,151 @@
 @import "tailwindcss";
 
+/*
+ * Koyu, veri-yoğun ürün arayüzü. Uygulama yalnızca koyu temadır —
+ * `dark:` varyantı hiç kullanılmaz, koyu değerler doğrudan varsayılandır.
+ *
+ * Rutin kimlik renkleri ve yoğunluk rampası `dataviz` validator'ından
+ * geçirilmiştir (yüzey #111318): renk körlüğü ayrımı, normal görüş
+ * ayrımı, açıklık bandı ve kontrast kontrollerinin tamamı PASS.
+ */
+
+@theme {
+  /* ── Yüzeyler ───────────────────────────────────────────────── */
+  --color-bg: #0b0d11;
+  --color-surface: #111318;
+  --color-surface-2: #161920;
+  --color-surface-3: #1c2028;
+
+  /* ── Mürekkep ───────────────────────────────────────────────── */
+  --color-ink: #f2f4f8;
+  --color-ink-2: #a8b0bf;
+  --color-ink-3: #6b7385;
+
+  /* ── Çizgiler ───────────────────────────────────────────────── */
+  --color-line: #232833;
+  --color-line-2: #2e3440;
+
+  /* ── Vurgu (marka: kobalt) ──────────────────────────────────── */
+  --color-accent: #3987e5;
+  --color-accent-soft: #1d3f6b;
+
+  /* ── Durum ──────────────────────────────────────────────────── */
+  --color-good: #0ca30c;
+  --color-warn: #fab219;
+  --color-danger: #e66767;
+
+  /* ── Tipografi: tek aile, sabit rem ölçeği (fluid değil) ─────── */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.125rem;
+  --text-2xl: 1.375rem;
+  --text-3xl: 1.75rem;
+
+  /* ── Hareket: durum bildirir, dekore etmez ──────────────────── */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+
+  /* ── Katman sırası (asla rastgele z-index yok) ──────────────── */
+  --z-sticky: 10;
+  --z-dropdown: 20;
+  --z-overlay: 30;
+  --z-modal: 40;
+  --z-toast: 50;
+}
+
+/*
+ * Rutin kimlik renkleri ve yoğunluk rampası.
+ *
+ * Bunlar `@theme` içinde DEĞİL, gerçek `:root` bloğunda tanımlanır.
+ * Tailwind v4 `@theme` değişkenlerini tree-shake eder: bir sınıf
+ * adında geçmiyorlarsa CSS çıktısına hiç yazılmazlar. Bu değerler
+ * yalnızca inline `style` içinde `var()` ile kullanıldığı için
+ * `@theme`'de tanımlansalardı sessizce boş kalırlardı.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Slot SIRASI renk körlüğü güvenliğinin mekanizmasıdır; asla
+     değişmez ve asla döngüye sokulmaz. 9. rutin 1. slota döner. */
+  --color-slot-0: #3987e5;
+  --color-slot-1: #d95926;
+  --color-slot-2: #199e70;
+  --color-slot-3: #c98500;
+  --color-slot-4: #d55181;
+  --color-slot-5: #008300;
+  --color-slot-6: #9085e9;
+  --color-slot-7: #e66767;
+
+  /* Yoğunluk rampası: matris skor satırı, takvim tonlaması, ısı haritası. */
+  --color-level-0: #171b24;
+  --color-level-1: #184f95;
+  --color-level-2: #2a78d6;
+  --color-level-3: #5598e7;
+  --color-level-4: #9ec5f4;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/*
+ * Sayfa gövdesi ASLA yana kaymaz.
+ *
+ * Matris gibi geniş içerik kendi `overflow-x: auto` konteynerinde
+ * kayar; oraya sığmayan taşma burada kesilir. `hidden` yerine `clip`:
+ * `hidden` bir kaydırma bağlamı yaratır ve içerideki `position: sticky`
+ * isim sütununu bozar.
+ *
+ * `@layer base` İÇİNDE DEĞİL — katman içindeki kurallar katmansız
+ * kurallardan düşük önceliklidir ve Tailwind yardımcı sınıfları
+ * (`h-full` vb.) bunu geçersiz kılar.
+ */
+html,
+body {
+  overflow-x: clip;
+  max-width: 100%;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Sayılar sütun halinde hizalanmalı: matris, tablolar, eksen etiketleri */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  ::selection {
+    background: var(--color-accent-soft);
+    color: var(--color-ink);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Hareket kısıtlaması opsiyonel değildir. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -1,0 +1,202 @@
+/*
+ * Matris ızgarası.
+ *
+ * Tek grid elemanı, tüm hücreler doğrudan çocuk (iç içe satır div'i
+ * yok): tek layout geçişi, sticky her yerde tutarlı davranır.
+ *
+ * Sanallaştırma yok — 31 sütun × 15 satır = 465 hücre, React bunu bir
+ * frame'in çok altında render eder. Sanallaştırma Cmd+F'i bozar ve
+ * klavye odağını karmaşıklaştırırdı.
+ */
+
+.matrixScroll {
+  overflow: auto;
+  overscroll-behavior-x: contain;
+
+  /* Kaydırma matrisin KENDİ içinde olmalı, sayfa gövdesinde değil.
+   * min-width:0 olmadan grid çocuğu içeriği kadar genişler ve
+   * taşmayı yukarı, body'ye iter — mobilde tüm sayfa yana kayar. */
+  min-width: 0;
+  max-width: 100%;
+
+  /* iOS Safari: sticky'yi bozan overflow:hidden atası olmamalı. */
+  -webkit-overflow-scrolling: touch;
+}
+
+.matrixGrid {
+  display: grid;
+  grid-template-columns: var(--name-w) repeat(var(--days), var(--cell-w));
+  grid-auto-rows: var(--row-h);
+  align-items: stretch;
+
+  /* Satırlar kendi yüksekliğinde kalır; ızgara dikeyde esnemez. Kalan
+   * boşluk kaydırma konteynerinin arka planıdır, gerilmiş hücre değil. */
+  align-content: start;
+
+  /* Grid genişliğini sütun şablonu belirler. `width: max-content`
+   * OLMADAN grid konteynerine sığmaya çalışır ve sütunlar ezilir;
+   * `min-width: max-content` ise taşmayı ebeveyne iter. Doğrusu:
+   * kendi genişliğini al, kaydırma konteynerine bırak. */
+  width: max-content;
+
+  --name-w: 176px;
+  --cell-w: 34px;
+  --row-h: 36px;
+}
+
+@media (max-width: 767px) {
+  .matrixGrid {
+    --name-w: 120px;
+    --cell-w: 30px;
+    --row-h: 34px;
+  }
+}
+
+/* ── Sabit sütun ve başlık ────────────────────────────────────────
+ * Arka plan OPAK olmalı: yarı saydam olursa altındaki hücreler
+ * kayarken görünür (iOS'ta özellikle belirgin).
+ */
+.nameCell {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--color-surface);
+}
+
+.headerCell {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-surface);
+}
+
+.cornerCell {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  background: var(--color-surface);
+}
+
+/* Sabit sütunun sağ kenarı — kaydırma olduğunda ayrımı belli eder. */
+.nameCell::after,
+.cornerCell::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  right: 0;
+  width: 1px;
+  background: var(--color-line-2);
+}
+
+/* ── Hücreler ──────────────────────────────────────────────────── */
+.cell {
+  position: relative;
+  height: var(--row-h);
+  display: grid;
+  place-items: center;
+  border-right: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out-quart),
+    transform var(--duration-fast) var(--ease-out-quart);
+
+  /* Klavye ile gezinirken odaklı hücre sabit isim sütununun ALTINDA
+   * kalmasın — klasik sticky + scrollIntoView hatası. */
+  scroll-margin-inline-start: var(--name-w);
+  scroll-margin-block-start: var(--row-h);
+}
+
+.cell:disabled {
+  cursor: default;
+}
+
+/* Dokunmatik hedef: hücre görsel olarak 28px ama dokunma alanı 44px. */
+@media (pointer: coarse) {
+  .cell::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+  }
+}
+
+.cellMark {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  transition:
+    background-color var(--duration-fast) var(--ease-out-quart),
+    box-shadow var(--duration-fast) var(--ease-out-quart);
+}
+
+/* Kısmi ilerleme: alttan yukarı dolan kutu.
+ * `display: grid` YERİNE `block` — mutlak konumlu dolgu çocuğu grid
+ * yerleşimiyle çakışır ve dolgu yanlış hizalanır. */
+.cellMarkPartial {
+  display: block;
+  position: relative;
+  overflow: hidden;
+}
+
+.cellFill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.45;
+  transition: height var(--duration-base) var(--ease-out-quart);
+}
+
+/* Tamamlanmış hücre işaretlendiğinde kısa bir onay hareketi. */
+@keyframes cellPop {
+  0% {
+    transform: scale(0.72);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.cellDone .cellMark {
+  animation: cellPop var(--duration-base) var(--ease-out-quart);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cellDone .cellMark {
+    animation: none;
+  }
+}
+
+/* ── Bugün sütunu ──────────────────────────────────────────────── */
+.todayColumn {
+  background: color-mix(in oklch, var(--color-accent) 7%, transparent);
+}
+
+.todayHeader {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+/* ── Hafta ayrımı ──────────────────────────────────────────────── */
+/* Pazartesi sütunlarının solunda daha belirgin çizgi: esnek
+ * rutinlerin dönem sınırını görünür kılar. */
+.weekStart {
+  border-left: 1px solid var(--color-line-2);
+}
+
+/* ── Hafta sonu ────────────────────────────────────────────────── */
+.weekend {
+  background: color-mix(in oklch, var(--color-ink) 2.5%, transparent);
+}
+
+/* ── Skor satırı ───────────────────────────────────────────────── */
+/* Ayırıcı çizgi ızgaranın bittiğini belli eder; altındaki boşluk
+ * sayfanın kendisidir, eksik hücre değil. */
+.scoreCell {
+  border-top: 1px solid var(--color-line-2);
+  border-bottom: 1px solid var(--color-line-2);
+}
