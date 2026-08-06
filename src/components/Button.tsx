@@ -16,8 +16,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const VARIANTS: Record<Variant, string> = {
   // Doygun dolgu üzerinde beyaz metin — Helmholtz-Kohlrausch etkisi
   // yüzünden koyu metin çamurlu okunur.
+  //
+  // Birincil eylem tek yükseltilmiş düğmedir: gölge + üst ışık.
+  // Kenarlığı YOK — kenarlık ve gölge aynı elemanda birleşmez.
   primary:
-    "bg-[var(--color-accent)] text-white hover:bg-[#4a94ea] active:bg-[#2f76cf] disabled:bg-[var(--color-accent-soft)]",
+    "bg-[var(--color-accent)] text-white shadow-[var(--shadow-raised),var(--sheen-top)] hover:bg-[#4a94ea] active:bg-[#2f76cf] active:shadow-none disabled:bg-[var(--color-accent-soft)] disabled:shadow-none",
   secondary:
     "bg-[var(--color-surface-3)] text-[var(--color-ink)] hover:bg-[#242935] active:bg-[var(--color-surface-2)] border border-[var(--color-line-2)]",
   ghost:
@@ -46,7 +49,11 @@ export function Button({
       disabled={disabled || loading}
       className={cn(
         "inline-flex items-center justify-center font-medium",
-        "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-quart)]",
+        // Basıldığında hafif küçülme: arayüzün dokunuşu duyduğunu
+        // anında söyler. Geri bildirim basma anında verilir, bırakma
+        // anında değil.
+        "transition-[color,background-color,border-color,box-shadow,transform] duration-[var(--duration-fast)] ease-[var(--ease-out-expo)]",
+        "not-disabled:active:scale-[0.97]",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         VARIANTS[variant],
         SIZES[size],

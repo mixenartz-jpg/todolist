@@ -1,46 +1,129 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/ui/cn";
+import "./toast.css";
 
-/** Basit hata bildirimi. Kaydetme başarısız olursa kullanıcıya söyler. */
+export type ToastVariant = "error" | "info";
+
+interface ToastState {
+  text: string;
+  variant: ToastVariant;
+  /**
+   * Her `show` çağrısında artar. Aynı metin arka arkaya gösterilirse
+   * React yine de yeni bir durum görür: zamanlayıcı sıfırlanır ve
+   * bildirim yeniden canlanır.
+   */
+  seq: number;
+}
+
+/**
+ * Bildirim. Varsayılan olarak hatadır — çağıranların çoğu bir mutation
+ * `onError` geri çağrısıdır ve `(message: string) => void` imzasıyla
+ * doğrudan geçirilir; ikinci parametre bu yüzden opsiyoneldir.
+ */
 export function useToast() {
-  const [message, setMessage] = useState<string | null>(null);
+  const [state, setState] = useState<ToastState | null>(null);
+  const seq = useRef(0);
 
-  const show = useCallback((text: string) => setMessage(text), []);
-  const dismiss = useCallback(() => setMessage(null), []);
+  const show = useCallback((text: string, variant: ToastVariant = "error") => {
+    seq.current += 1;
+    setState({ text, variant, seq: seq.current });
+  }, []);
 
-  return { message, show, dismiss };
+  const dismiss = useCallback(() => setState(null), []);
+
+  return {
+    message: state?.text ?? null,
+    variant: state?.variant ?? ("error" as ToastVariant),
+    token: state?.seq ?? 0,
+    show,
+    dismiss,
+  };
 }
 
 export function Toast({
   message,
+  variant = "error",
+  token = 0,
   onDismiss,
 }: {
   message: string | null;
+  variant?: ToastVariant;
+  token?: number;
   onDismiss: () => void;
 }) {
   useEffect(() => {
     if (!message) return;
     const timer = setTimeout(onDismiss, 5000);
     return () => clearTimeout(timer);
-  }, [message, onDismiss]);
+  }, [message, token, onDismiss]);
 
   if (!message) return null;
 
+  const isError = variant === "error";
+
   return (
     <div
+      /*
+       * `key`: yeni bir bildirim geldiğinde eleman yeniden takılır ve
+       * `@starting-style` girişi yeniden oynar. Aynı metin ikinci kez
+       * gösterilse bile `token` değiştiği için giriş tekrarlanır.
+       */
+      key={token}
       role="alert"
-      className="fixed inset-x-4 bottom-20 z-[var(--z-toast)] mx-auto max-w-sm rounded-lg border border-[color-mix(in_oklch,var(--color-danger)_40%,transparent)] bg-[var(--color-surface-2)] px-4 py-3 shadow-lg md:bottom-6"
+      aria-live={isError ? "assertive" : "polite"}
+      className={cn(
+        "toast",
+        "fixed inset-x-4 bottom-20 z-[var(--z-toast)] mx-auto flex max-w-sm items-start gap-3",
+        "rounded-lg bg-[var(--color-surface-2)] px-4 py-3 md:bottom-6",
+        "shadow-[var(--shadow-overlay),var(--sheen-top)]",
+        // Kenarlık yerine `ring`: Tailwind ring'i gölgeyle aynı
+        // `box-shadow` bileşiminde ayrı bir değişkende taşır, ikisi
+        // birbirini ezmez. Yan şerit YOK — çevreyi saran ince hat.
+        isError
+          ? "ring-1 ring-[color-mix(in_oklch,var(--color-danger)_38%,transparent)]"
+          : "ring-1 ring-[var(--color-line-2)]",
+      )}
     >
-      <p className="text-[length:var(--text-sm)] text-[var(--color-ink)]">
+      <span
+        aria-hidden
+        className={cn(
+          "mt-[0.4rem] size-1.5 shrink-0 rounded-full",
+          isError ? "bg-[var(--color-danger)]" : "bg-[var(--color-accent)]",
+        )}
+      />
+
+      <p className="flex-1 text-[length:var(--text-sm)] leading-relaxed text-[var(--color-ink)]">
         {message}
       </p>
+
       <button
         onClick={onDismiss}
-        className="mt-1.5 text-[length:var(--text-xs)] text-[var(--color-ink-3)] hover:text-[var(--color-ink-2)]"
+        aria-label="Bildirimi kapat"
+        className={cn(
+          "-mr-1 -mt-1 flex size-7 shrink-0 items-center justify-center rounded-md",
+          "text-[var(--color-ink-3)]",
+          "transition-[color,background-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out-expo)]",
+          "hover:bg-[var(--color-surface-3)] hover:text-[var(--color-ink)]",
+          "active:scale-[0.97]",
+        )}
       >
-        Kapat
+        <CloseIcon />
       </button>
     </div>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+      <path
+        d="M3.5 3.5l7 7M10.5 3.5l-7 7"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }

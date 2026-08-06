@@ -7,6 +7,7 @@ import { slotVar } from "@/lib/ui/colors";
 import { describeSchedule, scheduleAt } from "@/features/routines/schedule";
 import type { RoutineWithSchedule } from "@/features/routines/types";
 import type { PeriodProgress } from "@/features/stats/score";
+import "@/components/list-motion.css";
 
 interface TodayRoutineItemProps {
   routine: RoutineWithSchedule;
@@ -43,7 +44,7 @@ export const TodayRoutineItem = memo(function TodayRoutineItem({
   return (
     <li
       className={cn(
-        "relative flex items-center gap-3 rounded-xl border px-3 py-3",
+        "rowEnter relative flex items-center gap-3 rounded-xl border px-3 py-3",
         "transition-colors duration-[var(--duration-base)] ease-[var(--ease-out-quart)]",
         completed
           ? "border-transparent bg-[var(--color-surface-2)]"
@@ -75,11 +76,15 @@ export const TodayRoutineItem = memo(function TodayRoutineItem({
             ? `${routine.name}: tamamlandı, geri al`
             : `${routine.name}: tamamlandı işaretle`
         }
-        className="relative grid size-11 shrink-0 place-items-center rounded-lg transition-transform duration-[var(--duration-fast)] active:scale-95"
+        className="relative grid size-11 shrink-0 place-items-center rounded-lg transition-transform duration-[var(--duration-fast)] ease-[var(--ease-out-expo)] active:scale-[0.97]"
       >
         <span
+          /* `key`: her işaretlemede eleman yeniden takılır, onay
+             animasyonu yeniden oynar. */
+          key={completed ? "done" : "todo"}
           className={cn(
             "grid size-7 place-items-center rounded-lg transition-colors duration-[var(--duration-fast)]",
+            completed && "markPop",
           )}
           style={
             completed
@@ -166,11 +171,11 @@ function StepButton({
         "relative grid size-9 place-items-center rounded-lg border border-[var(--color-line-2)]",
         "before:absolute before:-inset-1 before:content-['']",
         "text-[length:var(--text-lg)] text-[var(--color-ink-2)]",
-        "transition-colors duration-[var(--duration-fast)]",
+        "transition-[color,background-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out-expo)]",
         "hover:bg-[var(--color-surface-3)] hover:text-[var(--color-ink)]",
         // Devre dışı düğme görünür kalmalı: %35'te tamamen kayboluyor
         // ve düğmenin orada olduğu anlaşılmıyordu.
-        "active:scale-95 disabled:opacity-55 disabled:hover:bg-transparent",
+        "active:scale-[0.97] disabled:opacity-55 disabled:hover:bg-transparent",
       )}
     >
       {children}

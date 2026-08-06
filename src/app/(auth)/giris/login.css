@@ -1,0 +1,67 @@
+/*
+ * Giriş ekranı.
+ *
+ * Uygulamanın tek marka yüzeyi. Arka plan dokusu ürünün KENDİ birincil
+ * ekranının soluk bir yankısıdır: Rutin bir matristir, giriş ekranı da
+ * o matrisi boş haliyle gösterir. Jenerik bir "blueprint" ızgarası
+ * değil; kullanıcı içeri girdiğinde tam olarak bu deseni dolu halde
+ * görecek.
+ *
+ * Doku ekranın üst kısmında yaşar ve aşağı doğru söner — formun
+ * arkasında desen yok, metin her zaman düz zeminde okunur.
+ */
+
+.loginRoot {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+/*
+ * Izgara ve dolu hücreler tek bir katmanda, formun ARKASINDA ve
+ * ortalanmış olarak yaşar. Köşeye sıkışan bir doku "artık" gibi
+ * okunuyordu; kompozisyonun merkezi form olmalı, desen onun etrafında
+ * sönmeli.
+ */
+.loginBackdrop {
+  position: absolute;
+  /* Ortalanmış sabit bir tuval: hücre konumları bu tuvale göre
+   * yazılır, viewport genişliğinden bağımsız aynı kompozisyon. */
+  top: 50%;
+  left: 50%;
+  width: 780px;
+  height: 560px;
+  transform: translate(-50%, -50%);
+  z-index: -1;
+  pointer-events: none;
+
+  /* Hücre boyutu matristeki 34px hücreye yakın tutulur.
+   *
+   * Çizgi rengi `--color-line`: `--color-level-0` (#171b24) sayfa
+   * zeminine fazla yakın, ızgara hiç okunmuyordu. Yoğunluk rampası
+   * dolu hücreler için doğru, çizgiler için değil. */
+  background-image:
+    linear-gradient(to right, var(--color-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-line) 1px, transparent 1px);
+  background-size: 34px 34px;
+
+  /* Merkezden kenara sönüm: desen bir çerçeve değil, bir atmosfer.
+   * Sönüm kenara yakın başlar — daha erken başlayınca kompozisyonun
+   * tamamı kayboluyordu. */
+  mask-image: radial-gradient(ellipse 70% 66% at 50% 50%, #000 30%, transparent 100%);
+}
+
+/* Matrisin "dolu hücre" dili. Konumlar tuvalin kenarlarına dağılır:
+ * merkez forma bırakılır, desen onu çerçeveler. */
+.loginCell {
+  position: absolute;
+  width: 33px;
+  height: 33px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .loginBackdrop {
+    display: none;
+  }
+}

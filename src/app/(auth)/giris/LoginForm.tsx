@@ -46,8 +46,10 @@ export function LoginForm() {
   }
 
   if (status.kind === "sent") {
+    // İç içe kart YOK: bu zaten giriş kartının içindedir, kendi
+    // kenarlığını ve zeminini taşımaz.
     return (
-      <div className="rounded-lg border border-[var(--color-line-2)] bg-[var(--color-surface)] p-5">
+      <div>
         <p className="text-[length:var(--text-base)]">
           <strong className="font-medium">{email}</strong> adresine bir
           doğrulama bağlantısı gönderildi.
@@ -84,7 +86,9 @@ export function LoginForm() {
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="h-10 rounded-lg border border-[var(--color-line-2)] bg-[var(--color-surface)] px-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] focus:border-[var(--color-accent)]"
+          /* Zemin `surface-2`: alan artık `surface` üzerindeki bir
+             kartın içinde ve aynı renk olsaydı girdi kutusu kaybolurdu. */
+          className="h-10 rounded-lg border border-[var(--color-line-2)] bg-[var(--color-surface-2)] px-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] focus:border-[var(--color-accent)]"
         />
       </label>
 
@@ -99,7 +103,9 @@ export function LoginForm() {
           autoComplete={mode === "signup" ? "new-password" : "current-password"}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="h-10 rounded-lg border border-[var(--color-line-2)] bg-[var(--color-surface)] px-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] focus:border-[var(--color-accent)]"
+          /* Zemin `surface-2`: alan artık `surface` üzerindeki bir
+             kartın içinde ve aynı renk olsaydı girdi kutusu kaybolurdu. */
+          className="h-10 rounded-lg border border-[var(--color-line-2)] bg-[var(--color-surface-2)] px-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] focus:border-[var(--color-accent)]"
         />
       </label>
 

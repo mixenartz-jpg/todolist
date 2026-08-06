@@ -5,6 +5,13 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/ui/cn";
 import { createClient } from "@/lib/supabase/client";
+import {
+  CalendarIcon,
+  ChartIcon,
+  CheckIcon,
+  GridIcon,
+  ListIcon,
+} from "@/components/icons";
 
 interface NavItem {
   href: string;
@@ -56,14 +63,26 @@ function NavRail() {
               href={item.href}
               aria-current={isActive(pathname, item.href) ? "page" : undefined}
               className={cn(
-                "flex h-9 items-center gap-2.5 rounded-md px-2.5 text-[length:var(--text-base)]",
-                "transition-colors duration-[var(--duration-fast)]",
+                "group flex h-9 items-center gap-2.5 rounded-md px-2.5 text-[length:var(--text-base)]",
+                "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-quart)]",
+                // Vurgu rengi mevcut seçimi bildirir — dekorasyon değil.
+                // Yan şerit KULLANILMAZ; ikon renklenir ve zemin
+                // vurgunun kendi tonuna kayar.
                 isActive(pathname, item.href)
-                  ? "bg-[var(--color-surface-3)] text-[var(--color-ink)]"
+                  ? "bg-[color-mix(in_oklch,var(--color-accent)_15%,transparent)] font-medium text-[var(--color-ink)]"
                   : "text-[var(--color-ink-2)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]",
               )}
             >
-              <span className="shrink-0 text-[var(--color-ink-3)]">{item.icon}</span>
+              <span
+                className={cn(
+                  "shrink-0 transition-colors duration-[var(--duration-fast)]",
+                  isActive(pathname, item.href)
+                    ? "text-[var(--color-accent)]"
+                    : "text-[var(--color-ink-3)] group-hover:text-[var(--color-ink-2)]",
+                )}
+              >
+                {item.icon}
+              </span>
               {item.label}
             </Link>
           </li>
@@ -93,9 +112,11 @@ function MobileTabBar() {
           aria-current={isActive(pathname, item.href) ? "page" : undefined}
           className={cn(
             "flex flex-1 flex-col items-center justify-center gap-1 py-2.5",
-            "text-[length:var(--text-2xs)] transition-colors duration-[var(--duration-fast)]",
+            "text-[length:var(--text-2xs)]",
+            "transition-[color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out-expo)]",
+            "active:scale-[0.97]",
             isActive(pathname, item.href)
-              ? "text-[var(--color-accent)]"
+              ? "font-medium text-[var(--color-accent)]"
               : "text-[var(--color-ink-3)]",
           )}
         >
@@ -130,79 +151,3 @@ function isActive(pathname: string, href: string): boolean {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-/* ── İkonlar ── currentColor kullanır, 1.5px çizgi ─────────────────── */
-
-function GridIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path
-        d="M2 4h12M2 8h12M2 12h12M6 2v12M11 2v12"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path
-        d="M3 8.5l3 3 7-7"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function CalendarIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <rect
-        x="2"
-        y="3"
-        width="12"
-        height="11"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth="1.3"
-      />
-      <path
-        d="M2 6.5h12M5.5 2v2M10.5 2v2"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function ChartIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path
-        d="M2.5 13.5V9M6.5 13.5V4M10.5 13.5v-6M14 13.5V6"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function ListIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path
-        d="M6 4h8M6 8h8M6 12h8M2.5 4h.01M2.5 8h.01M2.5 12h.01"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}

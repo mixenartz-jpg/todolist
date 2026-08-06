@@ -43,7 +43,7 @@ export function StreakCard({ routine, streak, history }: StreakCardProps) {
 
       <div className="flex items-baseline gap-1.5">
         <span
-          className="text-[2rem] font-semibold leading-none tracking-[-0.02em]"
+          className="text-[length:var(--text-4xl)] font-semibold leading-none tracking-[-0.02em]"
           style={{ color: isActive ? color : "var(--color-ink-3)" }}
         >
           {streak.current}

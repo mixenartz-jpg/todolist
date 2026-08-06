@@ -3,9 +3,11 @@
 import { useMemo } from "react";
 import { addDays, todayStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
+import { cn } from "@/lib/ui/cn";
 import { formatLongDate, formatPercent, WEEKDAYS_LONG } from "@/lib/ui/tr";
 import { isoWeekday } from "@/lib/date/date";
 import { EmptyState } from "@/components/EmptyState";
+import { CheckIcon } from "@/components/icons";
 import { Toast, useToast } from "@/components/Toast";
 import { isCompleted, valueOn } from "@/features/entries/completion";
 import { useSetEntry } from "@/features/entries/mutations";
@@ -109,6 +111,7 @@ export function TodayScreen() {
             <section>
               {routines.length === 0 ? (
                 <EmptyState
+                  icon={<CheckIcon size={22} />}
                   title="Bugün için rutin yok"
                   description="Bugüne denk gelen bir rutinin yok. Yeni bir tane ekleyebilir ya da tablodan geçmiş günleri doldurabilirsin."
                   actionLabel="Rutin ekle"
@@ -225,7 +228,12 @@ export function TodayScreen() {
         )}
       </div>
 
-      <Toast message={toast.message} onDismiss={toast.dismiss} />
+      <Toast
+        message={toast.message}
+        variant={toast.variant}
+        token={toast.token}
+        onDismiss={toast.dismiss}
+      />
     </div>
   );
 }
@@ -267,13 +275,30 @@ function TodayHeader({
               aria-valuemax={100}
               aria-label="Günün tamamlanma oranı"
             >
+              {/* Gün tamamlandığında renk `good`'a geçer. Durum
+                  bildirimi — kutlama değil; yüzde zaten yanında yazıyor
+                  ve renk tek başına bilgi taşımıyor. */}
               <div
-                className="h-full rounded-full bg-[var(--color-accent)] transition-[width] duration-[var(--duration-base)] ease-[var(--ease-out-quart)]"
+                className={cn(
+                  "h-full rounded-full",
+                  "transition-[width,background-color] duration-[var(--duration-base)] ease-[var(--ease-out-quart)]",
+                  ratio >= 1
+                    ? "bg-[var(--color-good)]"
+                    : "bg-[var(--color-accent)]",
+                )}
                 style={{ width: `${Math.round(ratio * 100)}%` }}
               />
             </div>
 
-            <span className="tabular shrink-0 text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
+            <span
+              className={cn(
+                "tabular shrink-0 text-[length:var(--text-sm)]",
+                "transition-colors duration-[var(--duration-base)]",
+                ratio >= 1
+                  ? "font-medium text-[var(--color-ink)]"
+                  : "text-[var(--color-ink-2)]",
+              )}
+            >
               {doneCount}/{totalCount} · {formatPercent(ratio)}
             </span>
           </div>

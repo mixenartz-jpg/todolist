@@ -46,11 +46,31 @@
   --text-xl: 1.125rem;
   --text-2xl: 1.375rem;
   --text-3xl: 1.75rem;
+  --text-4xl: 2rem;
 
   /* ── Hareket: durum bildirir, dekore etmez ──────────────────── */
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  /* Giriş/çıkış için daha güçlü eğri. `quart` renk ve hover geçişleri
+   * için doğru ama bir panel girerken fazla yumuşak kalıyor: kullanıcı
+   * ilk kareye bakar, `expo` orada anında yol alır. `ease-in` ASLA
+   * kullanılmaz — başlangıcı yavaştır, arayüzü ağır hissettirir. */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --duration-fast: 120ms;
   --duration-base: 180ms;
+  --duration-slow: 260ms;
+
+  /* ── Yükseklik ──────────────────────────────────────────────────
+   * Gölge dekorasyon değil, katman bildirimidir. Koyu temada gölge
+   * tek başına zayıf okunur; her adım bir `inset` üst ışıkla eşlenir
+   * (aşağıdaki --sheen-top). KURAL: bir yüzey ya kenarlık ya gölge
+   * kullanır, ikisini birden değil. */
+  --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.32), 0 2px 6px rgb(0 0 0 / 0.22);
+  --shadow-overlay: 0 4px 10px rgb(0 0 0 / 0.36), 0 12px 28px rgb(0 0 0 / 0.28);
+  --shadow-modal: 0 8px 20px rgb(0 0 0 / 0.42), 0 24px 56px rgb(0 0 0 / 0.36);
+
+  /* Yükseltilmiş yüzeyin üst kenarında ışık yakalaması. Koyu temada
+   * yüzeyleri kenarlığa muhtaç bırakmadan ayıran tek doğru araç. */
+  --sheen-top: inset 0 1px 0 rgb(255 255 255 / 0.045);
 
   /* ── Katman sırası (asla rastgele z-index yok) ──────────────── */
   --z-sticky: 10;
@@ -138,6 +158,23 @@ body {
   }
 }
 
+/*
+ * Sekme geçişleri.
+ *
+ * Yalnızca kısa bir çapraz geçiş — kayma, ölçek ya da koreografi YOK.
+ * Ürün arayüzü bir göreve yüklenir; kullanıcı yüklenmeyi izlemek
+ * istemez. Buradaki tek amaç sert kesmeyi yumuşatmak.
+ */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--duration-base);
+  animation-timing-function: var(--ease-out-quart);
+}
+
 /* Hareket kısıtlaması opsiyonel değildir. */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -147,5 +184,13 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* View transition sözde elemanları `*` seçicisinin kapsamında
+   * değildir; ayrıca susturulmaları gerekir. */
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }

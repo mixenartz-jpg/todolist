@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { Button } from "@/components/Button";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
 import { Toast, useToast } from "@/components/Toast";
+import { ListIcon } from "@/components/icons";
 import { todayStr } from "@/lib/date/date";
 import { cn } from "@/lib/ui/cn";
 import { slotVar } from "@/lib/ui/colors";
@@ -19,11 +21,18 @@ import { useRoutines } from "./queries";
 import { RoutineForm } from "./RoutineForm";
 import { describeSchedule, scheduleAt } from "./schedule";
 import type { RoutineDraft, RoutineWithSchedule } from "./types";
+import "@/components/list-motion.css";
 
 export function RoutineList() {
   const { data: routines = [], isPending } = useRoutines();
   const [editing, setEditing] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  /** Silinmesi onay bekleyen rutin. Ad da tutulur: onay metni rutinin
+   *  adını söylemeli, kullanıcı neyi sildiğini görmeli. */
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const toast = useToast();
 
   const create = useCreateRoutine();
@@ -113,6 +122,7 @@ export function RoutineList() {
 
         {active.length === 0 && !creating ? (
           <EmptyState
+            icon={<ListIcon size={22} />}
             title="Henüz rutin yok"
             description="İlk rutinini ekle. Her gün tekrarlayan bir şey olabilir, haftanın belirli günleri ya da haftada birkaç kez."
           >
@@ -195,15 +205,9 @@ export function RoutineList() {
                   <Button
                     size="sm"
                     variant="danger"
-                    onClick={() => {
-                      if (
-                        confirm(
-                          `"${routine.name}" ve tüm kayıtları kalıcı olarak silinecek. Emin misin?`,
-                        )
-                      ) {
-                        remove.mutate(routine.id);
-                      }
-                    }}
+                    onClick={() =>
+                      setPendingDelete({ id: routine.id, name: routine.name })
+                    }
                   >
                     Sil
                   </Button>
@@ -214,7 +218,37 @@ export function RoutineList() {
         )}
       </div>
 
-      <Toast message={toast.message} onDismiss={toast.dismiss} />
+      {pendingDelete && (
+        <ConfirmDialog
+          title="Rutini sil"
+          description={`"${pendingDelete.name}" ve tüm geçmiş kayıtları kalıcı olarak silinecek. Bu işlem geri alınamaz.`}
+          confirmLabel="Kalıcı olarak sil"
+          pending={remove.isPending}
+          /*
+           * Diyalog silme bitene kadar açık kalır ve onay düğmesi
+           * yükleniyor durumunu gösterir. `setPendingDelete(null)`
+           * hemen çağrılsaydı diyalog aynı commit'te sökülür ve
+           * `remove.isPending` hiçbir render'da görünmezdi.
+           */
+          onConfirm={() =>
+            remove.mutate(pendingDelete.id, {
+              onSuccess: () => setPendingDelete(null),
+              onError: (error) => {
+                toast.show(errorText(error));
+                setPendingDelete(null);
+              },
+            })
+          }
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
+
+      <Toast
+        message={toast.message}
+        variant={toast.variant}
+        token={toast.token}
+        onDismiss={toast.dismiss}
+      />
     </div>
   );
 }
@@ -233,7 +267,7 @@ function RoutineRow({
   return (
     <div
       className={cn(
-        "group flex items-center gap-3 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-3.5 py-3",
+        "revealOnHover flex items-center gap-3 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-3.5 py-3",
         "transition-colors duration-[var(--duration-fast)] hover:border-[var(--color-line-2)]",
       )}
     >
@@ -253,7 +287,7 @@ function RoutineRow({
         </div>
       </div>
 
-      <div className="flex gap-1 opacity-0 transition-opacity duration-[var(--duration-fast)] group-hover:opacity-100 focus-within:opacity-100">
+      <div className="revealTarget flex gap-1 opacity-0 transition-opacity duration-[var(--duration-fast)]">
         <Button size="sm" variant="ghost" onClick={onEdit}>
           Düzenle
         </Button>

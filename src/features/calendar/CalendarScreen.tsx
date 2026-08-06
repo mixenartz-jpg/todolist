@@ -108,7 +108,12 @@ export function CalendarScreen() {
         />
       )}
 
-      <Toast message={toast.message} onDismiss={toast.dismiss} />
+      <Toast
+        message={toast.message}
+        variant={toast.variant}
+        token={toast.token}
+        onDismiss={toast.dismiss}
+      />
     </div>
   );
 }

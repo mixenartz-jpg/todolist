@@ -1,0 +1,46 @@
+/*
+ * Bildirim hareketi.
+ *
+ * Giriş `@starting-style` ile: eleman DOM'a girdiğinde tarayıcı
+ * "önce" durumunu kendisi hesaplar. React tarafında `useState` +
+ * `requestAnimationFrame` ile aynı şeyi yapmak mümkün ama gereksiz —
+ * ve efekt içinde setState çağırmak zincirleme render üretir.
+ *
+ * Giriş ve çıkış AYNI yoldan (aşağıdan) olur: mekânsal tutarlılık.
+ * Bir şey nereden geldiyse oraya döner.
+ */
+
+.toast {
+  opacity: 1;
+  transform: translateY(0);
+
+  /* `all` DEĞİL: yalnızca gerçekten değişen iki özellik. Her ikisi de
+   * derleyici dostu — düzen veya boyama tetiklemez. */
+  transition:
+    opacity var(--duration-slow) var(--ease-out-expo),
+    transform var(--duration-slow) var(--ease-out-expo);
+}
+
+@starting-style {
+  .toast {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+}
+
+/*
+ * Çıkış animasyonu YOK — bilinçli.
+ *
+ * Çıkışı oynatmak için elemanın React tarafından bir süre daha DOM'da
+ * tutulması, yani ayrı bir "ayrılıyor" durumu gerekir. Bu durum efekt
+ * içinde setState çağırmayı zorunlu kılıyor ve zincirleme render
+ * üretiyordu. Bildirim zaten kendiliğinden 5 saniye sonra ya da
+ * kullanıcı kapattığında gider; girişin yumuşak olması yeterli,
+ * gidişin görülmesi gerekmiyor.
+ */
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    transform: none;
+  }
+}

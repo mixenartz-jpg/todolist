@@ -6,6 +6,7 @@ import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { formatPercent } from "@/lib/ui/tr";
 import { EmptyState } from "@/components/EmptyState";
+import { ChartIcon } from "@/components/icons";
 import { EMPTY_ENTRIES, useEntries } from "@/features/entries/queries";
 import { useRoutines } from "@/features/routines/queries";
 import {
@@ -96,6 +97,7 @@ export function StatsScreen() {
           </h1>
         </header>
         <EmptyState
+          icon={<ChartIcon size={22} />}
           title="Henüz veri yok"
           description="Rutin ekleyip birkaç gün işaretledikten sonra burada serilerini, tamamlanma oranlarını ve yıllık ısı haritanı göreceksin."
           actionLabel="Rutin ekle"
@@ -228,7 +230,7 @@ function SummaryRow({
             {tile.label}
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-[1.75rem] font-semibold leading-none tracking-[-0.02em]">
+            <span className="text-[length:var(--text-3xl)] font-semibold leading-none tracking-[-0.02em]">
               {tile.value}
             </span>
             {tile.hint && (

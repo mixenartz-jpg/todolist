@@ -1,0 +1,62 @@
+/*
+ * Liste hareketi: bugün ekranı ve görev listeleri.
+ *
+ * Matristeki `cellPop` ile AYNI dil — orada zaten doğru: kısa, tek
+ * yönlü, onay bildiren bir ölçek. Yeniden icat edilmez, taşınır.
+ * Ölçek 0.72 yerine 0.8: matris hücresi 34px, buradaki kutu 22-28px
+ * ve aynı oran daha büyük kutuda fazla zıplıyor.
+ */
+
+@keyframes markPop {
+  from {
+    transform: scale(0.8);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.markPop {
+  animation: markPop var(--duration-base) var(--ease-out-expo);
+}
+
+/*
+ * Yeni satır girişi.
+ *
+ * `@starting-style` yerine animasyon: satırlar React tarafından
+ * anahtarla takılıp sökülüyor ve `@starting-style` yalnızca ilk
+ * stil hesabında çalışır — listeye sonradan eklenen öğede güvenilir
+ * biçimde tetiklenmez. Kısa ve tek seferlik.
+ */
+@keyframes rowEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.rowEnter {
+  animation: rowEnter var(--duration-base) var(--ease-out-expo);
+}
+
+/*
+ * Hover yalnızca gerçek işaretçide.
+ *
+ * Dokunmatikte `:hover` dokunuşta tetiklenir ve parmak çekildikten
+ * sonra takılı kalır — eylem kümesi görünür kalır, satır "seçili"
+ * sanılır.
+ */
+@media (hover: hover) and (pointer: fine) {
+  .revealOnHover:hover .revealTarget,
+  .revealOnHover:focus-within .revealTarget {
+    opacity: 1;
+  }
+}
+
+/* Dokunmatikte gizlenecek bir şey yok: eylemler hep görünür kalır,
+ * aksi halde erişilemezler. */
+@media not all and (hover: hover) {
+  .revealTarget {
+    opacity: 1;
+  }
+}

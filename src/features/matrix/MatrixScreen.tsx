@@ -26,6 +26,7 @@ import { MatrixScoreRow } from "./MatrixScoreRow";
 import { MonthSwitcher } from "./MonthSwitcher";
 import { EmptyState } from "@/components/EmptyState";
 import { Toast, useToast } from "@/components/Toast";
+import { GridIcon } from "@/components/icons";
 import "./matrix.css";
 
 interface YearMonth {
@@ -242,6 +243,7 @@ export function MatrixScreen() {
         <MatrixSkeleton />
       ) : routines.length === 0 ? (
         <EmptyState
+          icon={<GridIcon size={22} />}
           title="Henüz rutin yok"
           description="Takip etmek istediğin ilk rutini ekle — her gün, haftanın belirli günleri veya haftada birkaç kez olabilir."
           actionLabel="Rutin ekle"
@@ -280,7 +282,12 @@ export function MatrixScreen() {
         </div>
       )}
 
-      <Toast message={toast.message} onDismiss={toast.dismiss} />
+      <Toast
+        message={toast.message}
+        variant={toast.variant}
+        token={toast.token}
+        onDismiss={toast.dismiss}
+      />
     </div>
   );
 }

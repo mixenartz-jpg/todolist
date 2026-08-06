@@ -6,6 +6,7 @@ import { cn } from "@/lib/ui/cn";
 import { formatShortDate } from "@/lib/ui/tr";
 import { isOverdue } from "./queries";
 import type { Task } from "./types";
+import "@/components/list-motion.css";
 
 interface TaskItemProps {
   task: Task;
@@ -28,8 +29,8 @@ export const TaskItem = memo(function TaskItem({
   return (
     <li
       className={cn(
-        "group flex items-center gap-3 rounded-xl border px-3 py-2.5",
-        "transition-colors duration-[var(--duration-base)]",
+        "rowEnter revealOnHover flex items-center gap-3 rounded-xl border px-3 py-2.5",
+        "transition-colors duration-[var(--duration-base)] ease-[var(--ease-out-quart)]",
         task.done
           ? "border-transparent bg-[var(--color-surface-2)]"
           : "border-[var(--color-line)] bg-[var(--color-surface)]",
@@ -40,13 +41,17 @@ export const TaskItem = memo(function TaskItem({
         onClick={onToggle}
         aria-pressed={task.done}
         aria-label={task.done ? `${task.title}: geri al` : `${task.title}: tamamla`}
-        className="grid size-10 shrink-0 place-items-center rounded-lg transition-transform duration-[var(--duration-fast)] active:scale-95"
+        className="grid size-10 shrink-0 place-items-center rounded-lg transition-transform duration-[var(--duration-fast)] ease-[var(--ease-out-expo)] active:scale-[0.97]"
       >
         <span
+          /* `key`: işaretlendiğinde eleman yeniden takılır ve onay
+             animasyonu her seferinde yeniden oynar. Aksi halde CSS
+             animasyonu yalnızca ilk boyamada çalışır. */
+          key={task.done ? "done" : "todo"}
           className={cn(
             "grid size-[22px] place-items-center rounded-md transition-colors duration-[var(--duration-fast)]",
             task.done
-              ? "bg-[var(--color-ink-3)]"
+              ? "markPop bg-[var(--color-ink-3)]"
               : "border-[1.5px] border-[var(--color-line-2)]",
           )}
         >
@@ -87,7 +92,7 @@ export const TaskItem = memo(function TaskItem({
         )}
       </div>
 
-      <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity duration-[var(--duration-fast)] focus-within:opacity-100 group-hover:opacity-100">
+      <div className="revealTarget flex shrink-0 gap-0.5 opacity-0 transition-opacity duration-[var(--duration-fast)]">
         {onDefer && !task.done && (
           <IconButton label={`${task.title}: yarına ertele`} onClick={onDefer}>
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
