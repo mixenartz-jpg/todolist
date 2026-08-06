@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/Button";
 import { createClient } from "@/lib/supabase/client";
+import { getSiteUrl } from "@/lib/supabase/site-url";
 
 type Mode = "signin" | "signup";
 
@@ -24,7 +25,11 @@ export function LoginForm() {
       const supabase = createClient();
 
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: `${getSiteUrl()}/auth/callback` },
+        });
         if (error) throw error;
         setStatus({ kind: "sent" });
         return;
