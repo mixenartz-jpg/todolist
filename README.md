@@ -122,6 +122,18 @@ sessizce kaybolmaz; bugünün listesinde "17 Ağustos tarihinden taşındı"
 etiketiyle görünmeye devam eder. Kaybolan görev, uygulamayı güvenilmez
 yapar.
 
+**Seri birimi rutin tipine göre değişir.** Günlük ve belirli-gün
+rutinlerinde **gün**, esnek rutinlerde **hafta/ay** sayılır. Arayüzde
+birim daima yazılır — birimsiz bir "5" kullanıcı tarafından gün sanılır.
+İki tolerans: bugün henüz işaretlenmediyse seri kırılmaz (gün bitmedi),
+esnek rutinde içinde bulunulan dönem de kırmaz.
+
+**Grafikler renge bağlı değil.** Isı haritası ve trend grafiğinin
+tablo görünümü var; her değer metinle de okunabilir. Grafikler tek
+seri + seçici etiketleme kullanır: sekiz rutini tek grafiğe koymak
+"hangisi arttı" sorusunu gömerdi, bu yüzden rutin karşılaştırması
+tablo olarak sunulur.
+
 ## Durum
 
 **Faz 1 tamamlandı** — matris, rutin yönetimi (CRUD + arşiv), işaretleme
@@ -132,6 +144,7 @@ stepper), tek seferlik görevler (tarihli + tarihsiz, erteleme,
 taşınanlar), günlük not + 5 seviyeli ruh hali (autosave), takvim
 (yoğunluk tonlaması, gün detay paneli).
 
-**Faz 3** — İstatistik ekranı: seri kartları, yıllık ısı haritası,
-tamamlanma yüzdeleri, trend grafikleri. (Hesaplama mantığı `features/stats/`
-içinde hazır ve testli; ekran kalıyor.)
+**Faz 3 tamamlandı** — İstatistik ekranı: özet kartları, süren seri
+kartları (doğru birimle + son 14 gün şeridi), haftalık trend grafiği,
+yıllık ısı haritası (53×7), rutin döküm tablosu. Tarih aralığı filtresi
+(30/90 gün, bu yıl, tümü) tüm görünümleri birlikte kapsar.

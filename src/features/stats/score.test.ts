@@ -196,16 +196,24 @@ describe("densityLevel", () => {
 
   it("ara oranları kademelendirir", () => {
     expect(densityLevel(0.2)).toBe(1);
-    expect(densityLevel(0.5)).toBe(2);
-    expect(densityLevel(0.8)).toBe(3);
+    expect(densityLevel(0.6)).toBe(2);
+    expect(densityLevel(0.9)).toBe(3);
   });
 
   it("eşik sınırlarında tutarlıdır", () => {
-    expect(densityLevel(0.34)).toBe(1);
-    expect(densityLevel(0.35)).toBe(2);
-    expect(densityLevel(0.64)).toBe(2);
-    expect(densityLevel(0.65)).toBe(3);
+    expect(densityLevel(0.49)).toBe(1);
+    expect(densityLevel(0.5)).toBe(2);
+    expect(densityLevel(0.74)).toBe(2);
+    expect(densityLevel(0.75)).toBe(3);
     expect(densityLevel(0.99)).toBe(3);
+  });
+
+  it("dört seviye de gerçekçi bir dağılımda kullanılır", () => {
+    // Regresyon koruması: eşikler öyle kaymamalı ki günlük oranlar
+    // tek bir seviyeye yığılsın ve ısı haritası tekdüze görünsün.
+    const sample = [0.3, 0.45, 0.55, 0.7, 0.8, 0.95, 1];
+    const levels = new Set(sample.map(densityLevel));
+    expect(levels.size).toBeGreaterThanOrEqual(4);
   });
 });
 

@@ -150,8 +150,11 @@ function round2(n: number): number {
  */
 export function densityLevel(ratio: number): 0 | 1 | 2 | 3 | 4 {
   if (ratio <= 0) return 0;
-  if (ratio < 0.35) return 1;
-  if (ratio < 0.65) return 2;
+  // Eşikler gerçek dağılıma göre: günlük oranlar pratikte %40–%100
+  // aralığında yoğunlaşır. Eşitlikçi bir bölme (0.25/0.5/0.75) neredeyse
+  // her günü aynı iki seviyeye düşürür ve ısı haritası tekdüze görünür.
+  if (ratio < 0.5) return 1;
+  if (ratio < 0.75) return 2;
   if (ratio < 1) return 3;
   return 4;
 }
