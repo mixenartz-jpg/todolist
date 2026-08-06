@@ -21,4 +21,12 @@ export const qk = {
 
   notes: () => ["notes"] as const,
   note: (date: DateStr) => ["notes", date] as const,
+
+  /*
+   * Serbest defter. Anahtar "notes" DEĞİL "journal" — `qk.notes()`
+   * zaten `qk.note(date)`'in önekidir ve TanStack Query önek eşleşmesi
+   * yapar. Defteri de "notes" altına koysaydık, bir defter notunu
+   * kaydetmek TÜM günlük notların önbelleğini geçersiz kılardı.
+   */
+  journal: () => ["journal"] as const,
 } as const;

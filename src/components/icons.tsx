@@ -89,6 +89,31 @@ export function ChartIcon({ size = 16 }: IconProps) {
   );
 }
 
+/**
+ * Notlar / defter.
+ *
+ * `ListIcon`'dan ayrışması gerekir: o madde imli bir liste, bu ise
+ * satırları olan bir sayfa. İkisi gezinmede yan yana durur.
+ */
+export function NoteIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...svgProps(size)}>
+      <path
+        d="M3.5 2.5h9v11h-9z"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M5.75 5.5h4.5M5.75 8h4.5M5.75 10.5h2.5"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 /** Rutin listesi. */
 export function ListIcon({ size = 16 }: IconProps) {
   return (

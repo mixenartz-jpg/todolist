@@ -11,11 +11,18 @@ import {
   CheckIcon,
   GridIcon,
   ListIcon,
+  NoteIcon,
 } from "@/components/icons";
 
 interface NavItem {
   href: string;
   label: string;
+  /**
+   * Alt sekme çubuğu için kısa etiket. Altı sekme 320px'e bölününce
+   * sekme başına ~53px kalır ve "İstatistik" oraya sığmaz. Kısaltma
+   * verilmezse `label` kullanılır.
+   */
+  shortLabel?: string;
   icon: ReactNode;
 }
 
@@ -23,8 +30,16 @@ const NAV: NavItem[] = [
   { href: "/", label: "Tablo", icon: <GridIcon /> },
   { href: "/bugun", label: "Bugün", icon: <CheckIcon /> },
   { href: "/takvim", label: "Takvim", icon: <CalendarIcon /> },
-  { href: "/istatistik", label: "İstatistik", icon: <ChartIcon /> },
+  {
+    href: "/istatistik",
+    label: "İstatistik",
+    // "İstatistik" yerine "Durum" DEĞİL: sekme adı içeriğini
+    // söylemeli. Kısaltma aynı kelimenin yaygın kısa biçimidir.
+    shortLabel: "İstat.",
+    icon: <ChartIcon />,
+  },
   { href: "/rutinler", label: "Rutinler", icon: <ListIcon /> },
+  { href: "/notlar", label: "Notlar", icon: <NoteIcon /> },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -111,7 +126,10 @@ function MobileTabBar() {
           href={item.href}
           aria-current={isActive(pathname, item.href) ? "page" : undefined}
           className={cn(
-            "flex flex-1 flex-col items-center justify-center gap-1 py-2.5",
+            // `min-w-0`: flex öğeleri varsayılan olarak içeriklerinden
+            // daha dar olamaz; onsuz uzun etiket sekmeyi şişirir ve
+            // altı sekme 320px'e sığmaz.
+            "flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 py-2.5",
             "text-[length:var(--text-2xs)]",
             "transition-[color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out-expo)]",
             "active:scale-[0.97]",
@@ -121,7 +139,9 @@ function MobileTabBar() {
           )}
         >
           {item.icon}
-          {item.label}
+          <span className="max-w-full truncate">
+            {item.shortLabel ?? item.label}
+          </span>
         </Link>
       ))}
     </nav>

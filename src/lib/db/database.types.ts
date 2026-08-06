@@ -59,3 +59,18 @@ export interface DayNoteRow {
   mood: number | null;
   updated_at: string;
 }
+
+/**
+ * Serbest defter satırı. `DayNoteRow` ile aynı şey DEĞİLDİR:
+ * `day_notes` gün başına tek kayıt tutar (ruh hali + gün
+ * değerlendirmesi), `notes` ise aynı güne birden çok not alır.
+ */
+export interface NoteRow {
+  id: string;
+  user_id: string;
+  title: string | null;
+  body: string;
+  date: string;
+  created_at: string;
+  updated_at: string;
+}

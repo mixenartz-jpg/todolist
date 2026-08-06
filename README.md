@@ -12,6 +12,7 @@ rutinler satır, ayın günleri sütun, hücrelere tıklayarak işaretlenir.
    - `supabase/migrations/0001_schema.sql`
    - `supabase/migrations/0002_rls.sql`
    - `supabase/migrations/0003_triggers.sql`
+   - `supabase/migrations/0004_notes.sql`
 3. **Project Settings → API** bölümünden şu iki değeri kopyala:
    - Project URL
    - `anon` / `publishable` key
