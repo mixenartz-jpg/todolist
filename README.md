@@ -117,12 +117,20 @@ tek bir `Map`'e sığar; seri hesapları milisaniyeler sürer. Sunucu
 tarafı pencere fonksiyonları, matrisin zaten ihtiyaç duyduğu istemci
 mantığının ikinci bir kopyası olurdu.
 
+**Görevler taşınır, kaybolmaz.** Tamamlanmamış bir görev tarihi geçince
+sessizce kaybolmaz; bugünün listesinde "17 Ağustos tarihinden taşındı"
+etiketiyle görünmeye devam eder. Kaybolan görev, uygulamayı güvenilmez
+yapar.
+
 ## Durum
 
 **Faz 1 tamamlandı** — matris, rutin yönetimi (CRUD + arşiv), işaretleme
 (optimistic), klavye gezinme, auth, PWA.
 
-**Faz 2** — Bugün ekranı, tek seferlik görevler, günlük not/mood, takvim.
+**Faz 2 tamamlandı** — Bugün ekranı (büyük dokunma hedefleri, sayısal
+stepper), tek seferlik görevler (tarihli + tarihsiz, erteleme,
+taşınanlar), günlük not + 5 seviyeli ruh hali (autosave), takvim
+(yoğunluk tonlaması, gün detay paneli).
 
 **Faz 3** — İstatistik ekranı: seri kartları, yıllık ısı haritası,
 tamamlanma yüzdeleri, trend grafikleri. (Hesaplama mantığı `features/stats/`

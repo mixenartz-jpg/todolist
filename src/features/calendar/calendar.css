@@ -1,0 +1,175 @@
+/*
+ * Takvim ızgarası: 7 sütun, tam haftalar.
+ *
+ * Matristen ayrı bir dosya çünkü farklı bir problem çözüyor — matris
+ * yatay kaydırmalı ve yoğun, takvim sayfaya sığan ve nefes alan.
+ */
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.calendarDay {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  /* Kare oran: hücreler ay uzunluğundan bağımsız aynı görünür. */
+  aspect-ratio: 1;
+  min-height: 44px;
+
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  background: var(--color-surface);
+  cursor: pointer;
+
+  transition:
+    border-color var(--duration-fast) var(--ease-out-quart),
+    background-color var(--duration-fast) var(--ease-out-quart);
+}
+
+.calendarDay:hover {
+  border-color: var(--color-line-2);
+}
+
+/* Komşu aydan taşan günler geri planda kalır ama tıklanabilir. */
+.calendarDayOutside {
+  opacity: 0.4;
+}
+
+/* Bugün: kenarlık vurgusu. Dolgu DEĞİL — dolu bir gün ile bugünü
+ * ayırt edebilmek gerekir. */
+.calendarDayToday {
+  border-color: var(--color-accent);
+}
+
+.calendarDayFuture {
+  background: transparent;
+  border-style: dashed;
+}
+
+.calendarDayNumber {
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Yoğunluk göstergesi: 4 adımlı ordinal rampa.
+ *
+ * Küçük bir çubuk yerine geniş bir şerit: 22×6px'lik çubukta rampanın
+ * dört adımı gözle ayırt edilemiyordu — renk doğruydu ama alan
+ * yetmiyordu. Yüzde de yazılır; renk tek başına bilgi taşımaz. */
+.calendarDensity {
+  display: grid;
+  place-items: center;
+  width: calc(100% - 12px);
+  height: 18px;
+  border-radius: 5px;
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  transition: background-color var(--duration-base) var(--ease-out-quart);
+}
+
+/* Tamamlanmamış görev işareti. */
+.calendarTaskDot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-warn);
+}
+
+@media (max-width: 400px) {
+  .calendarGrid {
+    gap: 3px;
+  }
+  .calendarDay {
+    border-radius: 8px;
+    min-height: 40px;
+  }
+}
+
+/* ── Gün detay paneli ──────────────────────────────────────────────
+ * Native <dialog>: odak tuzağı, Esc ve üst katman tarayıcıdan gelir.
+ * Mobilde alttan yükselen sheet, masaüstünde ortalanmış panel.
+ */
+
+.daySheet {
+  /* Varsayılan dialog stillerini sıfırla. */
+  margin: 0;
+  padding: 0;
+  max-width: none;
+  max-height: none;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+
+  /* Mobil: içerik alta yaslanır. */
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.daySheet::backdrop {
+  background: rgb(0 0 0 / 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.daySheetPanel {
+  width: 100%;
+  max-width: 34rem;
+  max-height: 88dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-2);
+  border-radius: 16px 16px 0 0;
+
+  /* Alt güvenli alan (iPhone çentik/çubuk). */
+  padding-bottom: env(safe-area-inset-bottom);
+
+  animation: sheetRise var(--duration-base) var(--ease-out-quart);
+}
+
+@keyframes sheetRise {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+}
+
+@media (min-width: 640px) {
+  .daySheet {
+    align-items: center;
+  }
+
+  .daySheetPanel {
+    border-radius: 14px;
+    max-height: 82dvh;
+    animation-name: sheetFade;
+  }
+
+  @keyframes sheetFade {
+    from {
+      transform: scale(0.98);
+      opacity: 0;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .daySheetPanel {
+    animation: none;
+  }
+}
