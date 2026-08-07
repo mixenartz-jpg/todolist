@@ -1,10 +1,11 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { formatShortDate } from "@/lib/ui/tr";
 import { isOverdue } from "./queries";
+import { DURATION_PRESETS, formatDuration } from "./schedule";
 import type { Task } from "./types";
 import "@/components/list-motion.css";
 
@@ -15,6 +16,16 @@ interface TaskItemProps {
   onDelete: () => void;
   /** Yarına ertele. Tarihsiz görevlerde gösterilmez. */
   onDefer?: () => void;
+  /**
+   * Saat/süre ayarlama. Verilmezse kontrol hiç gösterilmez —
+   * tarihsiz görevlerin ("bir ara") saati olmaz.
+   */
+  onSetTime?: (startTime: string | null, durationMinutes: number | null) => void;
+  /**
+   * Saat çipini gizle. Gün planında saat zaten sol olukta yazıyor;
+   * satırda tekrarlamak aynı bilgiyi iki kez göstermek olur.
+   */
+  hideTime?: boolean;
 }
 
 export const TaskItem = memo(function TaskItem({
@@ -23,8 +34,11 @@ export const TaskItem = memo(function TaskItem({
   onToggle,
   onDelete,
   onDefer,
+  onSetTime,
+  hideTime = false,
 }: TaskItemProps) {
   const overdue = isOverdue(task, today);
+  const [editingTime, setEditingTime] = useState(false);
 
   return (
     <li
@@ -72,12 +86,30 @@ export const TaskItem = memo(function TaskItem({
       <div className="min-w-0 flex-1">
         <div
           className={cn(
-            "truncate text-[length:var(--text-base)]",
+            "flex items-baseline gap-2 text-[length:var(--text-base)]",
             task.done && "text-[var(--color-ink-3)] line-through",
           )}
         >
-          {task.title}
+          {!hideTime && task.startTime && (
+            <span className="tabular shrink-0 text-[var(--color-ink-3)]">
+              {task.startTime}
+            </span>
+          )}
+          <span className="truncate">{task.title}</span>
+          {!hideTime && task.durationMinutes && (
+            <span className="shrink-0 text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
+              {formatDuration(task.durationMinutes)}
+            </span>
+          )}
         </div>
+
+        {editingTime && onSetTime && (
+          <TimeEditor
+            task={task}
+            onClose={() => setEditingTime(false)}
+            onSet={onSetTime}
+          />
+        )}
 
         {overdue && task.dueDate && (
           <div className="mt-0.5 text-[length:var(--text-xs)] text-[var(--color-warn)]">
@@ -93,6 +125,24 @@ export const TaskItem = memo(function TaskItem({
       </div>
 
       <div className="revealTarget flex shrink-0 gap-0.5 opacity-0 transition-opacity duration-[var(--duration-fast)]">
+        {onSetTime && !task.done && (
+          <IconButton
+            label={`${task.title}: saat ayarla`}
+            onClick={() => setEditingTime((open) => !open)}
+          >
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
+              <circle cx="8" cy="8" r="5.75" stroke="currentColor" strokeWidth="1.3" />
+              <path
+                d="M8 4.75V8l2.25 1.5"
+                stroke="currentColor"
+                strokeWidth="1.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </IconButton>
+        )}
+
         {onDefer && !task.done && (
           <IconButton label={`${task.title}: yarına ertele`} onClick={onDefer}>
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -123,6 +173,75 @@ export const TaskItem = memo(function TaskItem({
     </li>
   );
 });
+
+/**
+ * Saat ve süre ayarlama paneli.
+ *
+ * Görev eklerken DEĞİL, sonradan açılır: tek satırlık hızlı ekleme
+ * "görev eklemek tek cümle yazmaktır" ilkesini korumalı. Saat, planı
+ * kuran ikinci bir hareket olarak verilir.
+ *
+ * Süre ön ayarlardan seçilir; serbest dakika girişi bu ekranda
+ * kimsenin ihtiyaç duymadığı bir hassasiyet olurdu.
+ */
+function TimeEditor({
+  task,
+  onClose,
+  onSet,
+}: {
+  task: Task;
+  onClose: () => void;
+  onSet: (startTime: string | null, durationMinutes: number | null) => void;
+}) {
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      <input
+        type="time"
+        value={task.startTime ?? ""}
+        aria-label="Başlangıç saati"
+        onChange={(e) => onSet(e.target.value || null, task.durationMinutes)}
+        className="tabular h-8 rounded-md border border-[var(--color-line-2)] bg-[var(--color-surface-2)] px-2 text-[length:var(--text-sm)] outline-none focus:border-[var(--color-accent)]"
+      />
+
+      {task.startTime &&
+        DURATION_PRESETS.map((minutes) => (
+          <button
+            key={minutes}
+            type="button"
+            aria-pressed={task.durationMinutes === minutes}
+            onClick={() =>
+              onSet(
+                task.startTime,
+                task.durationMinutes === minutes ? null : minutes,
+              )
+            }
+            className={cn(
+              "h-8 rounded-md px-2 text-[length:var(--text-xs)]",
+              "transition-colors duration-[var(--duration-fast)]",
+              task.durationMinutes === minutes
+                ? "bg-[color-mix(in_oklch,var(--color-accent)_18%,transparent)] text-[var(--color-ink)]"
+                : "bg-[var(--color-surface-2)] text-[var(--color-ink-3)] hover:text-[var(--color-ink-2)]",
+            )}
+          >
+            {formatDuration(minutes)}
+          </button>
+        ))}
+
+      {task.startTime && (
+        <button
+          type="button"
+          onClick={() => {
+            onSet(null, null);
+            onClose();
+          }}
+          className="h-8 rounded-md px-2 text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-danger)]"
+        >
+          Saati kaldır
+        </button>
+      )}
+    </div>
+  );
+}
 
 function IconButton({
   label,

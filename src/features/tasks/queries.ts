@@ -45,6 +45,10 @@ export function toTask(row: TaskRow): Task {
     done: row.done,
     note: row.note,
     sortOrder: row.sort_order,
+    // Saniyeyi SINIRDA kırp: tüm uygulama 'HH:MM' ile çalışsın,
+    // biçim dönüşümü her kullanım yerinde tekrarlanmasın.
+    startTime: row.start_time ? row.start_time.slice(0, 5) : null,
+    durationMinutes: row.duration_minutes,
   };
 }
 

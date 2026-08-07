@@ -163,6 +163,64 @@ export function useRescheduleTask(onError?: (message: string) => void) {
   });
 }
 
+/**
+ * Görevin saatini ve süresini ayarlar — optimistic.
+ *
+ * `startTime` null verilirse süre de temizlenir: veritabanı kısıtı
+ * saatsiz süreye izin vermez ("45 dakika ama ne zaman?" bir plan
+ * değildir) ve bunu istemcide zorlamak, sunucudan kısıt hatası almaya
+ * yeğdir.
+ */
+export function useSetTaskTime(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      startTime,
+      durationMinutes,
+    }: {
+      id: string;
+      startTime: string | null;
+      durationMinutes: number | null;
+    }) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("tasks")
+        .update({
+          start_time: startTime,
+          duration_minutes: startTime ? durationMinutes : null,
+        })
+        .eq("id", id);
+      if (error) throw error;
+    },
+
+    onMutate: async ({ id, startTime, durationMinutes }) => {
+      await qc.cancelQueries({ queryKey: qk.tasks() });
+      const previous = qc.getQueryData<Task[]>(qk.tasks());
+      qc.setQueryData<Task[]>(qk.tasks(), (tasks) =>
+        tasks?.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                startTime,
+                durationMinutes: startTime ? durationMinutes : null,
+              }
+            : t,
+        ),
+      );
+      return { previous };
+    },
+
+    onError: (error, _vars, context) => {
+      qc.setQueryData(qk.tasks(), context?.previous);
+      onError?.(errorText(error));
+    },
+
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.tasks() }),
+  });
+}
+
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : "Kaydedilemedi, tekrar deneyin";
 }

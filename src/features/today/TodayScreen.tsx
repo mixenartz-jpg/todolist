@@ -17,12 +17,15 @@ import { useRoutines } from "@/features/routines/queries";
 import type { RoutineWithSchedule } from "@/features/routines/types";
 import { dayScore, periodProgress } from "@/features/stats/score";
 import { DayNoteCard } from "@/features/notes/DayNoteCard";
+import { ReviewQueue } from "@/features/mistakes/ReviewQueue";
+import { DaySchedule } from "@/features/tasks/DaySchedule";
 import { TaskItem } from "@/features/tasks/TaskItem";
 import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
 import {
   useCreateTask,
   useDeleteTask,
   useRescheduleTask,
+  useSetTaskTime,
   useToggleTask,
 } from "@/features/tasks/mutations";
 import { tasksForDay, undatedTasks, useTasks } from "@/features/tasks/queries";
@@ -43,6 +46,7 @@ export function TodayScreen() {
   const createTask = useCreateTask(toast.show);
   const deleteTask = useDeleteTask(toast.show);
   const rescheduleTask = useRescheduleTask(toast.show);
+  const setTaskTime = useSetTaskTime(toast.show);
 
   /**
    * Bugün gösterilecek rutinler.
@@ -141,25 +145,25 @@ export function TodayScreen() {
               </h2>
 
               {dayTasks.length > 0 && (
-                <ul className="mb-2.5 flex flex-col gap-1.5">
-                  {dayTasks.map((task) => (
-                    <TaskItem
-                      key={task.id}
-                      task={task}
-                      today={today}
-                      onToggle={() =>
-                        toggleTask.mutate({ id: task.id, done: !task.done })
-                      }
-                      onDelete={() => deleteTask.mutate(task.id)}
-                      onDefer={() =>
-                        rescheduleTask.mutate({
-                          id: task.id,
-                          dueDate: addDays(today, 1),
-                        })
-                      }
-                    />
-                  ))}
-                </ul>
+                <div className="mb-2.5">
+                  <DaySchedule
+                    tasks={dayTasks}
+                    today={today}
+                    onToggle={(task) =>
+                      toggleTask.mutate({ id: task.id, done: !task.done })
+                    }
+                    onDelete={(task) => deleteTask.mutate(task.id)}
+                    onDefer={(task) =>
+                      rescheduleTask.mutate({
+                        id: task.id,
+                        dueDate: addDays(today, 1),
+                      })
+                    }
+                    onSetTime={(task, startTime, durationMinutes) =>
+                      setTaskTime.mutate({ id: task.id, startTime, durationMinutes })
+                    }
+                  />
+                </div>
               )}
 
               <TaskQuickAdd
@@ -170,6 +174,12 @@ export function TodayScreen() {
                 }
               />
             </section>
+
+            {/* Vadesi gelmiş yanlış tekrarları. Görevlerden SONRA:
+                rutinler ve görevler günün asıl yükümlülükleri, tekrar
+                ikincildir. Vadesi gelen yoksa bölüm hiçbir şey
+                render etmez — bkz. ReviewQueue. */}
+            <ReviewQueue today={today} onError={toast.show} />
 
             {/* Tarihsiz görevler ("bir ara yapılacak"). Katlanabilir:
                 günlük akışın parçası değil, ama girildikleri yerde

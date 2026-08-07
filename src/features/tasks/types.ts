@@ -15,6 +15,16 @@ export interface Task {
   done: boolean;
   note: string | null;
   sortOrder: number;
+  /**
+   * Başlangıç saati, 'HH:MM' (saniye sınırda kırpılır).
+   *
+   * null → saatsiz görev. Bu BİRİNCİ SINIF bir durumdur: işlerin çoğu
+   * belirli bir saate bağlı değildir ve saatsiz görevler düz listede
+   * kalır. Gün planı yalnızca saati olanlardan kurulur.
+   */
+  startTime: string | null;
+  /** Süre, dakika. `startTime` null ise her zaman null. */
+  durationMinutes: number | null;
 }
 
 export interface TaskDraft {
