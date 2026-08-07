@@ -74,3 +74,29 @@ export interface NoteRow {
   created_at: string;
   updated_at: string;
 }
+
+/**
+ * Yanlış satırı.
+ *
+ * Bu tabloda `numeric` sütun YOKTUR; yukarıdaki string-coercion uyarısı
+ * burada geçerli değildir. `smallint` supabase-js'e number olarak gelir.
+ *
+ * `review_stage` tamamlanan tekrar sayısıdır (0..4), "hangi aralık"
+ * değil. `next_review_date` null ise yanlış mezun olmuştur ve bir daha
+ * tekrar kuyruğunda görünmez.
+ */
+export interface MistakeRow {
+  id: string;
+  user_id: string;
+  ders: string;
+  konu: string;
+  date: string;
+  note: string | null;
+  image_path: string | null;
+  image_width: number | null;
+  image_height: number | null;
+  review_stage: number;
+  next_review_date: string | null;
+  created_at: string;
+  updated_at: string;
+}

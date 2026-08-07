@@ -39,7 +39,12 @@ const NAV: NavItem[] = [
     icon: <ChartIcon />,
   },
   { href: "/rutinler", label: "Rutinler", icon: <ListIcon /> },
-  { href: "/notlar", label: "Notlar", icon: <NoteIcon /> },
+  /*
+   * Notlar ve Yanlışlar tek sekmede birleşir; ikisi de "yazdığım
+   * şeyler" ve ayrımı kendi alt sekmeleri yapar. Ayrı birer sekme
+   * olsalardı çubuk yediye çıkar, sekme başına ~45px kalırdı.
+   */
+  { href: "/defter", label: "Defter", icon: <NoteIcon /> },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {

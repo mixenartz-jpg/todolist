@@ -8,6 +8,7 @@
 import { addDays, asDateStr, eachDay } from "@/lib/date/date";
 import type { RoutineWithSchedule, Schedule, ScheduleVersion } from "@/features/routines/types";
 import { entryKey, type EntryMap } from "@/features/entries/entry-map";
+import type { Mistake } from "@/features/mistakes/types";
 
 let counter = 0;
 
@@ -103,6 +104,55 @@ export function entriesOn(
     map.set(entryKey(r.id, asDateStr(date)), value);
   }
   return map;
+}
+
+interface MistakeOptions {
+  id?: string;
+  ders?: string;
+  konu?: string;
+  date?: string;
+  note?: string | null;
+  imagePath?: string | null;
+  /** Tamamlanan tekrar sayısı (0..4). 4 = mezun. */
+  reviewStage?: number;
+  /** Açıkça verilmezse `reviewStage`'e göre türetilir. */
+  nextReviewDate?: string | null;
+}
+
+/**
+ * Test için yanlış üretir.
+ *
+ * `nextReviewDate` verilmezse tutarlı bir durum türetilir: mezun aşama
+ * için null, aksi halde tarihten bir gün sonra. Böylece çoğu test
+ * tekrar durumunu hiç düşünmek zorunda kalmaz.
+ */
+export function mistake(options: MistakeOptions = {}): Mistake {
+  const date = asDateStr(options.date ?? "2026-08-01");
+  const reviewStage = options.reviewStage ?? 0;
+
+  const nextReviewDate =
+    options.nextReviewDate === undefined
+      ? reviewStage >= 4
+        ? null
+        : addDays(date, 1)
+      : options.nextReviewDate === null
+        ? null
+        : asDateStr(options.nextReviewDate);
+
+  return {
+    id: options.id ?? `m${++counter}`,
+    ders: options.ders ?? "Matematik",
+    konu: options.konu ?? "Türev",
+    date,
+    note: options.note ?? null,
+    imagePath: options.imagePath ?? null,
+    imageWidth: null,
+    imageHeight: null,
+    reviewStage,
+    nextReviewDate,
+    createdAt: `${date}T10:00:00.000Z`,
+    updatedAt: `${date}T10:00:00.000Z`,
+  };
 }
 
 /** Bir aralıktaki tüm günleri tamamlanmış işaretler. */

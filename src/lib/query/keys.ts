@@ -29,4 +29,22 @@ export const qk = {
    * kaydetmek TÜM günlük notların önbelleğini geçersiz kılardı.
    */
   journal: () => ["journal"] as const,
+
+  /*
+   * Yanlışlar. Liste TEK sorgudur; çetele tablosu ve Bugün ekranının
+   * tekrar kuyruğu istemcide bu listeden türetilir. Ayrı bir "tally"
+   * ya da "due" anahtarı YOKTUR — olsaydı her yeni yanlış birden çok
+   * anahtarı kilit adımda geçersiz kılmak zorunda kalır ve ikinci bir
+   * doğruluk kaynağı doğardı.
+   */
+  mistakes: () => ["mistakes"] as const,
+
+  /*
+   * İmzalı görsel URL'i. "mistakes" ÖNEKİNİN ALTINDA DEĞİL: yeni bir
+   * yanlış eklenince `qk.mistakes()` geçersiz kılınır ve önek eşleşmesi
+   * yüzünden tüm imzalı URL'ler de çöpe giderdi — her satır için
+   * gereksiz yeniden imzalama demek olurdu. İmza yalnızca süresi
+   * dolunca yenilenmelidir.
+   */
+  mistakeImage: (path: string) => ["mistake-image", path] as const,
 } as const;

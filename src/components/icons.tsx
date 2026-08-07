@@ -114,6 +114,26 @@ export function NoteIcon({ size = 16 }: IconProps) {
   );
 }
 
+/**
+ * Yanlış.
+ *
+ * Çember içinde çarpı — `CheckIcon`'ın karşıtı olarak okunur ve aynı
+ * aileden görünür. Çıplak bir çarpı "kapat" eylemiyle karışırdı.
+ */
+export function CrossIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...svgProps(size)}>
+      <circle cx="8" cy="8" r="5.75" stroke="currentColor" strokeWidth="1.3" />
+      <path
+        d="M6.1 6.1l3.8 3.8M9.9 6.1l-3.8 3.8"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 /** Rutin listesi. */
 export function ListIcon({ size = 16 }: IconProps) {
   return (
