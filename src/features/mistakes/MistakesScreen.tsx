@@ -8,23 +8,26 @@ import { CrossIcon } from "@/components/icons";
 import { Toast, useToast } from "@/components/Toast";
 import { todayStr } from "@/lib/date/date";
 import { MistakeForm } from "./MistakeForm";
-import { MistakeItem } from "./MistakeItem";
+import { MistakeTree } from "./MistakeTree";
 import {
+  useAdvanceReview,
   useCreateMistake,
   useDeleteMistake,
   useUpdateMistake,
 } from "./mutations";
-import { EMPTY_MISTAKES, useMistakes } from "./queries";
-import { buildTally, filterBySelection } from "./tally";
-import { TallyTable, type Selection } from "./TallyTable";
+import { EMPTY_MISTAKES, useMistakeImageUrl, useMistakes } from "./queries";
+import { sortTree, type SortMode } from "./sort";
+import { SortSelect } from "./SortSelect";
+import { buildTree } from "./tree";
 import type { Mistake } from "./types";
 
 /**
  * Yanlış çetelesi ekranı.
  *
- * Üstte ders/konu kırılımlı sayım tablosu, altında yanlışların listesi.
- * Tablodan bir konu seçilince liste ona daralır: özet ve detay aynı
- * ekranda, gezinmeden.
+ * Tek bir ağaç: ders → konu → yanlış → detay. Özet (sayılar, ısı, vadesi
+ * gelen tekrar) üst seviyelerde durur, detay yerinde açılır — hangi
+ * konuda kaç yanlış olduğu ile o yanlışların ne olduğu artık aynı
+ * yapıda, gezinmeden.
  */
 export function MistakesScreen() {
   const today = useMemo(() => todayStr(), []);
@@ -36,21 +39,28 @@ export function MistakesScreen() {
   const createMistake = useCreateMistake(toast.show);
   const updateMistake = useUpdateMistake(toast.show);
   const deleteMistake = useDeleteMistake(toast.show);
+  const advanceReview = useAdvanceReview(toast.show);
 
   const [composing, setComposing] = useState(false);
   const [editing, setEditing] = useState<Mistake | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Mistake | null>(null);
-  const [selection, setSelection] = useState<Selection | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>("most");
 
-  const tally = useMemo(() => buildTally(mistakes, today), [mistakes, today]);
-  const visible = useMemo(
-    () => filterBySelection(mistakes, selection),
-    [mistakes, selection],
-  );
+  const tree = useMemo(() => buildTree(mistakes, today), [mistakes, today]);
+  const sorted = useMemo(() => sortTree(tree, sortMode), [tree, sortMode]);
+
+  // Düzenlenen kaydın mevcut görseli. Form onu gösteremezse kullanıcı
+  // ekran görüntüsünün silindiğini sanar.
+  const editingImage = useMistakeImageUrl(editing?.imagePath ?? null);
 
   function closeForm() {
     setComposing(false);
     setEditing(null);
+  }
+
+  function startEdit(mistake: Mistake) {
+    setComposing(false);
+    setEditing(mistake);
   }
 
   const formOpen = composing || editing !== null;
@@ -86,6 +96,7 @@ export function MistakesScreen() {
             initial={editing ?? undefined}
             history={mistakes}
             defaultDate={today}
+            existingImageUrl={editingImage.data ?? null}
             submitLabel={editing ? "Kaydet" : "Ekle"}
             pending={createMistake.isPending || updateMistake.isPending}
             onError={toast.show}
@@ -110,48 +121,21 @@ export function MistakesScreen() {
             <EmptyState
               icon={<CrossIcon size={22} />}
               title="Henüz yanlış yok"
-              description="Çözdüğün sorularda yaptığın yanlışları ekran görüntüsü ve notla kaydet. Hangi konuda takıldığını çetele tablosunda göreceksin."
+              description="Çözdüğün sorularda yaptığın yanlışları ekran görüntüsü ve notla kaydet. Hangi konuda takıldığını ders ve konu kırılımında göreceksin."
             />
           )
         ) : (
           <>
-            <TallyTable
-              tally={tally}
-              selection={selection}
-              onSelect={setSelection}
+            <SortSelect value={sortMode} onChange={setSortMode} />
+
+            <MistakeTree
+              tree={sorted}
+              today={today}
+              onEdit={startEdit}
+              onDelete={setPendingDelete}
+              onReviewed={(mistake) => advanceReview.mutate({ mistake, today })}
+              reviewPending={advanceReview.isPending}
             />
-
-            {selection && (
-              <div className="flex items-center gap-2">
-                <span
-                  aria-live="polite"
-                  className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]"
-                >
-                  {selection.ders} · {selection.konu} — {visible.length} yanlış
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelection(null)}
-                >
-                  Filtreyi kaldır
-                </Button>
-              </div>
-            )}
-
-            <ul className="flex flex-col gap-2">
-              {visible.map((mistake) => (
-                <MistakeItem
-                  key={mistake.id}
-                  mistake={mistake}
-                  onEdit={() => {
-                    setComposing(false);
-                    setEditing(mistake);
-                  }}
-                  onDelete={() => setPendingDelete(mistake)}
-                />
-              ))}
-            </ul>
           </>
         )}
       </div>
@@ -187,7 +171,7 @@ function MistakesSkeleton() {
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="h-24 animate-pulse rounded-xl bg-[var(--color-surface-2)]"
+          className="h-11 animate-pulse rounded-xl bg-[var(--color-surface-2)]"
           style={{ animationDelay: `${i * 70}ms` }}
         />
       ))}
