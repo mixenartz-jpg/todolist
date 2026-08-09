@@ -1,0 +1,63 @@
+/*
+ * Haftalık plan ızgarası.
+ *
+ * ── Neden mobilde YATAY KAYDIRMA değil, dikey yığın? ──
+ * 320px'de yedi sütuna ~40px düşer; bir görev başlığı oraya sığmaz.
+ * Akla ilk gelen çözüm yatay kaydırmadır ama hafta görünümünün bütün
+ * amacı yedi günü BİRDEN görmektir — kaydırma günleri bir hareketin
+ * arkasına saklar ve ekran, yan yana dizilmiş yedi ayrı "bugün"e
+ * dönüşür. Dikey yığında yedi başlık ve sayaç tek bakışta okunur,
+ * açılan gün ise tam genişlikte rahat bir liste verir.
+ *
+ * Takvim ızgarasından (calendar.css) ayrı bir dosya: orada hücre kare
+ * ve içerik yoğunluk göstergesi, burada sütun uzuyor ve içerik gerçek
+ * görev satırları.
+ */
+
+.weekGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.weekDay {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: var(--color-surface);
+  padding: 10px;
+}
+
+/* Bugün: kenarlık vurgusu — takvimdeki `calendarDayToday` ile aynı
+ * dil. Dolgu DEĞİL; dolu bir günle bugünü ayırt edebilmek gerekir. */
+.weekDayToday {
+  border-color: var(--color-accent);
+}
+
+/* Geçmiş günler geri planda kalır ama tıklanabilir ve okunur:
+ * soluklaştırma takvimdeki taşan günlerle aynı orandadır. */
+.weekDayPast {
+  opacity: 0.55;
+}
+
+.weekDayPast:hover,
+.weekDayPast:focus-within {
+  opacity: 1;
+}
+
+@media (min-width: 768px) {
+  .weekGrid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  /* Sütunlar eşit yükseklikte durur; en dolu gün yüksekliği belirler
+   * ve boş günler de aynı boyda kalır — ızgara bir tablo gibi okunur,
+   * dağınık kartlar gibi değil. */
+  .weekDay {
+    min-height: 8rem;
+  }
+}

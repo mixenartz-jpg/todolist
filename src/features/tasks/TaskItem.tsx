@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useState, type ReactNode } from "react";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { formatShortDate } from "@/lib/ui/tr";
@@ -26,6 +26,16 @@ interface TaskItemProps {
    * satırda tekrarlamak aynı bilgiyi iki kez göstermek olur.
    */
   hideTime?: boolean;
+  /**
+   * Gün seçici paneli. Verilirse "ertele" simgesi bir sonraki güne
+   * itmek yerine bu paneli açar.
+   *
+   * Aynı simgenin iki anlam taşıması bilinçli: "yarına it" ve "bir
+   * güne taşı" aynı hareketin iki hassasiyetidir. İkinci bir simge
+   * eklemek, satırdaki eylem kümesini dörde çıkarır ve haftalık
+   * ızgaranın dar sütununda yer kalmazdı.
+   */
+  dayPicker?: ReactNode;
 }
 
 export const TaskItem = memo(function TaskItem({
@@ -36,9 +46,11 @@ export const TaskItem = memo(function TaskItem({
   onDefer,
   onSetTime,
   hideTime = false,
+  dayPicker,
 }: TaskItemProps) {
   const overdue = isOverdue(task, today);
   const [editingTime, setEditingTime] = useState(false);
+  const [movingDay, setMovingDay] = useState(false);
 
   return (
     <li
@@ -111,6 +123,8 @@ export const TaskItem = memo(function TaskItem({
           />
         )}
 
+        {movingDay && dayPicker}
+
         {overdue && task.dueDate && (
           <div className="mt-0.5 text-[length:var(--text-xs)] text-[var(--color-warn)]">
             {formatShortDate(task.dueDate)} tarihinden taşındı
@@ -143,8 +157,17 @@ export const TaskItem = memo(function TaskItem({
           </IconButton>
         )}
 
-        {onDefer && !task.done && (
-          <IconButton label={`${task.title}: yarına ertele`} onClick={onDefer}>
+        {(onDefer || dayPicker) && !task.done && (
+          <IconButton
+            label={
+              dayPicker
+                ? `${task.title}: başka güne taşı`
+                : `${task.title}: yarına ertele`
+            }
+            onClick={
+              dayPicker ? () => setMovingDay((open) => !open) : () => onDefer?.()
+            }
+          >
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
               <path
                 d="M3 8h8M8 5l3 3-3 3"

@@ -72,6 +72,36 @@ export function formatMonthYear(year: number, month: number): string {
 }
 
 /**
+ * Hafta aralığı: "3–9 Ağustos".
+ *
+ * Ay aynıysa ay adı TEK KEZ yazılır; aylar farklıysa iki kez
+ * ("29 Eylül – 5 Ekim"); yıllar da farklıysa yıllar eklenir
+ * ("28 Aralık 2026 – 3 Ocak 2027").
+ *
+ * Her zaman uzun biçim ("3 Ağustos 2026 – 9 Ağustos 2026") yazmak
+ * başlığı gereksiz uzatır ve haftanın hangi ay içinde olduğunu
+ * okumayı zorlaştırır — tekrarlanan bilgi göz tarafından ayıklanmak
+ * zorunda kalır. Yıl yalnızca gerçekten ayırt edici olduğunda görünür.
+ *
+ * Ayraç yarım tire (–), kısa çizgi değil: sayı aralığının tipografik
+ * karşılığı odur ve "3-9" bir çıkarma gibi okunabilir.
+ */
+export function formatWeekRange(start: DateStr, end: DateStr): string {
+  const a = toParts(start);
+  const b = toParts(end);
+
+  if (a.year !== b.year) {
+    return `${a.day} ${MONTHS[a.month]} ${a.year} – ${b.day} ${MONTHS[b.month]} ${b.year}`;
+  }
+
+  if (a.month !== b.month) {
+    return `${a.day} ${MONTHS[a.month]} – ${b.day} ${MONTHS[b.month]}`;
+  }
+
+  return `${a.day}–${b.day} ${MONTHS[a.month]}`;
+}
+
+/**
  * Seri birimini Türkçeleştirir.
  *
  * Esnek rutinlerde seri HAFTA/AY birimiyle sayılır. Birimsiz bir "5"

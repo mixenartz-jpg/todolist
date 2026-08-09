@@ -9,6 +9,7 @@ import { addDays, asDateStr, eachDay } from "@/lib/date/date";
 import type { RoutineWithSchedule, Schedule, ScheduleVersion } from "@/features/routines/types";
 import { entryKey, type EntryMap } from "@/features/entries/entry-map";
 import type { Mistake } from "@/features/mistakes/types";
+import type { Task } from "@/features/tasks/types";
 
 let counter = 0;
 
@@ -152,6 +153,38 @@ export function mistake(options: MistakeOptions = {}): Mistake {
     nextReviewDate,
     createdAt: `${date}T10:00:00.000Z`,
     updatedAt: `${date}T10:00:00.000Z`,
+  };
+}
+
+interface TaskOptions {
+  id?: string;
+  title?: string;
+  /** null → tarihsiz görev ("bir ara"). Verilmezse tarihsizdir. */
+  dueDate?: string | null;
+  done?: boolean;
+  note?: string | null;
+  sortOrder?: number;
+  startTime?: string | null;
+  durationMinutes?: number | null;
+}
+
+/**
+ * Test için görev üretir.
+ *
+ * Varsayılan TARİHSİZ ve tamamlanmamıştır: hafta testlerinin çoğu
+ * tarihi açıkça verir ve varsayılanın "bugün" olması, testin yazıldığı
+ * güne bağlı sinsi bir kırılganlık doğururdu.
+ */
+export function task(options: TaskOptions = {}): Task {
+  return {
+    id: options.id ?? `t${++counter}`,
+    title: options.title ?? "Test görevi",
+    dueDate: options.dueDate == null ? null : asDateStr(options.dueDate),
+    done: options.done ?? false,
+    note: options.note ?? null,
+    sortOrder: options.sortOrder ?? 0,
+    startTime: options.startTime ?? null,
+    durationMinutes: options.durationMinutes ?? null,
   };
 }
 
