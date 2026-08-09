@@ -53,6 +53,16 @@ interface TaskItemProps {
    * simgenin anlamı üçüncü kez değişirdi.
    */
   extra?: ReactNode;
+  /**
+   * Dar sütun düzeni: eylem simgeleri başlığın YANINDA değil ALTINDA.
+   *
+   * Haftalık/plan ızgarasında sütun ~140px'e iner. Simgeler satırda
+   * kalırsa (kutucuk 40px + üç simge 96px + boşluklar) başlığa sıfır
+   * genişlik kalır ve görev ADSIZ görünür — `min-w-0` ile `truncate`
+   * metni sessizce tamamen kırpar. Simgeleri alta almak başlığa tüm
+   * satırı bırakır.
+   */
+  compact?: boolean;
 }
 
 export const TaskItem = memo(function TaskItem({
@@ -66,6 +76,7 @@ export const TaskItem = memo(function TaskItem({
   hideTime = false,
   dayPicker,
   extra,
+  compact = false,
 }: TaskItemProps) {
   const overdue = isOverdue(task, today);
   const [editingTime, setEditingTime] = useState(false);
@@ -83,7 +94,28 @@ export const TaskItem = memo(function TaskItem({
   return (
     <li
       className={cn(
-        "rowEnter revealOnHover flex items-center gap-3 rounded-xl border px-3 py-2.5",
+        "rowEnter revealOnHover flex rounded-xl border py-2.5",
+        // Dar sütunda yatay dolgu kısalır: 24px sadece kenar boşluğuna
+        // gidiyordu ve başlık o genişliğe muhtaç.
+        compact ? "px-2" : "px-3",
+        /*
+         * Dar sütunda satır SARAR ve sıra değişir: başlık en üstte tek
+         * başına, kutucuk ile simgeler altındaki satırda yan yana.
+         *
+         * Yan yana dizilimde (kutucuk 40px + üç simge 96px) başlığa
+         * sıfır genişlik kalıyor, `truncate` de metni tamamen kırpıyordu
+         * — görev ADSIZ görünürdü. Kutucuğu da alta almak, başlığa
+         * sütunun tamamını bırakır; 64px'lik bir şeride sıkışan metin
+         * "Matemat / ik" diye kelime ortasından bölünüyordu.
+         */
+        /*
+         * `gap-x-0`: kutucuk ile simge grubunu `justify-between` zaten
+         * iki uca yaslıyor. Ek bir sütun boşluğu 112px'lik iç alanda
+         * gereken 118px'i aşırıp simgeleri üçüncü satıra itiyordu.
+         */
+        compact
+          ? "flex-wrap items-center justify-between gap-x-0 gap-y-1.5"
+          : "items-center gap-3",
         "transition-colors duration-[var(--duration-base)] ease-[var(--ease-out-quart)]",
         task.done
           ? "border-transparent bg-[var(--color-surface-2)]"
@@ -95,7 +127,18 @@ export const TaskItem = memo(function TaskItem({
         onClick={onToggle}
         aria-pressed={task.done}
         aria-label={task.done ? `${task.title}: geri al` : `${task.title}: tamamla`}
-        className="grid size-10 shrink-0 place-items-center rounded-lg transition-transform duration-[var(--duration-fast)] ease-[var(--ease-out-expo)] active:scale-[0.97]"
+        className={cn(
+          "grid shrink-0 place-items-center rounded-lg",
+          "transition-transform duration-[var(--duration-fast)] ease-[var(--ease-out-expo)] active:scale-[0.97]",
+          /*
+           * Dar sütunda kutucuk küçülür ama dokunma hedefi küçülmez:
+           * `before` sözde elemanı görünmez alanı 44px'e tamamlar.
+           * 40px'lik kutu 140px'lik sütunda başlığa yer bırakmıyordu.
+           */
+          compact
+            ? "relative order-2 size-7 before:absolute before:-inset-2 before:content-['']"
+            : "size-10",
+        )}
       >
         <span
           /* `key`: işaretlendiğinde eleman yeniden takılır ve onay
@@ -123,10 +166,14 @@ export const TaskItem = memo(function TaskItem({
         </span>
       </button>
 
-      <div className="min-w-0 flex-1">
+      {/* compact: başlık tek başına üst satırda, sütunun tam genişliği. */}
+      <div className={cn("min-w-0 flex-1", compact && "order-1 w-full flex-none")}>
         <div
           className={cn(
-            "flex items-baseline gap-2 text-[length:var(--text-base)]",
+            "flex gap-2 text-[length:var(--text-base)]",
+            // Sarmalı metinde taban hizası ilk satıra göre hesaplanır
+            // ve saat çipi metnin ortasında asılı kalırdı.
+            compact ? "items-start" : "items-baseline",
             task.done && "text-[var(--color-ink-3)] line-through",
           )}
         >
@@ -147,15 +194,28 @@ export const TaskItem = memo(function TaskItem({
               title="Yeniden adlandır"
               onClick={() => setEditingTitle(true)}
               className={cn(
-                "min-w-0 flex-1 cursor-text truncate rounded-sm px-1 py-0.5 -mx-1 text-left",
+                "min-w-0 flex-1 cursor-text rounded-sm px-1 py-0.5 -mx-1 text-left",
                 "transition-colors duration-[var(--duration-fast)]",
                 "hover:bg-[var(--color-surface-2)]",
+                /*
+                 * Dar sütunda başlık SARAR, kırpılmaz: 140px'e uzun bir
+                 * görev adı zaten sığmaz ve "Matem..." hiçbir şey
+                 * söylemez. İki satır, yarım kelimeden iyidir.
+                 *
+                 * `wrap-anywhere` DEĞİL `break-words`: ilki kelimeyi
+                 * ortadan böler ("Matemat / ik testi"), ikincisi önce
+                 * kelime sınırını dener ve yalnızca satıra sığmayan tek
+                 * bir kelimeyi zorlar.
+                 */
+                compact ? "break-words" : "truncate",
               )}
             >
               {task.title}
             </button>
           ) : (
-            <span className="truncate">{task.title}</span>
+            <span className={compact ? "break-words" : "truncate"}>
+              {task.title}
+            </span>
           )}
           {!hideTime && task.durationMinutes && (
             <span className="shrink-0 text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
@@ -189,10 +249,23 @@ export const TaskItem = memo(function TaskItem({
         )}
       </div>
 
-      <div className="revealTarget flex shrink-0 gap-0.5 opacity-0 transition-opacity duration-[var(--duration-fast)]">
+      <div
+        className={cn(
+          "revealTarget flex shrink-0 gap-0.5 opacity-0 transition-opacity duration-[var(--duration-fast)]",
+          /*
+           * Kutucukla AYNI satırda, onun sağında.
+           *
+           * `ml-auto` DEĞİL: otomatik kenar boşluğu sarma hesabında
+           * kalan alanı doldurur ve simgeleri üçüncü bir satıra iterdi.
+           * Boşluğu kutucuğun `flex-1`'i üstlenir.
+           */
+          compact && "order-3",
+        )}
+      >
         {onSetTime && !task.done && (
           <IconButton
             label={`${task.title}: saat ayarla`}
+            compact={compact}
             onClick={() => setEditingTime((open) => !open)}
           >
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -215,6 +288,7 @@ export const TaskItem = memo(function TaskItem({
                 ? `${task.title}: başka güne taşı`
                 : `${task.title}: yarına ertele`
             }
+            compact={compact}
             onClick={
               dayPicker ? () => setMovingDay((open) => !open) : () => onDefer?.()
             }
@@ -232,7 +306,11 @@ export const TaskItem = memo(function TaskItem({
           </IconButton>
         )}
 
-        <IconButton label={`${task.title}: sil`} onClick={onDelete}>
+        <IconButton
+          label={`${task.title}: sil`}
+          compact={compact}
+          onClick={onDelete}
+        >
           <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
             <path
               d="M3.5 4.5h9M6.5 4.5V3.2c0-.4.3-.7.7-.7h1.6c.4 0 .7.3.7.7v1.3M5 4.5l.5 8h5l.5-8"
@@ -400,10 +478,13 @@ function TimeEditor({
 function IconButton({
   label,
   onClick,
+  compact = false,
   children,
 }: {
   label: string;
   onClick: () => void;
+  /** Dar sütun: simge kutusu küçülür, dokunma hedefi korunur. */
+  compact?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -411,7 +492,20 @@ function IconButton({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="grid size-8 place-items-center rounded-md text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-ink-2)]"
+      className={cn(
+        "grid place-items-center rounded-md text-[var(--color-ink-3)]",
+        "transition-colors duration-[var(--duration-fast)]",
+        "hover:bg-[var(--color-surface-3)] hover:text-[var(--color-ink-2)]",
+        /*
+         * 136px'lik iç alana kutucuk (28) + üç simge (3×32) + boşluklar
+         * sığmıyordu ve simgeler üçüncü bir satıra sarıyordu. 26px'e
+         * inince toplam ~110px olur; `before` görünmez alanı 44px'lik
+         * dokunma hedefine tamamlar.
+         */
+        compact
+          ? "relative size-[26px] before:absolute before:-inset-2 before:content-['']"
+          : "size-8",
+      )}
     >
       {children}
     </button>

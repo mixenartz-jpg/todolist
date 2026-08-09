@@ -103,6 +103,8 @@ export function WeekDayColumn({
               key={task.id}
               task={task}
               today={today}
+              // Sütun ~140px: simgeler başlığın altına iner.
+              compact
               onToggle={() => onToggle(task)}
               onDelete={() => onDelete(task)}
               onRename={(title) => onRename(task, title)}
