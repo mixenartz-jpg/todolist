@@ -12,6 +12,7 @@ import { useRoutines } from "@/features/routines/queries";
 import type { RoutineWithSchedule } from "@/features/routines/types";
 import { dayScore, periodProgress } from "@/features/stats/score";
 import { DayNoteCard } from "@/features/notes/DayNoteCard";
+import { SectionHeading } from "@/features/sections/SectionHeading";
 import { TaskItem } from "@/features/tasks/TaskItem";
 import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
 import {
@@ -152,9 +153,11 @@ export function DayDetailSheet({
           )}
 
           <section>
-            <h3 className="mb-2 text-[length:var(--text-sm)] font-medium text-[var(--color-ink-2)]">
-              Görevler
-            </h3>
+            {/* Bugün ekranıyla AYNI anahtar: bunlar aynı bölümdür.
+                Ayrı anahtar verilseydi kullanıcı "Görevler"i yeniden
+                adlandırır, gün panelinde eski adı görür ve bunu bir
+                hata sanardı. */}
+            <SectionHeading sectionKey="today.tasks" as="h3" onError={onError} />
 
             {dayTasks.length > 0 && (
               <ul className="mb-2 flex flex-col gap-1.5">
@@ -180,9 +183,7 @@ export function DayDetailSheet({
           </section>
 
           <section>
-            <h3 className="mb-2 text-[length:var(--text-sm)] font-medium text-[var(--color-ink-2)]">
-              Günlük
-            </h3>
+            <SectionHeading sectionKey="today.journal" as="h3" onError={onError} />
             <DayNoteCard date={date} onError={onError} />
           </section>
         </div>

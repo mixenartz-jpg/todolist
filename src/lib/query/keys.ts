@@ -47,4 +47,12 @@ export const qk = {
    * dolunca yenilenmelidir.
    */
   mistakeImage: (path: string) => ["mistake-image", path] as const,
+
+  /*
+   * Bölüm başlıkları. TEK sorgudur ve tüm anahtarları kapsar: kullanıcı
+   * başına bir avuç satır var ve anahtar başına ayrı sorgu, tek bir
+   * ekranda dört ağ turu demek olurdu. Bir başlığı düzenlemek tümünü
+   * tazeler — bu kadar küçük bir veri için ucuz ve tutarlı.
+   */
+  sectionLabels: () => ["section-labels"] as const,
 } as const;

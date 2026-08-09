@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { addDays, todayStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
@@ -18,6 +18,7 @@ import type { RoutineWithSchedule } from "@/features/routines/types";
 import { dayScore, periodProgress } from "@/features/stats/score";
 import { DayNoteCard } from "@/features/notes/DayNoteCard";
 import { ReviewQueue } from "@/features/mistakes/ReviewQueue";
+import { SectionHeading } from "@/features/sections/SectionHeading";
 import { DaySchedule } from "@/features/tasks/DaySchedule";
 import { TaskItem } from "@/features/tasks/TaskItem";
 import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
@@ -34,6 +35,13 @@ import { TodayRoutineItem } from "./TodayRoutineItem";
 export function TodayScreen() {
   const today = useMemo(() => todayStr(), []);
   const toast = useToast();
+
+  /*
+   * "Bir ara" varsayılan olarak KAPALI: günlük akışın parçası değil ve
+   * açık gelirse tarihli işlerin altında uzun bir kuyruk bırakır.
+   * (Önceki `<details>` de varsayılan kapalıydı — davranış korunuyor.)
+   */
+  const [somedayOpen, setSomedayOpen] = useState(false);
 
   const routinesQuery = useRoutines();
   const entriesQuery = useEntries(today, today);
@@ -140,9 +148,7 @@ export function TodayScreen() {
             </section>
 
             <section>
-              <h2 className="mb-2.5 text-[length:var(--text-sm)] font-medium text-[var(--color-ink-2)]">
-                Görevler
-              </h2>
+              <SectionHeading sectionKey="today.tasks" onError={toast.show} />
 
               {dayTasks.length > 0 && (
                 <div className="mb-2.5">
@@ -183,55 +189,76 @@ export function TodayScreen() {
 
             {/* Tarihsiz görevler ("bir ara yapılacak"). Katlanabilir:
                 günlük akışın parçası değil, ama girildikleri yerde
-                görünmezlerse kaybolmuş sayılırlar. */}
-            {someday.length > 0 && (
-              <details className="group">
-                <summary className="mb-2.5 flex cursor-pointer list-none items-center gap-1.5 text-[length:var(--text-sm)] font-medium text-[var(--color-ink-2)]">
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 12 12"
-                    fill="none"
-                    aria-hidden
-                    className="transition-transform duration-[var(--duration-fast)] group-open:rotate-90"
-                  >
-                    <path
-                      d="M4.5 2.5L8 6l-3.5 3.5"
-                      stroke="currentColor"
-                      strokeWidth="1.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  Bir ara
-                  <span className="tabular text-[var(--color-ink-3)]">
-                    {someday.filter((t) => !t.done).length}
-                  </span>
-                </summary>
+                görünmezlerse kaybolmuş sayılırlar.
 
-                <ul className="flex flex-col gap-1.5">
-                  {someday.map((task) => (
-                    <TaskItem
-                      key={task.id}
-                      task={task}
-                      today={today}
-                      onToggle={() =>
-                        toggleTask.mutate({ id: task.id, done: !task.done })
-                      }
-                      onDelete={() => deleteTask.mutate(task.id)}
-                      onDefer={() =>
-                        rescheduleTask.mutate({ id: task.id, dueDate: today })
-                      }
-                    />
-                  ))}
-                </ul>
-              </details>
+                `<details>` DEĞİL, durum tabanlı açılır bölüm: başlık
+                artık yeniden adlandırılabilir ve `<summary>` içinde
+                tıkla-düzenle ile tıkla-aç/kapa aynı hedefte çakışırdı.
+                Aç/kapa kendi düğmesine taşındı. */}
+            {someday.length > 0 && (
+              <section>
+                <SectionHeading
+                  sectionKey="today.someday"
+                  onError={toast.show}
+                  trailing={
+                    <button
+                      type="button"
+                      onClick={() => setSomedayOpen((open) => !open)}
+                      aria-expanded={somedayOpen}
+                      className="flex items-center gap-1.5 rounded-sm px-1 py-0.5 text-[length:var(--text-sm)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-ink-2)]"
+                    >
+                      <span className="tabular">
+                        {someday.filter((t) => !t.done).length}
+                      </span>
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 12 12"
+                        fill="none"
+                        aria-hidden
+                        className={cn(
+                          "transition-transform duration-[var(--duration-fast)]",
+                          somedayOpen && "rotate-90",
+                        )}
+                      >
+                        <path
+                          d="M4.5 2.5L8 6l-3.5 3.5"
+                          stroke="currentColor"
+                          strokeWidth="1.4"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <span className="sr-only">
+                        {somedayOpen ? "Bölümü kapat" : "Bölümü aç"}
+                      </span>
+                    </button>
+                  }
+                />
+
+                {somedayOpen && (
+                  <ul className="flex flex-col gap-1.5">
+                    {someday.map((task) => (
+                      <TaskItem
+                        key={task.id}
+                        task={task}
+                        today={today}
+                        onToggle={() =>
+                          toggleTask.mutate({ id: task.id, done: !task.done })
+                        }
+                        onDelete={() => deleteTask.mutate(task.id)}
+                        onDefer={() =>
+                          rescheduleTask.mutate({ id: task.id, dueDate: today })
+                        }
+                      />
+                    ))}
+                  </ul>
+                )}
+              </section>
             )}
 
             <section>
-              <h2 className="mb-2.5 text-[length:var(--text-sm)] font-medium text-[var(--color-ink-2)]">
-                Günlük
-              </h2>
+              <SectionHeading sectionKey="today.journal" onError={toast.show} />
               <DayNoteCard date={today} onError={toast.show} />
             </section>
           </>

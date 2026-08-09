@@ -79,6 +79,21 @@ export interface NoteRow {
 }
 
 /**
+ * Bölüm başlığı satırı.
+ *
+ * Yalnızca kullanıcının varsayılandan SAPAN başlıkları için satır
+ * bulunur; yazılmamış anahtar koddaki varsayılana düşer (bkz.
+ * src/lib/ui/sections.ts). Bu yüzden tabloyu okuyan taraf eksik
+ * anahtarı hata değil, "değiştirilmemiş" olarak yorumlar.
+ */
+export interface SectionLabelRow {
+  user_id: string;
+  key: string;
+  label: string;
+  updated_at: string;
+}
+
+/**
  * Yanlış satırı.
  *
  * Bu tabloda `numeric` sütun YOKTUR; yukarıdaki string-coercion uyarısı

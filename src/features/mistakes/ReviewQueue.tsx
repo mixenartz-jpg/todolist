@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { formatShortDate } from "@/lib/ui/tr";
+import { SectionHeading } from "@/features/sections/SectionHeading";
 import { useAdvanceReview } from "./mutations";
 import { EMPTY_MISTAKES, useMistakes } from "./queries";
 import { dueMistakes, REVIEW_INTERVALS } from "./review";
@@ -44,10 +45,15 @@ export function ReviewQueue({ today, onError }: ReviewQueueProps) {
 
   return (
     <section>
-      <h2 className="mb-2.5 flex items-center gap-1.5 text-[length:var(--text-sm)] font-medium text-[var(--color-ink-2)]">
-        Tekrar
-        <span className="tabular text-[var(--color-ink-3)]">{due.length}</span>
-      </h2>
+      <SectionHeading
+        sectionKey="today.review"
+        onError={onError}
+        trailing={
+          <span className="tabular text-[length:var(--text-sm)] text-[var(--color-ink-3)]">
+            {due.length}
+          </span>
+        }
+      />
 
       <ul className="flex flex-col gap-1.5">
         {visible.map((mistake) => (
