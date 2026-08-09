@@ -23,6 +23,14 @@ export const SECTION_DEFAULTS = {
   "today.review": "Tekrar",
   "today.journal": "Günlük",
   "week.overdue": "Gecikenler",
+  /*
+   * Plan ekranının başlıkları. `week.overdue` ile AYRI anahtarlar:
+   * Hafta ve Plan iki farklı ekran ve birinde "Gecikenler"i yeniden
+   * adlandırmak diğerini sessizce değiştirmemeli — ad alanı kuralının
+   * tam olarak var olma sebebi bu.
+   */
+  "plan.backlog": "Havuz",
+  "plan.overdue": "Gecikenler",
 } as const;
 
 export type SectionKey = keyof typeof SECTION_DEFAULTS;

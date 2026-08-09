@@ -5,6 +5,10 @@ import { qk } from "@/lib/query/keys";
 import { createClient } from "@/lib/supabase/client";
 import type { DateStr } from "@/lib/date/types";
 import type { TaskRow } from "@/lib/db/database.types";
+import {
+  applySortOrders,
+  type SortOrderPatch,
+} from "@/features/plan/reorder";
 import { toTask } from "./queries";
 import type { Task, TaskDraft } from "./types";
 
@@ -131,6 +135,52 @@ export function useDeleteTask(onError?: (message: string) => void) {
   });
 }
 
+/**
+ * Görevin YALNIZCA adını değiştirir — optimistic.
+ *
+ * `useUpdateTask` varken neden ayrı bir hook? Çünkü o `due_date` ve
+ * `note` alanlarını da yazıyor. Ad düzenleyen bir çağrı onları da
+ * göndermek zorunda kalır ve önbellekten okunan değer bayatsa —
+ * örneğin görev başka bir sekmede ertelendiyse — düzenleme o değişikliği
+ * sessizce geri alırdı. Dar bir güncelleme yalnızca dokunduğu alanı
+ * riske atar.
+ *
+ * Başlık burada da `.trim()` ediliyor: `normalizeTitleInput` çağrı
+ * yerinde zaten kırpıyor ama bu hook'un tek başına da doğru olması,
+ * ileride başka bir yerden çağrıldığında veritabanı kısıtına takılmayı
+ * önler.
+ */
+export function useRenameTask(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, title }: { id: string; title: string }) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("tasks")
+        .update({ title: title.trim() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+
+    onMutate: async ({ id, title }) => {
+      await qc.cancelQueries({ queryKey: qk.tasks() });
+      const previous = qc.getQueryData<Task[]>(qk.tasks());
+      qc.setQueryData<Task[]>(qk.tasks(), (tasks) =>
+        tasks?.map((t) => (t.id === id ? { ...t, title: title.trim() } : t)),
+      );
+      return { previous };
+    },
+
+    onError: (error, _vars, context) => {
+      qc.setQueryData(qk.tasks(), context?.previous);
+      onError?.(errorText(error));
+    },
+
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.tasks() }),
+  });
+}
+
 /** Görevi başka bir güne taşır (ör. "yarına ertele"). */
 export function useRescheduleTask(onError?: (message: string) => void) {
   const qc = useQueryClient();
@@ -209,6 +259,58 @@ export function useSetTaskTime(onError?: (message: string) => void) {
             : t,
         ),
       );
+      return { previous };
+    },
+
+    onError: (error, _vars, context) => {
+      qc.setQueryData(qk.tasks(), context?.previous);
+      onError?.(errorText(error));
+    },
+
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.tasks() }),
+  });
+}
+
+/**
+ * Gün içi sıralamayı yazar — optimistic.
+ *
+ * Yamalar `planReorder` ile hesaplanır (bkz. `plan/reorder.ts`);
+ * buraya yalnızca DEĞİŞEN satırlar gelir, tipik olarak iki tane.
+ *
+ * `upsert` DEĞİL, ayrı `update`'ler: upsert satırın tamamını ister ve
+ * `user_id` göndermeyi gerektirir — oysa o sütunu trigger yalnızca
+ * insert'te damgalıyor. Eksik gönderilen bir upsert mevcut satırı
+ * ezerdi. Dizi küçük olduğu için paralel update'ler yeterli.
+ */
+export function useReorderTasks(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (patches: readonly SortOrderPatch[]) => {
+      if (patches.length === 0) return;
+
+      const supabase = createClient();
+
+      const results = await Promise.all(
+        patches.map(({ id, sortOrder }) =>
+          supabase.from("tasks").update({ sort_order: sortOrder }).eq("id", id),
+        ),
+      );
+
+      // İlk hatayı fırlat: kısmi yazma olduysa `onSettled`'daki
+      // invalidate sunucunun gerçek sırasını geri getirir.
+      const failed = results.find((r) => r.error);
+      if (failed?.error) throw failed.error;
+    },
+
+    onMutate: async (patches) => {
+      await qc.cancelQueries({ queryKey: qk.tasks() });
+      const previous = qc.getQueryData<Task[]>(qk.tasks());
+
+      qc.setQueryData<Task[]>(qk.tasks(), (tasks) =>
+        tasks && applySortOrders(tasks, patches),
+      );
+
       return { previous };
     },
 

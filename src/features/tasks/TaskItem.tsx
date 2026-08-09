@@ -1,10 +1,11 @@
 "use client";
 
-import { memo, useState, type ReactNode } from "react";
+import { memo, useRef, useState, type ReactNode } from "react";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { formatShortDate } from "@/lib/ui/tr";
 import { isOverdue } from "./queries";
+import { normalizeTitleInput, shouldPersistTitle, TASK_TITLE_MAX } from "./rename";
 import { DURATION_PRESETS, formatDuration } from "./schedule";
 import type { Task } from "./types";
 import "@/components/list-motion.css";
@@ -27,6 +28,13 @@ interface TaskItemProps {
    */
   hideTime?: boolean;
   /**
+   * Ad düzenleme. Verilmezse başlık düz metin kalır.
+   *
+   * Çağrılmadan ÖNCE girdi doğrulanır (bkz. `rename.ts`): boş ya da
+   * değişmemiş bir ad buraya hiç ulaşmaz.
+   */
+  onRename?: (title: string) => void;
+  /**
    * Gün seçici paneli. Verilirse "ertele" simgesi bir sonraki güne
    * itmek yerine bu paneli açar.
    *
@@ -36,6 +44,15 @@ interface TaskItemProps {
    * ızgaranın dar sütununda yer kalmazdı.
    */
   dayPicker?: ReactNode;
+  /**
+   * Başlığın altında her zaman duran ek kontrol (ör. sıra düğmeleri).
+   *
+   * `dayPicker`'dan AYRI bir yuva: o bir simgenin arkasında açılıp
+   * kapanan bir panel, bu ise kalıcı. `dayPicker`'a verilseydi sıra
+   * düğmeleri "ertele" simgesine basılmadan görünmez olurdu ve o
+   * simgenin anlamı üçüncü kez değişirdi.
+   */
+  extra?: ReactNode;
 }
 
 export const TaskItem = memo(function TaskItem({
@@ -45,12 +62,23 @@ export const TaskItem = memo(function TaskItem({
   onDelete,
   onDefer,
   onSetTime,
+  onRename,
   hideTime = false,
   dayPicker,
+  extra,
 }: TaskItemProps) {
   const overdue = isOverdue(task, today);
   const [editingTime, setEditingTime] = useState(false);
   const [movingDay, setMovingDay] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+
+  /*
+   * Tamamlanmış görevin adı düzenlenmez. Üstü çizili bir metne tıklayınca
+   * düzenleme kutusu açılması, işaretlemeyi geri almaya çalışan eli
+   * yanlış yere götürür; bitmiş bir işin adını değiştirmek de nadir bir
+   * ihtiyaçtır — kutucuğu geri alıp düzenlemek hâlâ mümkün.
+   */
+  const canRename = Boolean(onRename) && !task.done;
 
   return (
     <li
@@ -107,7 +135,28 @@ export const TaskItem = memo(function TaskItem({
               {task.startTime}
             </span>
           )}
-          <span className="truncate">{task.title}</span>
+          {editingTitle && onRename ? (
+            <TitleEditor
+              task={task}
+              onClose={() => setEditingTitle(false)}
+              onRename={onRename}
+            />
+          ) : canRename ? (
+            <button
+              type="button"
+              title="Yeniden adlandır"
+              onClick={() => setEditingTitle(true)}
+              className={cn(
+                "min-w-0 flex-1 cursor-text truncate rounded-sm px-1 py-0.5 -mx-1 text-left",
+                "transition-colors duration-[var(--duration-fast)]",
+                "hover:bg-[var(--color-surface-2)]",
+              )}
+            >
+              {task.title}
+            </button>
+          ) : (
+            <span className="truncate">{task.title}</span>
+          )}
           {!hideTime && task.durationMinutes && (
             <span className="shrink-0 text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
               {formatDuration(task.durationMinutes)}
@@ -124,6 +173,8 @@ export const TaskItem = memo(function TaskItem({
         )}
 
         {movingDay && dayPicker}
+
+        {extra}
 
         {overdue && task.dueDate && (
           <div className="mt-0.5 text-[length:var(--text-xs)] text-[var(--color-warn)]">
@@ -196,6 +247,86 @@ export const TaskItem = memo(function TaskItem({
     </li>
   );
 });
+
+/**
+ * Görev adını yerinde düzenleme kutusu.
+ *
+ * `SectionHeading` ile AYNI dil: metnin kendisi hedeftir, ayrı bir
+ * kalem simgesi yoktur. Satırdaki eylem kümesi zaten üçe kadar çıkıyor
+ * (saat, taşı, sil); dördüncü bir simge dar hafta sütununa sığmazdı ve
+ * "adı değiştir" için metne tıklamak zaten en kısa yol.
+ *
+ * Yanlışlar ekranındaki `RenameRow`'dan AYRILAN yer: orada blur
+ * kaydetmez, çünkü tek onay N kaydı birden güncelliyor. Burada
+ * düzenleme tek bir satırı etkiliyor ve geri alınabilir, o yüzden blur
+ * kaydeder — kutuyu kapatmak için ayrıca Enter'a basmak gerekmez.
+ */
+function TitleEditor({
+  task,
+  onClose,
+  onRename,
+}: {
+  task: Task;
+  onClose: () => void;
+  onRename: (title: string) => void;
+}) {
+  /** Esc'e basıldı mı? `onBlur`'un kaydetmesini engeller — bkz. onBlur. */
+  const cancelledRef = useRef(false);
+
+  function save(value: string) {
+    onClose();
+
+    const next = normalizeTitleInput(value);
+    if (!shouldPersistTitle(task.title, next)) return;
+
+    // `shouldPersistTitle` null'ı elemişti; tip daralması için gerekli.
+    onRename(next as string);
+  }
+
+  return (
+    <input
+      autoFocus
+      defaultValue={task.title}
+      maxLength={TASK_TITLE_MAX}
+      aria-label={`${task.title}: görev adı`}
+      onFocus={(e) => e.currentTarget.select()}
+      onBlur={(e) => {
+        /*
+         * Esc ile kapatıldıysa KAYDETME.
+         *
+         * `onClose()` odağı eşzamanlı bırakmaz: React input'u sökerken
+         * tarayıcı hâlâ odaktaki elemana bir `blur` gönderir ve bu,
+         * kayıtlı `onBlur`'u çalıştırır. Yani "önce durumu kapat"
+         * yeterli değildir — Esc, tam da iptal etmesi gereken yazıyı
+         * kaydederdi. Bayrak bu sırayı kırar.
+         */
+        if (cancelledRef.current) {
+          cancelledRef.current = false;
+          return;
+        }
+        save(e.currentTarget.value);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          save(e.currentTarget.value);
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          cancelledRef.current = true;
+          onClose();
+        }
+      }}
+      /* Tipografi metinle AYNI: kutuya geçişte harfler yerinden
+         oynarsa düzenleme bir "mod değişimi" gibi hissedilir, oysa
+         yapılan şey aynı cümleyi yeniden yazmaktır. */
+      className={cn(
+        "min-w-0 flex-1 rounded-sm bg-[var(--color-surface-2)] px-1 py-0.5",
+        "text-[length:var(--text-base)] text-[var(--color-ink)] outline-none",
+        "ring-1 ring-[var(--color-accent)]",
+      )}
+    />
+  );
+}
 
 /**
  * Saat ve süre ayarlama paneli.

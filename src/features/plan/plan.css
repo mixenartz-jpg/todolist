@@ -1,0 +1,167 @@
+/*
+ * Plan ekranının ızgaraları — hafta ve ay ölçeği.
+ *
+ * `week.css`'ten AYRI bir dosya: oradaki sütun görev satırlarını tam
+ * hâliyle gösterir, buradaki hücreler iki ölçek arasında geçiş yapar
+ * ve ay ölçeğinde satır değil sayı gösterir. Aynı dosyada tutmak, iki
+ * ekranın birbirinin yerleşimini sessizce bozmasına açık kapı
+ * bırakırdı.
+ */
+
+/* ── Hafta ölçeği ─────────────────────────────────────────────────
+ * Mobilde dikey yığın, masaüstünde yedi sütun.
+ *
+ * Mobilde yatay kaydırma DEĞİL: 320px'de yedi sütuna bölününce sütun
+ * başına ~40px kalır ve bu ne bir görev başlığına ne de dokunma
+ * hedefine yeter. Kaydırma ise günleri bir hareketin arkasına saklar —
+ * planlarken tüm haftayı görmek gerekir. `week.css` ile aynı karar.
+ */
+.planWeekGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.planDay {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  padding: 10px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: var(--color-surface);
+
+  transition:
+    border-color var(--duration-fast) var(--ease-out-quart),
+    opacity var(--duration-fast) var(--ease-out-quart);
+}
+
+/* Bugün: kenarlık vurgusu, dolgu değil — takvimdeki dille aynı. */
+.planDayToday {
+  border-color: var(--color-accent);
+}
+
+/* Geçmiş günler geri planda kalır ama okunur ve kullanılabilir. */
+.planDayPast {
+  opacity: 0.55;
+}
+
+.planDayPast:hover,
+.planDayPast:focus-within {
+  opacity: 1;
+}
+
+/*
+ * Yerleştirme modu: havuzdan bir görev seçiliyken günler hedef olur.
+ * Kesikli kenarlık "buraya bırakılabilir" der; renk tek başına bilgi
+ * taşımasın diye hücrenin aria-label'ı da değişir (bkz. PlanDayCell).
+ */
+.planDayTarget {
+  border-style: dashed;
+  border-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.planDayTarget:hover {
+  background: color-mix(in oklch, var(--color-accent) 10%, transparent);
+}
+
+@media (min-width: 768px) {
+  .planWeekGrid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .planDay {
+    min-height: 9rem;
+  }
+}
+
+/* ── Ay ölçeği ────────────────────────────────────────────────────
+ * Kare hücreler, tam haftalar. Görev BAŞLIKLARI sığmaz; hücre gün
+ * numarası ve açık iş sayısını gösterir, detay panelde açılır.
+ */
+.planMonthGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.planMonthCell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+
+  /* Kare oran: hücreler ay uzunluğundan bağımsız aynı görünür. */
+  aspect-ratio: 1;
+  min-height: 44px;
+
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  background: var(--color-surface);
+  cursor: pointer;
+
+  transition:
+    border-color var(--duration-fast) var(--ease-out-quart),
+    background-color var(--duration-fast) var(--ease-out-quart);
+}
+
+.planMonthCell:hover {
+  border-color: var(--color-line-2);
+}
+
+/* Komşu aydan taşan günler geri planda kalır ama tıklanabilir. */
+.planMonthCellOutside {
+  opacity: 0.4;
+}
+
+.planMonthCellToday {
+  border-color: var(--color-accent);
+}
+
+.planMonthCellTarget {
+  border-style: dashed;
+  border-color: var(--color-accent);
+}
+
+.planMonthCellTarget:hover {
+  background: color-mix(in oklch, var(--color-accent) 10%, transparent);
+}
+
+@media (max-width: 400px) {
+  .planMonthGrid {
+    gap: 3px;
+  }
+
+  .planMonthCell {
+    border-radius: 8px;
+    min-height: 40px;
+  }
+}
+
+/* ── Havuz ────────────────────────────────────────────────────────
+ * Masaüstünde ızgaranın yanında sabit bir sütun, mobilde üstünde tam
+ * genişlikte bir blok. Yan yana koymak, "havuzdan güne taşı"
+ * hareketinin iki ucunu aynı anda görünür kılar.
+ */
+.planLayout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .planLayout {
+    grid-template-columns: 16rem 1fr;
+  }
+
+  .planBacklog {
+    position: sticky;
+    top: 12px;
+  }
+}

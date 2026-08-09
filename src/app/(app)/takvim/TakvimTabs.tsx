@@ -7,17 +7,22 @@ import { cn } from "@/lib/ui/cn";
 const TABS = [
   { href: "/takvim/ay", label: "Ay" },
   { href: "/takvim/hafta", label: "Hafta" },
+  { href: "/takvim/plan", label: "Plan" },
 ] as const;
 
 /**
  * Takvimin alt sekmeleri.
  *
- * Ay ve Hafta tek bir üst sekmede birleşir: ikisi de aynı şeyin —
- * zamanın — iki ölçekteki görünümüdür. Hafta ayrı bir üst sekme
- * olsaydı alt gezinme çubuğu yediye çıkardı; bütçe altıdır (320px'de
+ * Ay, Hafta ve Plan tek bir üst sekmede birleşir: hepsi aynı şeyin —
+ * zamanın — farklı ölçeklerdeki görünümüdür. Ayrı bir üst sekme
+ * olsalardı alt gezinme çubuğu yediye çıkardı; bütçe altıdır (320px'de
  * sekme başına ~53px) ve yedinci sekme dokunma hedeflerini
  * araştırılan eşiğin altına indirirdi. Defter'deki Notlar/Yanlışlar
  * ayrımı aynı gerekçeyle kurulmuştu.
+ *
+ * Ay ve Hafta BAKMAK için, Plan KURMAK için: ilk ikisi tarihlenmiş işi
+ * gösterir, Plan tarihsiz havuzu da getirip günlere dağıtmayı sağlar.
+ * Bu yüzden ayrı bir görünüm, dördüncü bir ölçek değil.
  */
 export function TakvimTabs() {
   const pathname = usePathname();

@@ -25,6 +25,7 @@ import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
 import {
   useCreateTask,
   useDeleteTask,
+  useRenameTask,
   useRescheduleTask,
   useSetTaskTime,
   useToggleTask,
@@ -55,6 +56,7 @@ export function TodayScreen() {
   const deleteTask = useDeleteTask(toast.show);
   const rescheduleTask = useRescheduleTask(toast.show);
   const setTaskTime = useSetTaskTime(toast.show);
+  const renameTask = useRenameTask(toast.show);
 
   /**
    * Bugün gösterilecek rutinler.
@@ -168,6 +170,9 @@ export function TodayScreen() {
                     onSetTime={(task, startTime, durationMinutes) =>
                       setTaskTime.mutate({ id: task.id, startTime, durationMinutes })
                     }
+                    onRename={(task, title) =>
+                      renameTask.mutate({ id: task.id, title })
+                    }
                   />
                 </div>
               )}
@@ -249,6 +254,9 @@ export function TodayScreen() {
                         onDelete={() => deleteTask.mutate(task.id)}
                         onDefer={() =>
                           rescheduleTask.mutate({ id: task.id, dueDate: today })
+                        }
+                        onRename={(title) =>
+                          renameTask.mutate({ id: task.id, title })
                         }
                       />
                     ))}

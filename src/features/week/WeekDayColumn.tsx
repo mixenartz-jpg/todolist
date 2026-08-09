@@ -21,6 +21,12 @@ interface WeekDayColumnProps {
   onToggle: (task: Task) => void;
   onDelete: (task: Task) => void;
   onMove: (task: Task, date: DateStr) => void;
+  onRename: (task: Task, title: string) => void;
+  onSetTime: (
+    task: Task,
+    startTime: string | null,
+    durationMinutes: number | null,
+  ) => void;
 }
 
 /**
@@ -32,6 +38,10 @@ interface WeekDayColumnProps {
  *
  * Saat çipi GİZLENMEZ (`hideTime` verilmez): gün planındaki sol oluk
  * burada yok, dolayısıyla saat yalnızca satırda görünüyor.
+ *
+ * Saat düzenleme burada da açıktır. Haftada saat verilememesi, planı
+ * kurduğun ekranda planın en somut parçasının eksik kalması demekti;
+ * kullanıcı yalnızca saat vermek için Bugün ekranına dönerdi.
  */
 export function WeekDayColumn({
   day,
@@ -42,6 +52,8 @@ export function WeekDayColumn({
   onToggle,
   onDelete,
   onMove,
+  onRename,
+  onSetTime,
 }: WeekDayColumnProps) {
   const isToday = day.date === today;
 
@@ -93,6 +105,8 @@ export function WeekDayColumn({
               today={today}
               onToggle={() => onToggle(task)}
               onDelete={() => onDelete(task)}
+              onRename={(title) => onRename(task, title)}
+              onSetTime={(start, duration) => onSetTime(task, start, duration)}
               dayPicker={
                 <DayPicker
                   weekStart={weekStart}

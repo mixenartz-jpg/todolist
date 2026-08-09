@@ -15,6 +15,12 @@ interface WeekGridProps {
   onToggle: (task: Task) => void;
   onDelete: (task: Task) => void;
   onMove: (task: Task, date: DateStr) => void;
+  onRename: (task: Task, title: string) => void;
+  onSetTime: (
+    task: Task,
+    startTime: string | null,
+    durationMinutes: number | null,
+  ) => void;
 }
 
 /**
@@ -34,6 +40,8 @@ export function WeekGrid({
   onToggle,
   onDelete,
   onMove,
+  onRename,
+  onSetTime,
 }: WeekGridProps) {
   return (
     <div className="weekGrid">
@@ -48,6 +56,8 @@ export function WeekGrid({
           onToggle={onToggle}
           onDelete={onDelete}
           onMove={onMove}
+          onRename={onRename}
+          onSetTime={onSetTime}
         />
       ))}
     </div>

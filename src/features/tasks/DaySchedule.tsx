@@ -18,6 +18,7 @@ interface DayScheduleProps {
     startTime: string | null,
     durationMinutes: number | null,
   ) => void;
+  onRename?: (task: Task, title: string) => void;
 }
 
 /**
@@ -38,6 +39,7 @@ export function DaySchedule({
   onDelete,
   onDefer,
   onSetTime,
+  onRename,
 }: DayScheduleProps) {
   const { timed, untimed } = useMemo(() => splitDaySchedule(tasks), [tasks]);
 
@@ -97,6 +99,9 @@ export function DaySchedule({
                   onDelete={() => onDelete(task)}
                   onDefer={() => onDefer(task)}
                   onSetTime={(start, duration) => onSetTime(task, start, duration)}
+                  onRename={
+                    onRename ? (title) => onRename(task, title) : undefined
+                  }
                 />
                 {clashing.has(task.id) && (
                   <p className="mt-0.5 pl-3 text-[length:var(--text-2xs)] text-[var(--color-warn)]">
@@ -129,6 +134,7 @@ export function DaySchedule({
                 onDelete={() => onDelete(task)}
                 onDefer={() => onDefer(task)}
                 onSetTime={(start, duration) => onSetTime(task, start, duration)}
+                onRename={onRename ? (title) => onRename(task, title) : undefined}
               />
             ))}
           </ul>

@@ -10,7 +10,9 @@ import { buildWeekPlan, weekContainsToday } from "@/features/tasks/week";
 import {
   useCreateTask,
   useDeleteTask,
+  useRenameTask,
   useRescheduleTask,
+  useSetTaskTime,
   useToggleTask,
 } from "@/features/tasks/mutations";
 import { useTasks } from "@/features/tasks/queries";
@@ -36,6 +38,8 @@ export function WeekScreen() {
   const toggleTask = useToggleTask(toast.show);
   const deleteTask = useDeleteTask(toast.show);
   const rescheduleTask = useRescheduleTask(toast.show);
+  const renameTask = useRenameTask(toast.show);
+  const setTaskTime = useSetTaskTime(toast.show);
 
   /*
    * `?? []` memo'nun İÇİNDE: dışarıda yazılsaydı her render'da yeni bir
@@ -100,6 +104,9 @@ export function WeekScreen() {
                       onDefer={() =>
                         rescheduleTask.mutate({ id: task.id, dueDate: today })
                       }
+                      onRename={(title) =>
+                        renameTask.mutate({ id: task.id, title })
+                      }
                     />
                   ))}
                 </ul>
@@ -119,6 +126,12 @@ export function WeekScreen() {
               }
               onDelete={(task) => deleteTask.mutate(task.id)}
               onMove={handleMove}
+              onRename={(task, title) =>
+                renameTask.mutate({ id: task.id, title })
+              }
+              onSetTime={(task, startTime, durationMinutes) =>
+                setTaskTime.mutate({ id: task.id, startTime, durationMinutes })
+              }
             />
           </>
         )}

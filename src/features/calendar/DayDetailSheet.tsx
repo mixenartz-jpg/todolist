@@ -18,10 +18,12 @@ import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
 import {
   useCreateTask,
   useDeleteTask,
+  useRenameTask,
   useToggleTask,
 } from "@/features/tasks/mutations";
 import { tasksForDay, useTasks } from "@/features/tasks/queries";
 import { TodayRoutineItem } from "@/features/today/TodayRoutineItem";
+import "@/components/sheet.css";
 
 /**
  * Bir günün detayı — geçmiş bir günü doldurmak ya da gözden geçirmek
@@ -53,6 +55,7 @@ export function DayDetailSheet({
   const toggleTask = useToggleTask(onError);
   const createTask = useCreateTask(onError);
   const deleteTask = useDeleteTask(onError);
+  const renameTask = useRenameTask(onError);
 
   useEffect(() => {
     dialogRef.current?.showModal();
@@ -170,6 +173,7 @@ export function DayDetailSheet({
                       toggleTask.mutate({ id: task.id, done: !task.done })
                     }
                     onDelete={() => deleteTask.mutate(task.id)}
+                    onRename={(title) => renameTask.mutate({ id: task.id, title })}
                   />
                 ))}
               </ul>
