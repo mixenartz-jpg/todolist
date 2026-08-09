@@ -13,13 +13,49 @@ import {
   useAdvanceReview,
   useCreateMistake,
   useDeleteMistake,
+  useRenameMistakeGroup,
   useUpdateMistake,
 } from "./mutations";
 import { EMPTY_MISTAKES, useMistakeImageUrl, useMistakes } from "./queries";
+import { planDersRename, planKonuRename, type RenamePlan } from "./rename";
 import { sortTree, type SortMode } from "./sort";
 import { SortSelect } from "./SortSelect";
 import { buildTree } from "./tree";
 import type { Mistake } from "./types";
+
+interface PendingRename {
+  level: "ders" | "konu";
+  from: string;
+  to: string;
+  plan: RenamePlan;
+}
+
+/**
+ * Onay kutusunun metni.
+ *
+ * Birleştirme durumu AÇIKÇA söylenir: iki dal tek dala iner ve ikinci
+ * bir yeniden adlandırmayla geri ayrılamaz. Bunu yumuşatmak,
+ * kullanıcının geri alınamaz bir işlemi fark etmeden onaylaması demek
+ * olurdu.
+ */
+function renameDescription({ level, from, to, plan }: PendingRename): string {
+  const noun = level === "ders" ? "Ders" : "Konu";
+
+  if (plan.count === 0) {
+    return `Güncellenecek kayıt yok: "${from}" zaten "${to}" adını taşıyor.`;
+  }
+
+  const base = `${plan.count} kayıt güncellenecek.`;
+
+  if (plan.merge) {
+    return (
+      `"${from}" kayıtları mevcut "${to}" dalına katılacak. ${base} ` +
+      `Bu dalda zaten ${plan.mergeIntoCount} kayıt var — işlem iki dalı BİRLEŞTİRİR ve geri alınamaz.`
+    );
+  }
+
+  return `${noun} adı "${from}" yerine "${to}" olacak. ${base}`;
+}
 
 /**
  * Yanlış çetelesi ekranı.
@@ -40,10 +76,12 @@ export function MistakesScreen() {
   const updateMistake = useUpdateMistake(toast.show);
   const deleteMistake = useDeleteMistake(toast.show);
   const advanceReview = useAdvanceReview(toast.show);
+  const renameGroup = useRenameMistakeGroup(toast.show);
 
   const [composing, setComposing] = useState(false);
   const [editing, setEditing] = useState<Mistake | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Mistake | null>(null);
+  const [pendingRename, setPendingRename] = useState<PendingRename | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>("most");
 
   const tree = useMemo(() => buildTree(mistakes, today), [mistakes, today]);
@@ -135,10 +173,53 @@ export function MistakesScreen() {
               onDelete={setPendingDelete}
               onReviewed={(mistake) => advanceReview.mutate({ mistake, today })}
               reviewPending={advanceReview.isPending}
+              onRenameDers={(ders, next) =>
+                setPendingRename({
+                  level: "ders",
+                  from: ders.ders,
+                  to: next,
+                  plan: planDersRename(mistakes, ders.ders, next),
+                })
+              }
+              onRenameKonu={(ders, konu, next) =>
+                setPendingRename({
+                  level: "konu",
+                  from: konu.konu,
+                  to: next,
+                  plan: planKonuRename(mistakes, ders.ders, konu.konu, next),
+                })
+              }
             />
           </>
         )}
       </div>
+
+      {pendingRename && (
+        <ConfirmDialog
+          title={
+            pendingRename.level === "ders"
+              ? "Ders yeniden adlandırılsın mı?"
+              : "Konu yeniden adlandırılsın mı?"
+          }
+          description={renameDescription(pendingRename)}
+          confirmLabel="Yeniden adlandır"
+          // Yıkıcı DEĞİL: kayıtlar silinmiyor, adları değişiyor.
+          confirmVariant="primary"
+          pending={renameGroup.isPending}
+          onCancel={() => setPendingRename(null)}
+          onConfirm={() =>
+            renameGroup.mutate(
+              {
+                ids: pendingRename.plan.ids,
+                ...(pendingRename.level === "ders"
+                  ? { ders: pendingRename.to }
+                  : { konu: pendingRename.to }),
+              },
+              { onSettled: () => setPendingRename(null) },
+            )
+          }
+        />
+      )}
 
       {pendingDelete && (
         <ConfirmDialog

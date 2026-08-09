@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import type { DateStr } from "@/lib/date/types";
 import { DersRow } from "./DersRow";
-import type { DersNode } from "./tree";
+import type { DersNode, KonuNode } from "./tree";
 import type { Mistake } from "./types";
 
 interface MistakeTreeProps {
@@ -13,6 +13,10 @@ interface MistakeTreeProps {
   onDelete: (mistake: Mistake) => void;
   onReviewed: (mistake: Mistake) => void;
   reviewPending: boolean;
+  /** Ders adını değiştirme isteği — ekran onay kutusunu açar. */
+  onRenameDers: (ders: DersNode, next: string) => void;
+  /** Konu adını değiştirme isteği; ders bağlamıyla birlikte. */
+  onRenameKonu: (ders: DersNode, konu: KonuNode, next: string) => void;
 }
 
 /**
@@ -42,8 +46,20 @@ export function MistakeTree({
   onDelete,
   onReviewed,
   reviewPending,
+  onRenameDers,
+  onRenameKonu,
 }: MistakeTreeProps) {
   const [openKeys, setOpenKeys] = useState<ReadonlySet<string>>(new Set());
+
+  /*
+   * Yeniden adlandırılan düğüm — aynı anda EN FAZLA BİR tane.
+   * Açık düğümlerin aksine burada çoklu duruma izin verilmez: iki
+   * satırı birden yeniden adlandırmak diye bir iş yoktur ve açık
+   * bırakılan ikinci kutu, kullanıcı hangisini kaydettiğini
+   * karıştırırdı. `nodeKey` kullanılır çünkü ders ve konu anahtarları
+   * `tree.ts`'te zaten çakışmayacak biçimde üretiliyor.
+   */
+  const [renamingKey, setRenamingKey] = useState<string | null>(null);
 
   const isOpen = useCallback((key: string) => openKeys.has(key), [openKeys]);
 
@@ -69,6 +85,21 @@ export function MistakeTree({
           onDelete={onDelete}
           onReviewed={onReviewed}
           reviewPending={reviewPending}
+          renamingKey={renamingKey}
+          onStartRename={(node) => setRenamingKey(node.nodeKey)}
+          onStartRenameKonu={(_ders, konu) => setRenamingKey(konu.nodeKey)}
+          onCancelRename={() => setRenamingKey(null)}
+          onRename={(node, next) => {
+            // Kutu HEMEN kapanır; onay kutusu ekranın işidir ve
+            // arkasında açık bir düzenleme alanı bırakmak, onaydan
+            // sonra neyin kaldığını belirsizleştirirdi.
+            setRenamingKey(null);
+            onRenameDers(node, next);
+          }}
+          onRenameKonu={(dersNode, konu, next) => {
+            setRenamingKey(null);
+            onRenameKonu(dersNode, konu, next);
+          }}
         />
       ))}
     </ul>

@@ -10,6 +10,15 @@ interface ConfirmDialogProps {
   description: string;
   confirmLabel: string;
   cancelLabel?: string;
+  /**
+   * Onay düğmesinin görünümü.
+   *
+   * Varsayılan `danger`, çünkü bu kutunun asıl işi yıkıcı eylemlerdir.
+   * Ama her onay yıkıcı değildir: toplu yeniden adlandırma geri
+   * alınabilir bir işlemdir ve onu da kırmızı göstermek, kullanıcıya
+   * kırmızıyı yok saymayı öğretirdi.
+   */
+  confirmVariant?: "danger" | "primary";
   pending?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -30,6 +39,7 @@ export function ConfirmDialog({
   description,
   confirmLabel,
   cancelLabel = "Vazgeç",
+  confirmVariant = "danger",
   pending = false,
   onConfirm,
   onCancel,
@@ -97,7 +107,7 @@ export function ConfirmDialog({
           </Button>
           <Button
             size="sm"
-            variant="danger"
+            variant={confirmVariant}
             loading={pending}
             onClick={onConfirm}
           >

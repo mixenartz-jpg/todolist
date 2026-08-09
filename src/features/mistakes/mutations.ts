@@ -251,6 +251,76 @@ export function useAdvanceReview(onError?: (message: string) => void) {
   });
 }
 
+/**
+ * Tek istekte gönderilecek azami kimlik sayısı.
+ *
+ * `.in()` filtresi URL'e yazılır; yüzlerce uuid tarayıcı ya da sunucu
+ * URL sınırını aşabilir. Parçalama bu yüzden zorunludur.
+ */
+const RENAME_CHUNK = 200;
+
+interface RenameVars {
+  ids: readonly string[];
+  /** Verilmezse ders alanına dokunulmaz. */
+  ders?: string;
+  /** Verilmezse konu alanına dokunulmaz. */
+  konu?: string;
+}
+
+/**
+ * Ders ya da konu adını toplu değiştirir.
+ *
+ * ── Neden OPTIMISTIC DEĞİL? ──
+ * Tek satırlık işaretlemelerin aksine bu N satırı birden değiştirir ve
+ * kullanıcının nadiren, bilerek yaptığı bir işlemdir. Önbelleği N satır
+ * için yamalayıp hata anında geri almak, ağacın gözle görülür biçimde
+ * iki kez sıçraması demek olurdu — üstelik yeniden gruplama yüzünden
+ * dallar açılıp kapanırdı. Onay kutusu zaten bir bekleme anı yaratıyor;
+ * yükleme durumunu oraya koymak daha dürüst.
+ *
+ * ── Neden kimlik listesiyle, `eq('ders', ...)` ile değil? ──
+ * Eşleşme `normalize()` ile Türkçe büyük/küçük harf duyarsızdır ve
+ * PostgREST'te böyle bir filtre yazılamaz (veritabanında normalize
+ * karşılığı yok). Kimlikler zaten elde olan listeden `rename.ts` ile
+ * hesaplanır; bu aynı zamanda onay kutusundaki "kaç kayıt" sayısını
+ * bedavaya doğru yapar.
+ *
+ * ── Parça ortasında hata ──
+ * Yarı yeniden adlandırılmış bir ders geriye iki dal olarak görünür.
+ * Kabul edilebilir: işlem idempotenttir, kullanıcı tekrar çalıştırınca
+ * kalanlar da düzelir. Tek kullanıcılık kişisel bir uygulamada bunun
+ * için transaction'lı bir RPC yazmak, kazandırdığından fazlasını
+ * karmaşıklık olarak geri alır.
+ */
+export function useRenameMistakeGroup(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ ids, ders, konu }: RenameVars) => {
+      if (ids.length === 0) return;
+
+      const patch: { ders?: string; konu?: string } = {};
+      if (ders !== undefined) patch.ders = ders.trim();
+      if (konu !== undefined) patch.konu = konu.trim();
+      if (Object.keys(patch).length === 0) return;
+
+      const supabase = createClient();
+
+      for (let i = 0; i < ids.length; i += RENAME_CHUNK) {
+        const chunk = ids.slice(i, i + RENAME_CHUNK);
+        const { error } = await supabase
+          .from("mistakes")
+          .update(patch)
+          .in("id", chunk);
+        if (error) throw error;
+      }
+    },
+
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.mistakes() }),
+    onError: (error) => onError?.(errorText(error)),
+  });
+}
+
 /** Görseli yükler ve yolunu döner. */
 async function uploadImage(image: PendingImage): Promise<string> {
   const supabase = createClient();
