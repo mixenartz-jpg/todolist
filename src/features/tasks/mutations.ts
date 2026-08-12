@@ -8,7 +8,7 @@ import type { TaskRow } from "@/lib/db/database.types";
 import {
   applySortOrders,
   type SortOrderPatch,
-} from "@/features/plan/reorder";
+} from "@/features/planlama/reorder";
 import { toTask } from "./queries";
 import type { Task, TaskDraft } from "./types";
 
@@ -274,7 +274,7 @@ export function useSetTaskTime(onError?: (message: string) => void) {
 /**
  * Gün içi sıralamayı yazar — optimistic.
  *
- * Yamalar `planReorder` ile hesaplanır (bkz. `plan/reorder.ts`);
+ * Yamalar `planReorder` ile hesaplanır (bkz. `planlama/reorder.ts`);
  * buraya yalnızca DEĞİŞEN satırlar gelir, tipik olarak iki tane.
  *
  * `upsert` DEĞİL, ayrı `update`'ler: upsert satırın tamamını ister ve

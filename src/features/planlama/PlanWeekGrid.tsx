@@ -8,13 +8,17 @@ import { splitDaySchedule } from "@/features/tasks/schedule";
 import { TaskItem } from "@/features/tasks/TaskItem";
 import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
 import type { Task } from "@/features/tasks/types";
-import type { PlanBucket } from "./plan";
+import { CategoryDot } from "./CategoryDot";
+import type { PlanBucket } from "./range";
 import { ReorderButtons } from "./ReorderButtons";
-import "./plan.css";
+import type { Category } from "./types";
+import "./planlama.css";
 
 interface PlanWeekGridProps {
   buckets: readonly PlanBucket[];
   today: DateStr;
+  /** Kimlikten kategoriye — satırdaki renk noktası için. */
+  categoryById: ReadonlyMap<string, Category>;
   /** Havuzdan seçili görev varsa günler yerleştirme hedefi olur. */
   placing: boolean;
   addPending: boolean;
@@ -41,11 +45,12 @@ interface PlanWeekGridProps {
  * prop'u oradan da geçirmek demekti.
  *
  * Masaüstünde yan yana ızgara, mobilde dikey yığın — ayrım tamamen
- * CSS'te (plan.css).
+ * CSS'te (planlama.css).
  */
 export function PlanWeekGrid({
   buckets,
   today,
+  categoryById,
   placing,
   addPending,
   onPlace,
@@ -64,6 +69,7 @@ export function PlanWeekGrid({
           key={bucket.date}
           bucket={bucket}
           today={today}
+          categoryById={categoryById}
           placing={placing}
           addPending={addPending}
           onPlace={onPlace}
@@ -83,6 +89,7 @@ export function PlanWeekGrid({
 function PlanDayColumn({
   bucket,
   today,
+  categoryById,
   placing,
   addPending,
   onPlace,
@@ -96,6 +103,7 @@ function PlanDayColumn({
 }: {
   bucket: PlanBucket;
   today: DateStr;
+  categoryById: ReadonlyMap<string, Category>;
   placing: boolean;
   addPending: boolean;
   onPlace: (date: DateStr) => void;
@@ -175,11 +183,24 @@ function PlanDayColumn({
 
       {ordered.length > 0 && (
         <ul className="flex flex-col gap-1.5">
-          {ordered.map((task, index) => (
+          {ordered.map((task, index) => {
+            const category =
+              task.categoryId === null
+                ? undefined
+                : categoryById.get(task.categoryId);
+
+            return (
             <TaskItem
               key={task.id}
               task={task}
               today={today}
+              /*
+               * Dar sütunda kategori SEÇİCİSİ yok, yalnızca nokta:
+               * 140px'e bir `<select>` sığmaz ve başlığı yer.
+               * Kategori atamak gün panelinden yapılır — orada yer var
+               * ve zaten "bu günü düzenliyorum" bağlamı kurulmuş.
+               */
+              marker={category && <CategoryDot category={category} size={7} />}
               // Sütun ~140px: simgeler başlığın altına iner.
               compact
               onToggle={() => onToggle(task)}
@@ -201,7 +222,8 @@ function PlanDayColumn({
                 ) : undefined
               }
             />
-          ))}
+            );
+          })}
         </ul>
       )}
 

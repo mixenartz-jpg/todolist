@@ -134,6 +134,25 @@ export function CrossIcon({ size = 16 }: IconProps) {
   );
 }
 
+/**
+ * Planlama / hedef.
+ *
+ * İç içe iki çember ve merkez nokta — "nişan alınan şey". `CrossIcon`
+ * da çember tabanlıdır ama onun içi çarpıdır ve ikisi hiçbir zaman yan
+ * yana durmaz (biri gezinmede, öteki yanlış satırlarında). Takvimden
+ * ayrışması kritik: ikisi alt çubukta komşudur ve Takvim bir ızgara,
+ * bu ise bir hedeftir.
+ */
+export function TargetIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...svgProps(size)}>
+      <circle cx="8" cy="8" r="5.75" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="8" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="8" cy="8" r="0.9" fill="currentColor" />
+    </svg>
+  );
+}
+
 /** Rutin listesi. */
 export function ListIcon({ size = 16 }: IconProps) {
   return (

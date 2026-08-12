@@ -25,6 +25,20 @@ export interface Task {
   startTime: string | null;
   /** Süre, dakika. `startTime` null ise her zaman null. */
   durationMinutes: number | null;
+  /**
+   * Kategori kimliği. En fazla BİR tane — çoklu etiket değil.
+   *
+   * null → kategorisiz ve bu birinci sınıf bir durumdur: görevlerin
+   * çoğu sınıflandırılmaz. Ay dağılımında kategorisizler kendi
+   * kovasında görünür.
+   *
+   * Tek kategori kısıtının gerekçesi şemada (0008): bir görev iki
+   * dilime birden sayılsaydı dilimlerin toplamı görev sayısını aşar ve
+   * grafik yalan söylerdi.
+   */
+  categoryId: string | null;
+  /** Bağlı olduğu aylık hedef. En fazla BİR tane; null → bağsız. */
+  goalId: string | null;
 }
 
 export interface TaskDraft {

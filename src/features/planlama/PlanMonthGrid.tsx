@@ -4,12 +4,20 @@ import { toParts } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { WEEKDAYS_MIN } from "@/lib/ui/tr";
-import type { PlanBucket } from "./plan";
-import "./plan.css";
+import type { DaySummary } from "./dayplan";
+import type { PlanBucket } from "./range";
+import "./planlama.css";
 
 interface PlanMonthGridProps {
   buckets: readonly PlanBucket[];
   today: DateStr;
+  /**
+   * Gün başına özet — hücredeki sayı ve plan noktası.
+   *
+   * Kova sayaçlarıyla ÇAKIŞMAZ; `daySummaries` onları aynen taşır ve
+   * üstüne yalnızca `hasPlan`'ı ekler (bkz. dayplan.ts).
+   */
+  summaries: ReadonlyMap<DateStr, DaySummary>;
   /** Havuzdan seçili görev varsa hücreler yerleştirme hedefi olur. */
   placing: boolean;
   onSelect: (date: DateStr) => void;
@@ -31,6 +39,7 @@ interface PlanMonthGridProps {
 export function PlanMonthGrid({
   buckets,
   today,
+  summaries,
   placing,
   onSelect,
 }: PlanMonthGridProps) {
@@ -52,6 +61,7 @@ export function PlanMonthGrid({
           <PlanMonthCell
             key={bucket.date}
             bucket={bucket}
+            hasPlan={summaries.get(bucket.date)?.hasPlan ?? false}
             isToday={bucket.date === today}
             placing={placing}
             onSelect={() => onSelect(bucket.date)}
@@ -64,11 +74,13 @@ export function PlanMonthGrid({
 
 function PlanMonthCell({
   bucket,
+  hasPlan,
   isToday,
   placing,
   onSelect,
 }: {
   bucket: PlanBucket;
+  hasPlan: boolean;
   isToday: boolean;
   placing: boolean;
   onSelect: () => void;
@@ -79,10 +91,14 @@ function PlanMonthCell({
    * Etiket sayıyı KELİMEYLE söyler. Hücrede rakam görsel olarak
    * yeterli ama ekran okuyucuya "5 3" diye okunurdu — hangisi gün,
    * hangisi iş sayısı belli olmazdı.
+   *
+   * "planlı" da etikete girer: nokta `aria-hidden` ve renk/şekil tek
+   * başına bilgi taşımamalı.
    */
   const label = [
     `${day}`,
     bucket.openCount > 0 ? `${bucket.openCount} iş` : "iş yok",
+    hasPlan ? "planlı" : null,
     isToday ? "bugün" : null,
     placing ? "bu güne koy" : null,
   ]
@@ -110,6 +126,21 @@ function PlanMonthCell({
       >
         {day}
       </span>
+
+      {/*
+       * Plan noktası gün rakamının sağ üstünde, sayaçtan AYRI bir
+       * işaret: planı yazılmış ama işi olmayan bir gün de "dolu"dur ve
+       * bunu sayı gösteremezdi (bkz. dayplan.ts).
+       *
+       * Konum mutlak — akışta yer kaplasaydı 40px'lik hücrede sayıyı
+       * aşağı iterdi.
+       */}
+      {hasPlan && (
+        <span
+          aria-hidden
+          className="absolute right-1 top-1 size-1.5 rounded-full bg-[var(--color-accent)]"
+        />
+      )}
 
       {/* Sıfırken hiç gösterilmez: "0" bir bilgi değil, gürültüdür ve
           42 hücrede tekrarlanırdı. */}

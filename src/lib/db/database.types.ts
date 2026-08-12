@@ -52,7 +52,54 @@ export interface TaskRow {
   /** Postgres `time` supabase-js'e 'HH:MM:SS' STRING olarak gelir. */
   start_time: string | null;
   duration_minutes: number | null;
+  /** Kategori FK. En fazla BİR tane — çoklu etiket değil (0008). */
+  category_id: string | null;
+  /** Aylık hedef FK. En fazla BİR tane. */
+  goal_id: string | null;
   created_at: string;
+}
+
+/**
+ * Kategori satırı.
+ *
+ * `color_slot` `smallint`'tir ve supabase-js'e number olarak gelir;
+ * yukarıdaki `numeric` uyarısı burada geçerli değildir.
+ */
+export interface CategoryRow {
+  id: string;
+  user_id: string;
+  name: string;
+  color_slot: number;
+  sort_order: number;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Aylık hedef satırı.
+ *
+ * `month` Postgres `date`'tir; supabase-js 'YYYY-MM-DD' STRING
+ * döndürür, yani `asDateStr()` doğrudan geçer ve
+ * src/lib/date/types.ts'in "sınırdan Date nesnesi geçmez" kuralı
+ * korunur. Değer her zaman ayın 1'idir (DB kısıtı).
+ *
+ * `target_count` null ise ilerleme bağlı görevlerden okunur;
+ * `done_count` yalnızca `target_count` doluyken anlamlıdır.
+ */
+export interface PlanGoalRow {
+  id: string;
+  user_id: string;
+  month: string;
+  title: string;
+  note: string | null;
+  target_count: number | null;
+  done_count: number;
+  color_slot: number;
+  sort_order: number;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DayNoteRow {
@@ -60,6 +107,16 @@ export interface DayNoteRow {
   date: string;
   note: string | null;
   mood: number | null;
+  /**
+   * Günün İLERİYE dönük planı — `note` ile aynı şey DEĞİLDİR.
+   *
+   * `note` geriye dönüktür ("bugün nasıl geçti", Bugün ekranı, ruh
+   * haliyle birlikte); `plan` ileriye dönüktür ("bugün şunları
+   * yapacağım", Planlama ekranı). İkisi aynı satırda yaşar ama farklı
+   * ekranlardan, farklı mutation'larla ve KESİŞMEYEN sütun kümeleriyle
+   * yazılır (0008).
+   */
+  plan: string | null;
   updated_at: string;
 }
 

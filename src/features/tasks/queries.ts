@@ -49,6 +49,8 @@ export function toTask(row: TaskRow): Task {
     // biçim dönüşümü her kullanım yerinde tekrarlanmasın.
     startTime: row.start_time ? row.start_time.slice(0, 5) : null,
     durationMinutes: row.duration_minutes,
+    categoryId: row.category_id,
+    goalId: row.goal_id,
   };
 }
 

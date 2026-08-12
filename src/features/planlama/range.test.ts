@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { asDateStr, eachDay, startOfIsoWeek } from "@/lib/date/date";
 import { monthGrid } from "@/features/calendar/grid";
 import { task } from "@/features/testing/fixtures";
-import { anchorForScale, buildPlanRange } from "./plan";
+import { anchorForScale, buildPlanRange } from "./range";
 
 /*
  * 3 Ağustos 2026 Pazartesi'dir; hafta 9 Ağustos Pazar'da biter.

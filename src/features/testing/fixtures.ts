@@ -9,6 +9,7 @@ import { addDays, asDateStr, eachDay } from "@/lib/date/date";
 import type { RoutineWithSchedule, Schedule, ScheduleVersion } from "@/features/routines/types";
 import { entryKey, type EntryMap } from "@/features/entries/entry-map";
 import type { Mistake } from "@/features/mistakes/types";
+import type { Category, PlanGoal } from "@/features/planlama/types";
 import type { Task } from "@/features/tasks/types";
 
 let counter = 0;
@@ -166,6 +167,8 @@ interface TaskOptions {
   sortOrder?: number;
   startTime?: string | null;
   durationMinutes?: number | null;
+  categoryId?: string | null;
+  goalId?: string | null;
 }
 
 /**
@@ -174,6 +177,10 @@ interface TaskOptions {
  * Varsayılan TARİHSİZ ve tamamlanmamıştır: hafta testlerinin çoğu
  * tarihi açıkça verir ve varsayılanın "bugün" olması, testin yazıldığı
  * güne bağlı sinsi bir kırılganlık doğururdu.
+ *
+ * `categoryId`/`goalId` varsayılanı null: görevlerin çoğu
+ * sınıflandırılmaz ve mevcut testlerin hiçbiri bu alanları bilmek
+ * zorunda değil.
  */
 export function task(options: TaskOptions = {}): Task {
   return {
@@ -185,6 +192,62 @@ export function task(options: TaskOptions = {}): Task {
     sortOrder: options.sortOrder ?? 0,
     startTime: options.startTime ?? null,
     durationMinutes: options.durationMinutes ?? null,
+    categoryId: options.categoryId ?? null,
+    goalId: options.goalId ?? null,
+  };
+}
+
+interface CategoryOptions {
+  id?: string;
+  name?: string;
+  colorSlot?: number;
+  sortOrder?: number;
+  archivedAt?: string | null;
+}
+
+/** Test için kategori üretir. Varsayılan: etkin, slot 0. */
+export function category(options: CategoryOptions = {}): Category {
+  return {
+    id: options.id ?? `c${++counter}`,
+    name: options.name ?? "Test kategorisi",
+    colorSlot: options.colorSlot ?? 0,
+    sortOrder: options.sortOrder ?? 0,
+    archivedAt: options.archivedAt ?? null,
+  };
+}
+
+interface PlanGoalOptions {
+  id?: string;
+  /** Ayın 1'i olmalı; verilmezse 2026-08. */
+  month?: string;
+  title?: string;
+  note?: string | null;
+  /** null → ilerleme bağlı görevlerden okunur. Varsayılan budur. */
+  targetCount?: number | null;
+  doneCount?: number;
+  colorSlot?: number;
+  sortOrder?: number;
+  archivedAt?: string | null;
+}
+
+/**
+ * Test için aylık hedef üretir.
+ *
+ * Varsayılan `targetCount: null` — yani ilerleme bağlı görevlerden
+ * okunur. Sayısal hedefi olan durum testte AÇIKÇA belirtilmeli, çünkü
+ * iki ölçüm biçimi arasındaki fark bu modülün asıl konusu.
+ */
+export function planGoal(options: PlanGoalOptions = {}): PlanGoal {
+  return {
+    id: options.id ?? `g${++counter}`,
+    month: asDateStr(options.month ?? "2026-08-01"),
+    title: options.title ?? "Test hedefi",
+    note: options.note ?? null,
+    targetCount: options.targetCount ?? null,
+    doneCount: options.doneCount ?? 0,
+    colorSlot: options.colorSlot ?? 0,
+    sortOrder: options.sortOrder ?? 0,
+    archivedAt: options.archivedAt ?? null,
   };
 }
 

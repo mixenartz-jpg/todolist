@@ -26,7 +26,7 @@ async function fetchDayNote(date: DateStr): Promise<DayNote> {
     .maybeSingle();
 
   if (error) throw error;
-  if (!data) return { date, note: null, mood: null };
+  if (!data) return { date, note: null, mood: null, plan: null };
 
   return toDayNote(data as DayNoteRow);
 }
@@ -36,5 +36,6 @@ export function toDayNote(row: DayNoteRow): DayNote {
     date: asDateStr(row.date),
     note: row.note,
     mood: (row.mood as Mood | null) ?? null,
+    plan: row.plan,
   };
 }

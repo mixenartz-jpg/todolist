@@ -29,8 +29,21 @@ export const SECTION_DEFAULTS = {
    * adlandırmak diğerini sessizce değiştirmemeli — ad alanı kuralının
    * tam olarak var olma sebebi bu.
    */
+  /*
+   * `plan.*` anahtarları ekran /planlama'ya taşınınca DEĞİŞTİRİLMEDİ.
+   *
+   * `section_labels` satırları `key` METNİYLE bağlıdır; anahtarı
+   * `planlama.backlog` yapmak, kullanıcının verdiği adı sessizce
+   * kaybettirirdi — satır yetim kalır, kod varsayılana düşerdi.
+   * Anahtar ekranın YOLUNU değil BÖLÜMÜ adlandırır.
+   */
   "plan.backlog": "Havuz",
   "plan.overdue": "Gecikenler",
+
+  "planlama.dayPlan": "Günün planı",
+  "planlama.goals": "Aylık hedefler",
+  "planlama.categories": "Kategoriler",
+  "planlama.summary": "Ay özeti",
 } as const;
 
 export type SectionKey = keyof typeof SECTION_DEFAULTS;

@@ -54,6 +54,19 @@ interface TaskItemProps {
    */
   extra?: ReactNode;
   /**
+   * Başlığın SOLUNDA duran küçük işaret (ör. kategori renk noktası).
+   *
+   * `extra`'dan ayrı bir yuva: o başlığın ALTINDA duran bir kontrol,
+   * bu ise başlıkla aynı satırda duran bir işaret. Kategori noktası
+   * `extra`ya konsaydı görev adının altında kendi satırını açar ve dar
+   * sütunda her satırı bir kat daha uzatırdı.
+   *
+   * İçeriği `aria-hidden` olmalı: renk tek başına bilgi taşımaz ve
+   * kategori adı `TaskItem`'ın dışında, satırın bağlamında zaten
+   * okunur (bkz. CategoryDot).
+   */
+  marker?: ReactNode;
+  /**
    * Dar sütun düzeni: eylem simgeleri başlığın YANINDA değil ALTINDA.
    *
    * Haftalık/plan ızgarasında sütun ~140px'e iner. Simgeler satırda
@@ -76,6 +89,7 @@ export const TaskItem = memo(function TaskItem({
   hideTime = false,
   dayPicker,
   extra,
+  marker,
   compact = false,
 }: TaskItemProps) {
   const overdue = isOverdue(task, today);
@@ -177,6 +191,21 @@ export const TaskItem = memo(function TaskItem({
             task.done && "text-[var(--color-ink-3)] line-through",
           )}
         >
+          {/* Kategori noktası saatin de solunda: satırın en başındaki
+              sabit konum, göz taramasını kolaylaştırır. */}
+          {marker && (
+            <span
+              className={cn(
+                "flex shrink-0",
+                // Sarmalı başlıkta nokta ilk satırın ortasına hizalanır;
+                // `items-start` altında tepeye yapışıp kayardı.
+                compact ? "mt-[0.4em]" : "self-center",
+              )}
+            >
+              {marker}
+            </span>
+          )}
+
           {!hideTime && task.startTime && (
             <span className="tabular shrink-0 text-[var(--color-ink-3)]">
               {task.startTime}

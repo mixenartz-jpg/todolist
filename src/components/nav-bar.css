@@ -1,0 +1,69 @@
+/*
+ * Alt sekme çubuğu — yatay kaydırma.
+ *
+ * ── Neden sekmeleri KÜÇÜLTMEK değil? ──
+ * Yedi sekme 320px'e bölününce sekme başına ~45px kalır; araştırılan
+ * dokunma hedefi eşiği 44px'tir ve "İstat." etiketi oraya sığmaz.
+ * Kaydırma sekme genişliğini KORUR; maliyeti yalnızca "bir sekme ilk
+ * bakışta görünmeyebilir"dir ve bu, sıkışmış-yanlış basılan yedi
+ * sekmeden iyidir.
+ *
+ * ── Neden Tailwind arbitrary value değil, ayrı CSS dosyası? ──
+ * `scrollbar-width`, `::-webkit-scrollbar`, `scroll-snap-type` ve
+ * `overscroll-behavior-x` birlikte kullanılıyor. Bunları
+ * `[&::-webkit-scrollbar]:hidden` gibi yazmak okunmaz bir className
+ * zinciri üretirdi. Depoda zaten sheet.css / toast.css / planlama.css
+ * deseni var.
+ */
+
+.tabBar {
+  display: flex;
+
+  overflow-x: auto;
+
+  /*
+   * iOS'ta yatay kaydırma sayfanın "geri" jestini tetikleyebilir;
+   * `contain` kaydırmayı bu konteynerde tutar. Çubuğun sonuna gelip
+   * bir kez daha çekmek tarayıcıyı geri götürmemeli.
+   */
+  overscroll-behavior-x: contain;
+
+  /*
+   * Kaydırma çubuğu GİZLİ ama kaydırma AÇIK. Çubuk masaüstünde 8px
+   * yükseklik çalardı ve zaten `md:` üzerinde bu bileşen hiç
+   * görünmüyor; mobilde ise overlay scrollbar kullanılıyor ve
+   * görünmüyor.
+   */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  /*
+   * `proximity`, `mandatory` DEĞİL: mandatory her kaydırmayı bir
+   * sekmeye yapıştırır, kullanıcı iki sekme arasına bakamaz ve
+   * `scrollIntoView` ile snap birbiriyle yarışıp titreme üretir.
+   * `proximity` yalnızca yakınsa hizalar — kaydırma serbest kalır,
+   * sonuç düzgün durur.
+   */
+  scroll-snap-type: x proximity;
+}
+
+.tabBar::-webkit-scrollbar {
+  display: none;
+}
+
+.tabBarItem {
+  /*
+   * SABİT taban genişliği. `flex: 1` DEĞİL — esneme yedi sekmeyi yine
+   * 320px'e sıkıştırır ve kaydırma hiç oluşmazdı; kaydırmanın var olma
+   * sebebi tam olarak bunu engellemek.
+   *
+   * 68px: ikon (16) + boşluk + etiket payı. 320px'de ~4.7 sekme
+   * görünür, yani yarım kalan sekme "daha var" işaretini kullanıcıya
+   * kendiliğinden gösterir — ayrı bir gölge ya da ok gerekmez.
+   *
+   * `flex-shrink: 0` (kısaltmanın ikinci değeri) sıkışmayı YAPISAL
+   * olarak imkânsız kılar.
+   */
+  flex: 0 0 68px;
+  scroll-snap-align: center;
+}

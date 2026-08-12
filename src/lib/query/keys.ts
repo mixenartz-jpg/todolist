@@ -23,6 +23,23 @@ export const qk = {
   note: (date: DateStr) => ["notes", date] as const,
 
   /*
+   * Ayın hangi günlerinde PLAN yazılı? Ay ızgarasının hücre noktaları
+   * için.
+   *
+   * `qk.notes()` önekinin ALTINDA — ve bu bilerek böyle: bir günün
+   * planı kaydedilince `qk.note(date)` ile birlikte bunun da tazelenmesi
+   * GEREKİR, yoksa hücredeki nokta gerçekle ayrışır. `mistakeImage`'ın
+   * önekten kaçınma gerekçesinin TERSİ yön: orada önek eşleşmesi
+   * gereksiz iş üretiyordu, burada tam olarak istenen işi ücretsiz
+   * yapıyor.
+   *
+   * Üçüncü eleman "month" sabiti: `qk.note(date)` ikinci elemanda bir
+   * tarih taşıyor ve ayrım olmasa `["notes", "2026-08"]` gibi bir
+   * anahtar bir gün anahtarıyla karışabilirdi.
+   */
+  notePlansMonth: (month: DateStr) => ["notes", "month", month] as const,
+
+  /*
    * Serbest defter. Anahtar "notes" DEĞİL "journal" — `qk.notes()`
    * zaten `qk.note(date)`'in önekidir ve TanStack Query önek eşleşmesi
    * yapar. Defteri de "notes" altına koysaydık, bir defter notunu
@@ -55,4 +72,32 @@ export const qk = {
    * tazeler — bu kadar küçük bir veri için ucuz ve tutarlı.
    */
   sectionLabels: () => ["section-labels"] as const,
+
+  /*
+   * Kategoriler. TEK sorgudur — kullanıcı başına bir avuç satır (renk
+   * paleti sekiz, kategori sayısı o mertebede kalır) ve her ekran
+   * hepsini birden ister: filtre çubuğu, görev satırındaki seçici, ay
+   * dağılımı. Kategori başına ayrı anahtar, tek ekranda dört ağ turu
+   * demek olurdu — `sectionLabels` ile aynı gerekçe.
+   *
+   * Arşivlenmişler de bu sorguda gelir: geçmiş görevlerin rengi ve adı
+   * hâlâ çizilmeli, yalnızca SEÇİM listesinden çıkarılmalılar. Ayrı bir
+   * "arşivli" anahtarı, aynı satırların iki önbellek girdisinde
+   * durması olurdu.
+   */
+  categories: () => ["categories"] as const,
+
+  /*
+   * Aylık hedefler. AY BAŞINA ayrı anahtar: hedefler yıllar boyunca
+   * birikir ama hep tek ay okunur — `tasks`'ın "hepsini çek, bellekte
+   * filtrele" yaklaşımı burada tutmaz.
+   *
+   * Anahtar "plan-goals", düz "plan" DEĞİL. `["plan", "goals", month]`
+   * yazılsaydı, ileride eklenecek herhangi bir `qk.plan(...)` anahtarı
+   * önek eşleşmesiyle hedefleri de geçersiz kılardı. Tireli tek parça,
+   * o çakışmayı yapısal olarak imkânsız kılar (`mistakeImage`'ın
+   * "mistakes" önekinden kaçınmasıyla aynı gerekçe).
+   */
+  planGoals: () => ["plan-goals"] as const,
+  planGoalsMonth: (month: DateStr) => ["plan-goals", month] as const,
 } as const;

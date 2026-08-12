@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { cn } from "@/lib/ui/cn";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -12,14 +12,16 @@ import {
   GridIcon,
   ListIcon,
   NoteIcon,
+  TargetIcon,
 } from "@/components/icons";
+import "./nav-bar.css";
 
 interface NavItem {
   href: string;
   label: string;
   /**
-   * Alt sekme çubuğu için kısa etiket. Altı sekme 320px'e bölününce
-   * sekme başına ~53px kalır ve "İstatistik" oraya sığmaz. Kısaltma
+   * Alt sekme çubuğu için kısa etiket. Sekmeler 68px sabit genişlikte
+   * (bkz. nav-bar.css) ve uzun adlar oraya sığmaz. Kısaltma
    * verilmezse `label` kullanılır.
    */
   shortLabel?: string;
@@ -30,6 +32,21 @@ const NAV: NavItem[] = [
   { href: "/", label: "Tablo", icon: <GridIcon /> },
   { href: "/bugun", label: "Bugün", icon: <CheckIcon /> },
   { href: "/takvim", label: "Takvim", icon: <CalendarIcon /> },
+  /*
+   * Planlama, Takvim'in HEMEN yanında: ikisi de zamansal yüzeydir ve
+   * komşu durmaları haritayı okunur kılar. Takvim BAKMAK içindir
+   * (ay/hafta görünümü); Planlama KURMAK içindir — hedef koymak,
+   * günü yazmak, kategorilere ayırmak, ay sonunda ölçmek.
+   */
+  {
+    href: "/planlama",
+    label: "Planlama",
+    // "Plan" DEĞİL diye tam ad: eski /takvim/plan ekranının adı
+    // "Plan"dı ve ikisi karışırdı. Kısa etiket yine "Plan" — 68px'e
+    // "Planlama" sığmaz ve kısaltma bağlamda belirsiz değil.
+    shortLabel: "Plan",
+    icon: <TargetIcon />,
+  },
   {
     href: "/istatistik",
     label: "İstatistik",
@@ -42,7 +59,9 @@ const NAV: NavItem[] = [
   /*
    * Notlar ve Yanlışlar tek sekmede birleşir; ikisi de "yazdığım
    * şeyler" ve ayrımı kendi alt sekmeleri yapar. Ayrı birer sekme
-   * olsalardı çubuk yediye çıkar, sekme başına ~45px kalırdı.
+   * olsalardı çubuk sekize çıkardı — kaydırma sekme genişliğini
+   * koruyor ama her yeni sekme "ilk bakışta görünmeyen" alanı
+   * büyütür; birleştirme hâlâ doğru karar.
    */
   { href: "/defter", label: "Defter", icon: <NoteIcon /> },
 ];
@@ -116,39 +135,83 @@ function NavRail() {
   );
 }
 
-/** Mobil alt sekme çubuğu. */
+/**
+ * Mobil alt sekme çubuğu — yatay kaydırılabilir.
+ *
+ * Yedi sekme sabit 68px genişlikte durur ve çubuk kayar; sıkıştırma
+ * yapılmaz. Gerekçe ve ölçüler nav-bar.css'te.
+ */
 function MobileTabBar() {
   const pathname = usePathname();
+  const activeRef = useRef<HTMLAnchorElement>(null);
+
+  /*
+   * Aktif sekmeyi görünüre getir.
+   *
+   * `useEffect`, `useLayoutEffect` DEĞİL: layout effect sunucuda uyarı
+   * basar ve burada boyamadan önce çalışması gerekmiyor — çubuk
+   * ekranın en altında ve ilk karede kaydırılmamış olması fark
+   * edilmez.
+   *
+   * `block: "nearest"` ZORUNLU: varsayılan "start" DİKEY kaydırmayı da
+   * tetikler ve sayfayı yukarı zıplatır. `inline: "center"` sekmeyi
+   * ortalar. `behavior: "auto"` — kullanıcının yapmadığı bir hareketi
+   * ona animasyonla göstermek yanıltıcı olurdu.
+   *
+   * Hydration uyuşmazlığı imkânsız: DOM'a hiçbir şey yazılmıyor,
+   * yalnızca kaydırma konumu değişiyor ve React onu uzlaştırmıyor.
+   */
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({
+      block: "nearest",
+      inline: "center",
+      behavior: "auto",
+    });
+  }, [pathname]);
 
   return (
     <nav
       aria-label="Ana gezinme"
-      className="fixed inset-x-0 bottom-0 z-[var(--z-sticky)] flex border-t border-[var(--color-line)] bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom)] md:hidden"
+      /*
+       * `pb-[env(safe-area-inset-bottom)]` KAYDIRMA KONTEYNERİNDE
+       * kalır. Sekmelere taşımak her sekmeye ayrı boşluk verir ve
+       * flex-basis hesabını bozardı; burada iPhone home indicator
+       * alanı sekmelerin altında tek parça boş durur.
+       *
+       * `.tabBar`'a tabindex VERİLMEZ: içindeki yedi <Link> zaten
+       * odaklanabilir ve tarayıcı odaklananı kendiliğinden görünüre
+       * kaydırır. Ayrı bir odak durağı, klavye kullanıcısına anlamsız
+       * bir fazladan Tab bastırırdı.
+       */
+      className="tabBar fixed inset-x-0 bottom-0 z-[var(--z-sticky)] border-t border-[var(--color-line)] bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      {NAV.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          aria-current={isActive(pathname, item.href) ? "page" : undefined}
-          className={cn(
-            // `min-w-0`: flex öğeleri varsayılan olarak içeriklerinden
-            // daha dar olamaz; onsuz uzun etiket sekmeyi şişirir ve
-            // altı sekme 320px'e sığmaz.
-            "flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 py-2.5",
-            "text-[length:var(--text-2xs)]",
-            "transition-[color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out-expo)]",
-            "active:scale-[0.97]",
-            isActive(pathname, item.href)
-              ? "font-medium text-[var(--color-accent)]"
-              : "text-[var(--color-ink-3)]",
-          )}
-        >
-          {item.icon}
-          <span className="max-w-full truncate">
-            {item.shortLabel ?? item.label}
-          </span>
-        </Link>
-      ))}
+      {NAV.map((item) => {
+        const active = isActive(pathname, item.href);
+
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            ref={active ? activeRef : undefined}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "tabBarItem",
+              "flex flex-col items-center justify-center gap-1 px-0.5 py-2.5",
+              "text-[length:var(--text-2xs)]",
+              "transition-[color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out-expo)]",
+              "active:scale-[0.97]",
+              active
+                ? "font-medium text-[var(--color-accent)]"
+                : "text-[var(--color-ink-3)]",
+            )}
+          >
+            {item.icon}
+            <span className="max-w-full truncate">
+              {item.shortLabel ?? item.label}
+            </span>
+          </Link>
+        );
+      })}
     </nav>
   );
 }

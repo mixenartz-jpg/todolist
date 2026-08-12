@@ -8,14 +8,25 @@ import { splitDaySchedule } from "@/features/tasks/schedule";
 import { TaskItem } from "@/features/tasks/TaskItem";
 import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
 import type { Task } from "@/features/tasks/types";
+import { CategoryDot } from "./CategoryDot";
+import { DayPlanEditor } from "./DayPlanEditor";
+import { CategoryPicker } from "./CategoryPicker";
+import { GoalPicker } from "./GoalPicker";
 import { ReorderButtons } from "./ReorderButtons";
+import type { Category, PlanGoal } from "./types";
 import "@/components/sheet.css";
 
 interface PlanDaySheetProps {
   date: DateStr;
   today: DateStr;
   tasks: readonly Task[];
+  categories: readonly Category[];
+  /** Görüntülenen ayın hedefleri — görev satırındaki seçici için. */
+  goals: readonly PlanGoal[];
   addPending: boolean;
+  onError?: (message: string) => void;
+  onSetCategory: (task: Task, categoryId: string | null) => void;
+  onSetGoal: (task: Task, goalId: string | null) => void;
   onClose: () => void;
   onAdd: (title: string, date: DateStr) => void;
   onToggle: (task: Task) => void;
@@ -45,7 +56,12 @@ export function PlanDaySheet({
   date,
   today,
   tasks,
+  categories,
+  goals,
   addPending,
+  onError,
+  onSetCategory,
+  onSetGoal,
   onClose,
   onAdd,
   onToggle,
@@ -64,6 +80,8 @@ export function PlanDaySheet({
 
   const { timed, untimed } = splitDaySchedule(tasks);
   const ordered = [...timed, ...untimed];
+
+  const categoryById = new Map(categories.map((c) => [c.id, c]));
 
   return (
     <dialog
@@ -105,7 +123,15 @@ export function PlanDaySheet({
           </button>
         </header>
 
-        <div className="flex flex-col gap-3 px-4 py-4">
+        <div className="flex flex-col gap-4 px-4 py-4">
+          {/*
+           * Plan, görev listesinin ÜSTÜNDE: gün panelini açan hareket
+           * "bu güne bakayım"dır ve önce günün niyeti okunur, sonra
+           * işlerin dökümü. Altta olsaydı uzun bir listede hiç
+           * görünmezdi.
+           */}
+          <DayPlanEditor date={date} onError={onError} />
+
           {ordered.length > 0 && (
             <ul className="flex flex-col gap-1.5">
               {ordered.map((task, index) => (
@@ -113,20 +139,51 @@ export function PlanDaySheet({
                   key={task.id}
                   task={task}
                   today={today}
+                  marker={
+                    task.categoryId !== null &&
+                    categoryById.has(task.categoryId) ? (
+                      <CategoryDot
+                        category={categoryById.get(task.categoryId)!}
+                      />
+                    ) : undefined
+                  }
                   onToggle={() => onToggle(task)}
                   onDelete={() => onDelete(task)}
                   onRename={(title) => onRename(task, title)}
                   onSetTime={(start, duration) => onSetTime(task, start, duration)}
                   onDefer={() => onUnschedule(task)}
+                  /*
+                   * Kategori seçici ve sıra düğmeleri aynı yuvayı
+                   * paylaşır. Seçici TAMAMLANMIŞ görevde de durur:
+                   * bitmiş bir işin kategorisini düzeltmek ay
+                   * dağılımını düzeltmenin tek yoludur. Sıra düğmeleri
+                   * ise yalnızca açık işlerde anlamlı.
+                   */
                   extra={
-                    ordered.length > 1 && !task.done ? (
-                      <ReorderButtons
-                        title={task.title}
-                        isFirst={index === 0}
-                        isLast={index === ordered.length - 1}
-                        onMove={(delta) => onReorder(ordered, task, delta)}
+                    <div className="flex items-center gap-1.5">
+                      <CategoryPicker
+                        categories={categories}
+                        value={task.categoryId}
+                        taskTitle={task.title}
+                        onChange={(categoryId) => onSetCategory(task, categoryId)}
                       />
-                    ) : undefined
+
+                      <GoalPicker
+                        goals={goals}
+                        value={task.goalId}
+                        taskTitle={task.title}
+                        onChange={(goalId) => onSetGoal(task, goalId)}
+                      />
+
+                      {ordered.length > 1 && !task.done && (
+                        <ReorderButtons
+                          title={task.title}
+                          isFirst={index === 0}
+                          isLast={index === ordered.length - 1}
+                          onMove={(delta) => onReorder(ordered, task, delta)}
+                        />
+                      )}
+                    </div>
                   }
                 />
               ))}

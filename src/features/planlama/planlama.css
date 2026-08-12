@@ -165,3 +165,17 @@
     top: 12px;
   }
 }
+
+/*
+ * Ay özetinin sayı kutuları.
+ *
+ * `auto-fit` + `minmax` sabit bir sütun sayısı yerine: dört kutu
+ * 320px'de ikişerli iki satır, geniş ekranda tek satır olur ve arada
+ * bir kırılma noktası tanımlamak gerekmez. 140px taban, en uzun
+ * değerin ("12 sa 30 dk") sarmadan sığdığı genişliktir.
+ */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}

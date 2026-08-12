@@ -4,10 +4,14 @@ import { cn } from "@/lib/ui/cn";
 import { SectionHeading } from "@/features/sections/SectionHeading";
 import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
 import type { Task } from "@/features/tasks/types";
-import "./plan.css";
+import { CategoryDot } from "./CategoryDot";
+import type { Category } from "./types";
+import "./planlama.css";
 
 interface PlanBacklogProps {
   tasks: readonly Task[];
+  /** Kimlikten kategoriye — satırdaki renk noktası için. */
+  categoryById: ReadonlyMap<string, Category>;
   /** Şu an seçili olan görev — ızgara yerleştirme modundadır. */
   selectedId: string | null;
   addPending: boolean;
@@ -38,6 +42,7 @@ interface PlanBacklogProps {
  */
 export function PlanBacklog({
   tasks,
+  categoryById,
   selectedId,
   addPending,
   onSelect,
@@ -67,6 +72,10 @@ export function PlanBacklog({
         <ul className="mb-2.5 flex flex-col gap-1.5">
           {tasks.map((task) => {
             const selected = task.id === selectedId;
+            const category =
+              task.categoryId === null
+                ? undefined
+                : categoryById.get(task.categoryId);
 
             return (
               <li key={task.id}>
@@ -74,8 +83,14 @@ export function PlanBacklog({
                   type="button"
                   aria-pressed={selected}
                   /* Etiket eylemi söyler, durumu değil: `aria-pressed`
-                     zaten seçili olup olmadığını duyuruyor. */
-                  aria-label={`${task.title}: bir güne yerleştir`}
+                     zaten seçili olup olmadığını duyuruyor. Kategori adı
+                     etikete GİRER çünkü nokta aria-hidden'dır ve renk
+                     tek başına bilgi taşımamalı. */
+                  aria-label={
+                    category
+                      ? `${task.title} (${category.name}): bir güne yerleştir`
+                      : `${task.title}: bir güne yerleştir`
+                  }
                   onClick={() => onSelect(selected ? null : task.id)}
                   className={cn(
                     "rowEnter flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left",
@@ -86,6 +101,8 @@ export function PlanBacklog({
                       : "border-[var(--color-line)] bg-[var(--color-surface)] hover:border-[var(--color-line-2)]",
                   )}
                 >
+                  {category && <CategoryDot category={category} />}
+
                   <span className="min-w-0 flex-1 truncate">{task.title}</span>
 
                   {/* Seçiliyken ne yapılacağını YAZIYLA söyler. Renk ve
