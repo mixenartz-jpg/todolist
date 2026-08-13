@@ -4,6 +4,7 @@ import {
   displayTitle,
   groupByDate,
   normalize,
+  noteBody,
   searchNotes,
   sortNotes,
 } from "./search";
@@ -172,5 +173,54 @@ describe("displayTitle", () => {
     const result = displayTitle(note({ id: "a", body: long }), 20);
     expect(result).toHaveLength(21); // 20 karakter + tek karakterlik "…"
     expect(result.endsWith("…")).toBe(true);
+  });
+});
+
+describe("noteBody", () => {
+  test("açık başlıklı notta gövdenin tamamını döner", () => {
+    expect(
+      noteBody(note({ id: "a", title: "Başlık", body: "ilk satır\nikinci" })),
+    ).toBe("ilk satır\nikinci");
+  });
+
+  test("türetilmiş başlıklı tek satırlık notta boş döner", () => {
+    // Açılacak bir şey yok: ilk satır zaten başlıkta.
+    expect(noteBody(note({ id: "a", title: null, body: "tek satır" }))).toBe("");
+  });
+
+  test("türetilmiş başlıklı çok satırlı notta ilk satırdan sonrasını döner", () => {
+    expect(
+      noteBody(note({ id: "a", title: null, body: "ilk satır\nikinci\nüçüncü" })),
+    ).toBe("ikinci\nüçüncü");
+  });
+
+  test("yalnızca boşluktan oluşan devam satırları boş sayılır", () => {
+    expect(noteBody(note({ id: "a", title: null, body: "ilk satır\n   \n\n" }))).toBe(
+      "",
+    );
+  });
+
+  test("kırpılan türetilmiş başlıkta TAM ilk satır döner", () => {
+    // `displayTitle` 20'yi aşınca "…" ile kırpar; kırpılan metnin
+    // okunacak bir yeri kalmalı.
+    const long = "a".repeat(50);
+    expect(noteBody(note({ id: "a", title: null, body: long }), 20)).toBe(long);
+  });
+
+  test("kırpılan başlıkta sonraki satırlar da korunur", () => {
+    const long = "a".repeat(50);
+    expect(
+      noteBody(note({ id: "a", title: null, body: `${long}\nikinci` }), 20),
+    ).toBe(`${long}\nikinci`);
+  });
+
+  test("başlık ile gövde arasında metin ne kaybolur ne tekrarlanır", () => {
+    // displayTitle + noteBody birlikte notun tamamını vermeli.
+    const n = note({ id: "a", title: null, body: "ilk satır\nikinci" });
+    expect(`${displayTitle(n)}\n${noteBody(n)}`).toBe("ilk satır\nikinci");
+  });
+
+  test("boşluk sadece başlık gövdeden türetilmiş sayılır", () => {
+    expect(noteBody(note({ id: "a", title: "   ", body: "tek satır" }))).toBe("");
   });
 });

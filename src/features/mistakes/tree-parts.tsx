@@ -7,42 +7,12 @@ import type { Heat } from "./tree";
 /**
  * Ağacın üç seviyesinde de tekrar eden parçalar.
  *
- * Chevron, ısı şeridi ve sayı rozetleri ders/konu satırlarında birebir
- * aynıdır. Tek yerde durmaları, seviyeler arasında görsel kaymayı
- * imkânsız kılar.
- */
-
-/**
- * Açılır/kapanır göstergesi.
+ * Isı şeridi ve sayı rozetleri ders/konu satırlarında birebir aynıdır.
+ * Tek yerde durmaları, seviyeler arasında görsel kaymayı imkânsız kılar.
  *
- * Path uygulamanın ortak açma ikonudur (Bugün ekranındaki "Bir ara"
- * bölümü ve eski çetele tablosu aynısını kullanır) — kendi çizimini
- * üretmek ağacı yabancı gösterirdi.
+ * Açma oku burada DEĞİL: `components/Chevron` uygulamanın ortağıdır ve
+ * defter de aynısını kullanır.
  */
-export function Chevron({ open }: { open: boolean }) {
-  return (
-    <svg
-      width="10"
-      height="10"
-      viewBox="0 0 12 12"
-      fill="none"
-      aria-hidden
-      className={cn(
-        "shrink-0 text-[var(--color-ink-3)]",
-        "transition-transform duration-[var(--duration-fast)] ease-[var(--ease-out-expo)]",
-        open && "rotate-90",
-      )}
-    >
-      <path
-        d="M4.5 2.5L8 6l-3.5 3.5"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 /**
  * Yoğunluk şeridi — satırın sol kenarında dikey çizgi.

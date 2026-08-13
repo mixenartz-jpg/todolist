@@ -2,9 +2,10 @@
 
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
+import { Chevron } from "@/components/Chevron";
 import { KonuRow } from "./KonuRow";
 import { RenameButton, RenameRow } from "./RenameRow";
-import { Chevron, CountPair, DueBadge, HeatBar } from "./tree-parts";
+import { CountPair, DueBadge, HeatBar } from "./tree-parts";
 import type { DersNode, KonuNode } from "./tree";
 import type { Mistake } from "./types";
 import "@/components/list-motion.css";

@@ -3,9 +3,9 @@
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { formatShortDate } from "@/lib/ui/tr";
+import { Chevron } from "@/components/Chevron";
 import { MistakeImage } from "./MistakeImage";
 import { GRADUATED_STAGE, isDue, toReviewState } from "./review";
-import { Chevron } from "./tree-parts";
 import type { Mistake } from "./types";
 import "@/components/list-motion.css";
 

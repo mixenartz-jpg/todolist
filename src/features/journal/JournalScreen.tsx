@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/Button";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
@@ -27,6 +27,33 @@ export function JournalScreen() {
   const [pendingDelete, setPendingDelete] = useState<Note | null>(null);
   const [query, setQuery] = useState("");
   const [order, setOrder] = useState<SortOrder>("newest");
+
+  /**
+   * AÇIK notların kimlikleri — kapalıların değil.
+   *
+   * Varsayılan kapalı olduğu için kapalı kümesi neredeyse tüm notları
+   * tutardı ve her yeni not, oluşturulur oluşturulmaz kümeye eklenmek
+   * zorunda kalırdı. Açık kümesi boş başlar, yalnızca kullanıcının
+   * dokunduğu notları taşır.
+   *
+   * Silinen notun kimliği kümede kalabilir; zararsızdır (bir daha
+   * eşleşmez) ve temizleyen bir efekt eklemek durumu veriyle
+   * senkronda tutma yükünü karşılıksız getirirdi.
+   *
+   * Kalıcı DEĞİL: `MistakeTree` ile aynı karar — açma durumu bir okuma
+   * anının parçasıdır, ertesi gün geri yüklenmesi kullanıcının
+   * bıraktığı yeri değil eski bir kararı hatırlatırdı.
+   */
+  const [openIds, setOpenIds] = useState<ReadonlySet<string>>(() => new Set());
+
+  const toggleNote = useCallback((id: string) => {
+    setOpenIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
 
   const create = useCreateNote(toast.show);
   const update = useUpdateNote(toast.show);
@@ -168,11 +195,25 @@ export function JournalScreen() {
                     )}
                   </h2>
 
+                  {/*
+                    Aramada notlar KENDİLİĞİNDEN açılır: eşleşme
+                    gövdede olabilir ve kapalı bir sonuç, neden
+                    bulunduğunu saklardı.
+
+                    `openIds`'e yazmak yerine türetilmiş bir bayrak:
+                    arama temizlenince kullanıcının kendi açtıkları
+                    olduğu gibi geri gelir, uzlaştıracak durum kalmaz.
+                    Bu sırada ok gizlenir — zorla açık bir notta
+                    kapatma düğmesi hiçbir şey yapmazdı.
+                  */}
                   <ul className="flex flex-col gap-2">
                     {group.notes.map((note) => (
                       <NoteItem
                         key={note.id}
                         note={note}
+                        open={searching || openIds.has(note.id)}
+                        toggleHidden={searching}
+                        onToggle={() => toggleNote(note.id)}
                         onEdit={() => {
                           setComposing(false);
                           setEditing(note);

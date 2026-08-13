@@ -97,3 +97,36 @@ export function displayTitle(note: Note, maxLength = 80): string {
   if (firstLine.length <= maxLength) return firstLine;
   return `${firstLine.slice(0, maxLength).trimEnd()}…`;
 }
+
+/**
+ * Başlığın ALTINDA gösterilecek gövde — yani açılıp kapanan kısım.
+ *
+ * `displayTitle` ile birlikte okunmalı: ikisi notu ikiye böler ve
+ * aralarında metin ne kaybolur ne tekrarlanır.
+ *
+ * Üç durum var:
+ *
+ * 1. Başlık AÇIKÇA yazılmışsa gövdenin tamamı döner — başlık gövdeden
+ *    türemediği için hiçbir satır zaten görünmüş değildir.
+ *
+ * 2. Başlık türetilmişse ilk satır zaten başlıktadır; yalnızca
+ *    sonrası döner. Tek satırlık bir notta boş dize döner — açılacak
+ *    şey yoktur, çağıran oku hiç çizmemelidir.
+ *
+ * 3. Türetilmiş başlık `maxLength`'i AŞTIYSA `displayTitle` onu "…" ile
+ *    kırpar ve gerisi hiçbir yerde görünmez. O yüzden bu durumda TAM
+ *    ilk satır (ve varsa sonrası) döner: kırpılan metnin okunacak bir
+ *    yeri olur.
+ */
+export function noteBody(note: Note, maxLength = 80): string {
+  const explicit = note.title?.trim();
+  if (explicit) return note.body.trim();
+
+  const trimmed = note.body.trim();
+  const breakAt = trimmed.indexOf("\n");
+  const firstLine = (breakAt === -1 ? trimmed : trimmed.slice(0, breakAt)).trim();
+
+  if (firstLine.length > maxLength) return trimmed;
+
+  return breakAt === -1 ? "" : trimmed.slice(breakAt + 1).trim();
+}
