@@ -129,7 +129,11 @@ export const TaskItem = memo(function TaskItem({
          */
         compact
           ? "flex-wrap items-center justify-between gap-x-0 gap-y-1.5"
-          : "items-center gap-3",
+          : // `items-start`, `items-center` DEĞİL: başlık artık iki
+            // satıra sarabiliyor ve ortalama, kutucuğu ile simgeleri
+            // metnin ortasında asılı bırakırdı. Tepeden hizalanınca
+            // kutucuk her zaman ilk satırın hizasında durur.
+            "items-start gap-3",
         "transition-colors duration-[var(--duration-base)] ease-[var(--ease-out-quart)]",
         task.done
           ? "border-transparent bg-[var(--color-surface-2)]"
@@ -151,7 +155,10 @@ export const TaskItem = memo(function TaskItem({
            */
           compact
             ? "relative order-2 size-7 before:absolute before:-inset-2 before:content-['']"
-            : "size-10",
+            : // `-mt-0.5`: satır artık tepeden hizalı (başlık sarabiliyor)
+              // ve 40px'lik kutucuk ilk metin satırından bir tık yüksek
+              // duruyordu.
+              "size-10 -mt-0.5",
         )}
       >
         <span
@@ -185,9 +192,11 @@ export const TaskItem = memo(function TaskItem({
         <div
           className={cn(
             "flex gap-2 text-[length:var(--text-base)]",
-            // Sarmalı metinde taban hizası ilk satıra göre hesaplanır
-            // ve saat çipi metnin ortasında asılı kalırdı.
-            compact ? "items-start" : "items-baseline",
+            // Başlık artık her yerde sarabildiği için hiza da her yerde
+            // tepeden: `items-baseline` sarmalı metinde tabanı SON
+            // satıra göre hesaplar ve saat çipi metnin ortasında asılı
+            // kalırdı.
+            "items-start",
             task.done && "text-[var(--color-ink-3)] line-through",
           )}
         >
@@ -195,12 +204,11 @@ export const TaskItem = memo(function TaskItem({
               sabit konum, göz taramasını kolaylaştırır. */}
           {marker && (
             <span
-              className={cn(
-                "flex shrink-0",
-                // Sarmalı başlıkta nokta ilk satırın ortasına hizalanır;
-                // `items-start` altında tepeye yapışıp kayardı.
-                compact ? "mt-[0.4em]" : "self-center",
-              )}
+              // Nokta İLK satırın ortasına hizalanır. `self-center`
+              // DEĞİL: iki satırlık bir başlıkta nokta iki satırın
+              // arasına düşerdi. `items-start` altında da tepeye
+              // yapışmaması için 0.4em aşağı itilir.
+              className="mt-[0.4em] flex shrink-0"
             >
               {marker}
             </span>
@@ -227,24 +235,31 @@ export const TaskItem = memo(function TaskItem({
                 "transition-colors duration-[var(--duration-fast)]",
                 "hover:bg-[var(--color-surface-2)]",
                 /*
-                 * Dar sütunda başlık SARAR, kırpılmaz: 140px'e uzun bir
-                 * görev adı zaten sığmaz ve "Matem..." hiçbir şey
-                 * söylemez. İki satır, yarım kelimeden iyidir.
+                 * Başlık HER ZAMAN sarar, asla kırpılmaz.
+                 *
+                 * "Orijinal TYT Matema..." hangi görev olduğunu
+                 * söylemez; kullanıcı adı okuyamadığı bir işi
+                 * planlayamaz. İki satır, yarım kelimeden iyidir.
+                 *
+                 * Eskiden bu davranış `compact`'a bağlıydı ve yalnızca
+                 * dar sütunlarda açılıyordu — ama kırpma GENİŞ satırda
+                 * da yanlış: uzun bir ad orada da sığmıyor, sadece
+                 * daha geç kırpılıyor. Bayrak, doğru davranışı
+                 * isteğe bağlı kılıyordu.
                  *
                  * `wrap-anywhere` DEĞİL `break-words`: ilki kelimeyi
                  * ortadan böler ("Matemat / ik testi"), ikincisi önce
                  * kelime sınırını dener ve yalnızca satıra sığmayan tek
                  * bir kelimeyi zorlar.
                  */
-                compact ? "break-words" : "truncate",
+                "break-words",
               )}
             >
               {task.title}
             </button>
           ) : (
-            <span className={compact ? "break-words" : "truncate"}>
-              {task.title}
-            </span>
+            // Yeniden adlandırılamayan başlık — sarma kuralı aynı.
+            <span className="min-w-0 flex-1 break-words">{task.title}</span>
           )}
           {!hideTime && task.durationMinutes && (
             <span className="shrink-0 text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
