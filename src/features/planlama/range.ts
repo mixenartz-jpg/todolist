@@ -146,6 +146,31 @@ export function buildPlanRange(
 }
 
 /**
+ * Kovaları haftalık satırlara böler.
+ *
+ * Ay ızgarası hafta hafta çizilir: her satır kendi başlığını taşır ve
+ * aşağı kaydırırken hangi haftada olunduğu kaybolmaz.
+ *
+ * `calendar/grid.ts`'teki `toWeeks`'ten AYRI: o `CalendarCell` dizisi
+ * bekler, buradaki kova dizisini böler. Ortak bir generic yazmak iki
+ * modülü beş satır uğruna birbirine bağlardı ve `grid.test.ts` hücre
+ * şeklini doğruluyor.
+ *
+ * Son satır EKSİK KALMAZ: `monthGrid` daima 7'nin katı hücre döner, ama
+ * artan olursa kısa bir satır olarak döndürülür — sessizce düşürmek
+ * ekrandan gün yerdi.
+ */
+export function chunkWeeks(buckets: readonly PlanBucket[]): PlanBucket[][] {
+  const weeks: PlanBucket[][] = [];
+
+  for (let i = 0; i < buckets.length; i += 7) {
+    weeks.push(buckets.slice(i, i + 7));
+  }
+
+  return weeks;
+}
+
+/**
  * Ölçek değişince çapa hangi güne oturur?
  *
  * Çapa, ölçeğin ilk günüdür: hafta için Pazartesi, ay için ayın 1'i.

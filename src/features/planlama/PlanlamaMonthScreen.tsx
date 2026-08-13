@@ -25,9 +25,14 @@ import "./planlama.css";
 /**
  * Ayı KURMA yüzeyi — Planlamanın varsayılan görünümü.
  *
- * Hafta ekranıyla aynı veriyi farklı ölçekte gösterir: ay ızgarası
- * görev BAŞLIKLARINI taşımaz (42 hücreye sığmaz), hücre "kaç iş var"
- * der ve "hangileri" sorusunu gün paneli cevaplar.
+ * Hafta ekranıyla aynı veriyi farklı ölçekte gösterir: ay, hafta
+ * SATIRLARI hâlinde aşağı kaydırılır ve her gün kutusu gerçek görev
+ * satırları taşır. Önceki sürüm kare hücrelerde yalnızca sayı
+ * gösteriyordu; "hangileri" sorusu her gün için ayrı bir panel
+ * tıklaması istiyordu.
+ *
+ * Gün paneli DURUYOR ama artık tek yol değil: plan metni, kategori ve
+ * hedef seçicileri yalnızca orada, satırları düzenlemekse kutuda.
  */
 export function PlanlamaMonthScreen() {
   const toast = useToast();
@@ -133,7 +138,10 @@ export function PlanlamaMonthScreen() {
               onError={toast.show}
             />
 
-            <div className="planLayout">
+            {/* Havuz YANDA değil ÜSTTE: 16rem'lik sütun gün kutularını
+                ~113px'e indirir ve görev başlıkları dört satıra sarardı
+                (hesap için bkz. planlama.css → .planLayoutWide). */}
+            <div className="planLayoutWide">
               <PlanBacklog
                 tasks={range.backlog}
                 categoryById={categories.categoryById}
@@ -148,14 +156,21 @@ export function PlanlamaMonthScreen() {
                 buckets={range.buckets}
                 today={today}
                 summaries={summaries}
+                categoryById={categories.categoryById}
                 placing={placing}
-                onSelect={(date) => {
-                  // Yerleştirme modundayken tıklama günü AÇMAZ, görevi
-                  // oraya koyar: kullanıcı zaten bir hedef seçmiş
-                  // durumda.
-                  if (placing) handlePlace(date);
-                  else setOpenDay(date);
-                }}
+                addPending={actions.addPending}
+                onPlace={handlePlace}
+                // Gün numarası yerleştirme modunda da paneli açar:
+                // yerleştirmenin kendi düğmesi var, aynı hedefin anlamı
+                // moda göre değişmemeli.
+                onOpenDay={setOpenDay}
+                onAdd={actions.onAdd}
+                onToggle={actions.onToggle}
+                onDelete={actions.onDelete}
+                onRename={actions.onRename}
+                onSetTime={actions.onSetTime}
+                onUnschedule={actions.onUnschedule}
+                onReorder={actions.onReorder}
               />
             </div>
           </>

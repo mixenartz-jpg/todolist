@@ -4,13 +4,10 @@ import { isoWeekday, toParts } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { WEEKDAYS_SHORT } from "@/lib/ui/tr";
-import { splitDaySchedule } from "@/features/tasks/schedule";
-import { TaskItem } from "@/features/tasks/TaskItem";
 import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
 import type { Task } from "@/features/tasks/types";
-import { CategoryDot } from "./CategoryDot";
+import { PlanTaskList } from "./PlanTaskList";
 import type { PlanBucket } from "./range";
-import { ReorderButtons } from "./ReorderButtons";
 import type { Category } from "./types";
 import "./planlama.css";
 
@@ -43,6 +40,10 @@ interface PlanWeekGridProps {
  * modunu, sıra düğmelerini ve "havuza geri at" eylemini biliyor.
  * Ortak bir bileşene zorlamak, Hafta ekranının hiç kullanmadığı beş
  * prop'u oradan da geçirmek demekti.
+ *
+ * Ay kutusuyla paylaşılan tek parça `PlanTaskList`'tir: sütunun KABI
+ * (içerik kadar uzar) ile ay kutusunun kabı (sabit boy + iç kaydırma)
+ * ayrışıyor, ama içindeki liste birebir aynı.
  *
  * Masaüstünde yan yana ızgara, mobilde dikey yığın — ayrım tamamen
  * CSS'te (planlama.css).
@@ -123,12 +124,6 @@ function PlanDayColumn({
   const weekday = WEEKDAYS_SHORT[isoWeekday(bucket.date)];
   const dayNumber = toParts(bucket.date).day;
 
-  // Gün içi sıralama Bugün ekranıyla AYNI kuralı izler: önce saatliler
-  // saate göre, sonra saatsizler. Ayrı bir sıralama yazmak, aynı günün
-  // iki ekranda farklı sırada görünmesi demek olurdu.
-  const { timed, untimed } = splitDaySchedule(bucket.tasks);
-  const ordered = [...timed, ...untimed];
-
   return (
     <section
       aria-label={`${weekday} ${dayNumber}`}
@@ -181,51 +176,18 @@ function PlanDayColumn({
         </button>
       )}
 
-      {ordered.length > 0 && (
-        <ul className="flex flex-col gap-1.5">
-          {ordered.map((task, index) => {
-            const category =
-              task.categoryId === null
-                ? undefined
-                : categoryById.get(task.categoryId);
-
-            return (
-            <TaskItem
-              key={task.id}
-              task={task}
-              today={today}
-              /*
-               * Dar sütunda kategori SEÇİCİSİ yok, yalnızca nokta:
-               * 140px'e bir `<select>` sığmaz ve başlığı yer.
-               * Kategori atamak gün panelinden yapılır — orada yer var
-               * ve zaten "bu günü düzenliyorum" bağlamı kurulmuş.
-               */
-              marker={category && <CategoryDot category={category} size={7} />}
-              // Sütun ~140px: simgeler başlığın altına iner.
-              compact
-              onToggle={() => onToggle(task)}
-              onDelete={() => onDelete(task)}
-              onRename={(title) => onRename(task, title)}
-              onSetTime={(start, duration) => onSetTime(task, start, duration)}
-              // "Ertele" simgesi burada havuza geri atar: planlarken
-              // asıl ihtiyaç "bunu şimdilik geri koy"dur, bir gün
-              // ilerletmek değil — o zaten sıradaki güne tıklamaktır.
-              onDefer={() => onUnschedule(task)}
-              extra={
-                ordered.length > 1 && !task.done ? (
-                  <ReorderButtons
-                    title={task.title}
-                    isFirst={index === 0}
-                    isLast={index === ordered.length - 1}
-                    onMove={(delta) => onReorder(ordered, task, delta)}
-                  />
-                ) : undefined
-              }
-            />
-            );
-          })}
-        </ul>
-      )}
+      <PlanTaskList
+        tasks={bucket.tasks}
+        today={today}
+        categoryById={categoryById}
+        className="flex flex-col gap-1.5"
+        onToggle={onToggle}
+        onDelete={onDelete}
+        onRename={onRename}
+        onSetTime={onSetTime}
+        onUnschedule={onUnschedule}
+        onReorder={onReorder}
+      />
 
       <div className="mt-auto">
         <TaskQuickAdd

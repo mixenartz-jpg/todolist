@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { asDateStr, eachDay, startOfIsoWeek } from "@/lib/date/date";
 import { monthGrid } from "@/features/calendar/grid";
 import { task } from "@/features/testing/fixtures";
-import { anchorForScale, buildPlanRange } from "./range";
+import { anchorForScale, buildPlanRange, chunkWeeks } from "./range";
+import type { PlanBucket } from "./range";
 
 /*
  * 3 Ağustos 2026 Pazartesi'dir; hafta 9 Ağustos Pazar'da biter.
@@ -222,6 +223,80 @@ describe("buildPlanRange — sınır durumlar", () => {
     expect(range.backlog).toHaveLength(0);
     expect(range.overdue).toHaveLength(0);
     expect(range.buckets.every((b) => b.tasks.length === 0)).toBe(true);
+  });
+});
+
+describe("chunkWeeks", () => {
+  /** Yalnızca tarih taşıyan sahte kova — bölme sırasını izlemek için. */
+  function bucket(day: number): PlanBucket {
+    return {
+      date: asDateStr(`2026-08-${String(day).padStart(2, "0")}`),
+      tasks: [],
+      openCount: 0,
+      doneCount: 0,
+      inScope: true,
+    };
+  }
+
+  function buckets(count: number): PlanBucket[] {
+    return Array.from({ length: count }, (_, i) => bucket((i % 28) + 1));
+  }
+
+  it("42 kovayı 6 satıra böler, her satır 7 kova", () => {
+    const weeks = chunkWeeks(buckets(42));
+
+    expect(weeks).toHaveLength(6);
+    expect(weeks.every((w) => w.length === 7)).toBe(true);
+  });
+
+  it("35 kovayı 5 satıra böler", () => {
+    expect(chunkWeeks(buckets(35))).toHaveLength(5);
+  });
+
+  it("hiçbir kova düşmez", () => {
+    const input = buckets(42);
+    expect(chunkWeeks(input).flat()).toHaveLength(input.length);
+  });
+
+  it("boş dizide boş dizi döner", () => {
+    expect(chunkWeeks([])).toEqual([]);
+  });
+
+  it("7'nin katı olmayan girdide son satır kısa döner", () => {
+    // Sessizce düşürmek ekrandan gün yerdi.
+    const weeks = chunkWeeks(buckets(10));
+
+    expect(weeks).toHaveLength(2);
+    expect(weeks[0]).toHaveLength(7);
+    expect(weeks[1]).toHaveLength(3);
+  });
+
+  it("satır ve kova sırası korunur", () => {
+    const input = buckets(14);
+    const weeks = chunkWeeks(input);
+
+    expect(weeks[0][0]).toBe(input[0]);
+    expect(weeks[0][6]).toBe(input[6]);
+    expect(weeks[1][0]).toBe(input[7]);
+  });
+
+  it("gerçek ay ızgarasını tam haftalara böler", () => {
+    const range = buildPlanRange(
+      [],
+      monthGrid(2026, 8).map((c) => c.date),
+      asDateStr("2026-08-01"),
+      asDateStr("2026-08-31"),
+    );
+
+    const weeks = chunkWeeks(range.buckets);
+    expect(weeks.every((w) => w.length === 7)).toBe(true);
+  });
+
+  it("girdiyi değiştirmez", () => {
+    const input = buckets(14);
+    const copy = [...input];
+    chunkWeeks(input);
+    expect(input).toEqual(copy);
   });
 });
 
