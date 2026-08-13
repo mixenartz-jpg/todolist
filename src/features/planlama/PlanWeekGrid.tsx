@@ -36,6 +36,9 @@ interface PlanWeekGridProps {
   /** Havuzdan seçili görev varsa günler yerleştirme hedefi olur. */
   placing: boolean;
   addPending: boolean;
+  /** Katlanmış günler — gerekçe PlanMonthGrid'de. */
+  collapsedDays: ReadonlySet<DateStr>;
+  onToggleCollapsed: (date: DateStr) => void;
   onPlace: (date: DateStr) => void;
   onAdd: (title: string, date: DateStr) => void;
   onToggle: (task: Task) => void;
@@ -56,6 +59,8 @@ export function PlanWeekGrid({
   categoryById,
   placing,
   addPending,
+  collapsedDays,
+  onToggleCollapsed,
   onPlace,
   onAdd,
   onToggle,
@@ -81,6 +86,8 @@ export function PlanWeekGrid({
           addPending={addPending}
           /* Hafta ölçeğinde komşu ay kavramı yok — her gün kapsamda. */
           inScope
+          collapsed={collapsedDays.has(bucket.date)}
+          onToggleCollapsed={onToggleCollapsed}
           /* `onOpenDay` VERİLMEZ: kanal düğme değil düz blok olur.
            * Sahte bir düğme klavye kullanıcısına anlamsız bir durak
            * eklerdi (bkz. PlanDayRow). */

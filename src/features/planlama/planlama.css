@@ -115,6 +115,66 @@
     opacity var(--duration-fast) var(--ease-out-quart);
 }
 
+/*
+ * ÇOK dar ekran (≤360px): tarih kanalı YATAY şeride döner.
+ *
+ * 320px'de dikey kanal 56px yatay yer alıyor ve görev alanına ~215px
+ * kalıyordu; 40px kutucuk ve üç simge düşünce başlığa 100px'in altında
+ * yer kalıyor, metin harf harf sarıyordu ("Ma / te / ma / tik").
+ *
+ * Kanalı üste almak günün tam genişliğini görev adına bırakır.
+ * Tarihlerin dikey hizası bu ölçüde zaten okunmuyordu — orada
+ * kazanılan şey hizalama değil, adın okunabilmesi.
+ */
+@media (max-width: 360px) {
+  .planDayRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* `.planDayRow` ön eki ZORUNLU: dikey kanalın `align-items: center`
+   * kuralıyla aynı özgüllükte kalırsa hangisinin kazanacağı sıraya
+   * bağlı olur. */
+  .planDayRow .planDayGutter {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 0.5rem;
+
+    /* Dikey kanaldan miras `text-align: center` yatay şeritte tarihi
+     * ortalıyordu; şerit sola yaslı okunur. */
+    text-align: left;
+
+    padding: 0.5rem var(--card-p);
+    border-right: none;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  /* Dikeydeki büyük rakam yatay şeritte gövde ölçüsüne iner: burada
+   * tarih bir başlık değil, satırın etiketi. */
+  .planDayNum {
+    font-size: var(--text-base);
+  }
+
+  /* Yatay şeritte sayaç sağa yaslanır — dikeydeki "altta" yerini
+   * tutar ve tarihten ayrışır. */
+  .planDayCount {
+    margin-top: 0;
+    margin-left: auto;
+  }
+
+  .planDayDot {
+    margin-top: 0;
+  }
+
+  .planDayField {
+    padding-left: var(--card-p);
+  }
+
+  .planDayRow:not(.planDayRowCollapsed) .planDayField {
+    padding-left: 1.75rem;
+  }
+}
+
 /* İlk satırın üst çizgisi kağıdın kendi kenarıyla çakışırdı. */
 .planWeekLabel + .planDayRow {
   border-top: none;
@@ -206,10 +266,101 @@
  */
 .planDayTasks {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(var(--plan-task-col), 1fr));
+  /*
+   * `min()` ZORUNLU: çıplak `minmax(280px, 1fr)` dar ekranda sütunu
+   * konteynerden GENİŞ tutar ve kutular sağdan kesilir. 320px'de
+   * görev alanına ~215px kalıyor ve 280px'lik taban oraya sığmıyordu.
+   *
+   * `min(--plan-task-col, 100%)` tabanı konteynerle sınırlar: geniş
+   * ekranda 280px'lik çok sütunlu akış aynen sürer, dar ekranda taban
+   * %100'e iner ve tek sütun taşmadan oturur.
+   */
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(var(--plan-task-col), 100%), 1fr)
+  );
   gap: var(--row-gap) 1.25rem;
   align-content: start;
   min-width: 0;
+}
+
+/* ── Katlama oku ───────────────────────────────────────────────────
+ * Görev alanının başında, listeden önce. Dokunma hedefi 44px'e
+ * tamamlanır (`::before`) ama görsel olarak küçük kalır — okun kendisi
+ * bir eylem değil, bir tutamak.
+ */
+.planDayCollapse {
+  position: relative;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+
+  margin-left: -0.25rem;
+  padding: 0.125rem 0.25rem;
+  border-radius: var(--r-sm);
+
+  font-size: var(--text-2xs);
+  color: var(--color-ink-3);
+  cursor: pointer;
+
+  transition:
+    background-color var(--duration-fast) var(--ease-out-quart),
+    color var(--duration-fast) var(--ease-out-quart);
+}
+
+/*
+ * AÇIK günde ok görev listesinin ÜSTÜNE binmez — kendi satırını
+ * kaplamak yerine alanın sol üst köşesine mutlak konumlanır.
+ *
+ * Aksi hâlde her açık gün, hiçbir şey söylemeyen bir ok satırı
+ * yüzünden ~20px uzardı ve ajanda kağıdı yeniden şişerdi. Katlıyken
+ * ise ok TEK içeriktir ve akışta durması doğrudur.
+ */
+.planDayRow:not(.planDayRowCollapsed) .planDayCollapse {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.375rem;
+  z-index: 1;
+}
+
+/* Açık günde ok solda kendi şeridinde durur; içerik ona çarpmasın. */
+.planDayRow:not(.planDayRowCollapsed) .planDayField {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+/*
+ * KATLI satır boş satır kadar kısa olmalı: katlamanın bütün amacı
+ * yer açmak. Dikey dolgu boş gün şeridiyle aynı ölçüye iner.
+ */
+.planDayRowCollapsed .planDayField {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.planDayRowCollapsed .planDayGutter {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+/* Görsel boyut küçük, dokunma hedefi değil. */
+.planDayCollapse::before {
+  content: "";
+  position: absolute;
+  inset: -0.625rem -0.5rem;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .planDayCollapse:hover {
+    background: var(--color-surface-2);
+    color: var(--color-ink-2);
+  }
+}
+
+/* Bugünün ters çevrilmiş kanalıyla aynı satırda: ok da okunur kalmalı. */
+.planDayRowToday .planDayCollapse {
+  color: var(--color-ink-2);
 }
 
 /* ── Durumlar ─────────────────────────────────────────────────────── */

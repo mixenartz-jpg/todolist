@@ -1,5 +1,6 @@
 "use client";
 
+import { Chevron } from "@/components/Chevron";
 import { isoWeekday, toParts } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
@@ -58,6 +59,16 @@ interface PlanDayRowProps {
    * düğme klavye kullanıcısına anlamsız bir durak olurdu.
    */
   onOpenDay?: (date: DateStr) => void;
+  /**
+   * Gün katlanmış mı — görev listesi gizli, yalnızca özet görünür.
+   *
+   * Durum EKRANDA tutulur, burada değil: bir ay 42 satır çiziyor ve
+   * her satırın kendi `useState`'i olsaydı ay değiştirildiğinde
+   * hepsi sıfırlanırdı. Ayrıca "hepsini kapat" gibi bir eylem asla
+   * yazılamazdı.
+   */
+  collapsed: boolean;
+  onToggleCollapsed: (date: DateStr) => void;
   onPlace: (date: DateStr) => void;
   onAdd: (title: string, date: DateStr) => void;
   onToggle: (task: Task) => void;
@@ -80,6 +91,8 @@ export function PlanDayRow({
   placing,
   addPending,
   inScope,
+  collapsed,
+  onToggleCollapsed,
   onOpenDay,
   onPlace,
   onAdd,
@@ -115,6 +128,21 @@ export function PlanDayRow({
     .filter(Boolean)
     .join(", ");
 
+  /*
+   * Katlı satırın özeti.
+   *
+   * Kanaldaki sayaçla AYNI dili konuşur: ikisi de AÇIK işi sayar.
+   * `bucket.tasks.length` (toplam) kullanılsaydı, altı görevi de
+   * bitmiş bir gün kapalıyken "6 görev" derdi ve o günün bittiği
+   * görünmezdi — üstelik kanaldaki sayaç aynı satırda hiç
+   * görünmezken (sıfırda gizleniyor) iki sayı çelişirdi.
+   *
+   * Hepsi bittiğinde sayı değil DURUM söylenir: "6 görev" demek
+   * yapılacak iş varmış gibi okunurdu.
+   */
+  const summary =
+    bucket.openCount > 0 ? `${bucket.openCount} açık iş` : "tamamlandı";
+
   const gutterInner = (
     <>
       <span className="planDayNum tabular">{day}</span>
@@ -140,6 +168,9 @@ export function PlanDayRow({
         isWeekend && "planDayRowWeekend",
         !inScope && "planDayRowOutside",
         isEmpty && "planDayRowEmpty",
+        // `!isEmpty` şart: boş günde katlanacak bir şey yok ve
+        // `collapsed` bayrağı orada anlamsız kalır.
+        collapsed && !isEmpty && "planDayRowCollapsed",
         placing && "planDayRowTarget",
       )}
     >
@@ -165,18 +196,50 @@ export function PlanDayRow({
       )}
 
       <div className="planDayField">
-        <PlanTaskList
-          tasks={bucket.tasks}
-          today={today}
-          categoryById={categoryById}
-          className="planDayTasks"
-          onToggle={onToggle}
-          onDelete={onDelete}
-          onRename={onRename}
-          onSetTime={onSetTime}
-          onUnschedule={onUnschedule}
-          onReorder={onReorder}
-        />
+        {/*
+          Katlama oku — YALNIZCA görevi olan günde.
+          Boş bir günde katlanacak bir şey yok ve ok "burada gizli
+          bir şey var" diye yalan söylerdi.
+
+          Tarih kanalına konulamaz: orası zaten gün panelini açan bir
+          düğme ve aynı hedefe iki işlev bindirmek, hangisinin
+          olacağını tahmin edilemez kılardı.
+        */}
+        {!isEmpty && (
+          <button
+            type="button"
+            onClick={() => onToggleCollapsed(bucket.date)}
+            aria-expanded={!collapsed}
+            aria-label={
+              collapsed ? `${dayName}: ${summary} göster` : `${dayName}: görevleri gizle`
+            }
+            className="planDayCollapse"
+          >
+            <Chevron open={!collapsed} />
+            {/* Kapalıyken özet görünür: satır "boş" sanılmasın.
+                Açıkken gereksiz — görevler zaten ortada. */}
+            {collapsed && (
+              <span aria-hidden className="tabular">
+                {summary}
+              </span>
+            )}
+          </button>
+        )}
+
+        {!collapsed && (
+          <PlanTaskList
+            tasks={bucket.tasks}
+            today={today}
+            categoryById={categoryById}
+            className="planDayTasks"
+            onToggle={onToggle}
+            onDelete={onDelete}
+            onRename={onRename}
+            onSetTime={onSetTime}
+            onUnschedule={onUnschedule}
+            onReorder={onReorder}
+          />
+        )}
 
         {/*
           Yerleştirme modunda ekleme kutusu YERİNE geniş bırakma şeridi.
@@ -189,6 +252,9 @@ export function PlanDayRow({
           ekle" hedefi belirsizlik olurdu.
         */}
         {placing ? (
+          /* Yerleştirme hedefi KATLI günde de görünür: kapalı bir güne
+             iş atmak isteyebilirsin ve şeridi gizlemek o günü hedef
+             olmaktan çıkarırdı. */
           <button
             type="button"
             aria-label={`${dayName} gününe koy`}
@@ -198,11 +264,15 @@ export function PlanDayRow({
             <span aria-hidden>＋ {dayName} gününe koy</span>
           </button>
         ) : (
-          <TaskQuickAdd
-            dueDate={bucket.date}
-            pending={addPending}
-            onAdd={(title) => onAdd(title, bucket.date)}
-          />
+          /* Katlıyken ekleme kutusu da gizlenir — yoksa "kapalı" bir
+             gün yine 36px yer kaplar ve katlamanın anlamı kalmazdı. */
+          !collapsed && (
+            <TaskQuickAdd
+              dueDate={bucket.date}
+              pending={addPending}
+              onAdd={(title) => onAdd(title, bucket.date)}
+            />
+          )
         )}
       </div>
     </section>

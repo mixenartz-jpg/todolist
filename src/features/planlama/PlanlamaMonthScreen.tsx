@@ -20,6 +20,7 @@ import { PlanOverdue } from "./PlanOverdue";
 import { PlanSkeleton } from "./PlanSkeleton";
 import { usePlanlamaSurface } from "./usePlanlamaSurface";
 import { usePlanCategories } from "./usePlanCategories";
+import { useCollapsedDays } from "./useCollapsedDays";
 import { usePlanTaskActions } from "./usePlanTaskActions";
 import "./planlama.css";
 
@@ -40,6 +41,7 @@ export function PlanlamaMonthScreen() {
   const { today, anchor, category, setAnchor, setCategory } =
     usePlanlamaSurface("month");
   const actions = usePlanTaskActions(toast.show);
+  const { collapsedDays, toggleCollapsed } = useCollapsedDays(anchor);
 
   /** Havuzdan seçilen görev — ızgara yerleştirme moduna girer. */
   const [placingId, setPlacingId] = useState<string | null>(null);
@@ -154,6 +156,8 @@ export function PlanlamaMonthScreen() {
                 categoryById={categories.categoryById}
                 placing={placing}
                 addPending={actions.addPending}
+                collapsedDays={collapsedDays}
+                onToggleCollapsed={toggleCollapsed}
                 onPlace={handlePlace}
                 // Gün numarası yerleştirme modunda da paneli açar:
                 // yerleştirmenin kendi düğmesi var, aynı hedefin anlamı

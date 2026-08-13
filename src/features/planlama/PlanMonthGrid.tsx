@@ -53,6 +53,14 @@ interface PlanMonthGridProps {
   /** Havuzdan seçili görev varsa günler yerleştirme hedefi olur. */
   placing: boolean;
   addPending: boolean;
+  /**
+   * Katlanmış günler.
+   *
+   * Ekranda tutulur, satırda değil: 42 satırın her birinin kendi
+   * `useState`'i olsaydı ay değiştirildiğinde hepsi sıfırlanırdı.
+   */
+  collapsedDays: ReadonlySet<DateStr>;
+  onToggleCollapsed: (date: DateStr) => void;
   onPlace: (date: DateStr) => void;
   /** Gün panelini açar — plan metni, kategori ve hedef seçicileri orada. */
   onOpenDay: (date: DateStr) => void;
@@ -76,6 +84,8 @@ export function PlanMonthGrid({
   categoryById,
   placing,
   addPending,
+  collapsedDays,
+  onToggleCollapsed,
   onPlace,
   onOpenDay,
   onAdd,
@@ -111,6 +121,8 @@ export function PlanMonthGrid({
                 placing={placing}
                 addPending={addPending}
                 inScope={bucket.inScope}
+                collapsed={collapsedDays.has(bucket.date)}
+                onToggleCollapsed={onToggleCollapsed}
                 onOpenDay={onOpenDay}
                 onPlace={onPlace}
                 onAdd={onAdd}
