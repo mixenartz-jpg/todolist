@@ -67,7 +67,7 @@
 .heatmapCell {
   width: var(--cell);
   height: var(--cell);
-  border-radius: 2px;
+  border-radius: var(--r-xs);
 }
 
 /* Aralık dışı günler yer tutar ama görünmez — ızgara bozulmasın. */

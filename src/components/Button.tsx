@@ -14,15 +14,24 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANTS: Record<Variant, string> = {
-  // Doygun dolgu üzerinde beyaz metin — Helmholtz-Kohlrausch etkisi
-  // yüzünden koyu metin çamurlu okunur.
-  //
-  // Birincil eylem tek yükseltilmiş düğmedir: gölge + üst ışık.
-  // Kenarlığı YOK — kenarlık ve gölge aynı elemanda birleşmez.
+  /*
+   * Birincil eylem: BEYAZ dolgu, koyu metin.
+   *
+   * Vurgu artık kobalt değil mürekkebin kendisi (bkz. globals.css).
+   * Monokrom bir kabukta "en yüksek kontrast" en güçlü sinyaldir ve
+   * onu tek bir eleman taşımalı — bu yüzden sayfada tek bir birincil
+   * düğme olur.
+   *
+   * Odak halkası `--shadow-focus` ile geliyor (aşağıda): global
+   * `:focus-visible` outline'ı BEYAZ ve beyaz dolgunun üstünde
+   * tamamen kaybolurdu. İki katmanlı koyu-sonra-açık halka çözer.
+   *
+   * Kenarlığı YOK — kenarlık ve gölge aynı elemanda birleşmez.
+   */
   primary:
-    "bg-[var(--color-accent)] text-white shadow-[var(--shadow-raised),var(--sheen-top)] hover:bg-[#4a94ea] active:bg-[#2f76cf] active:shadow-none disabled:bg-[var(--color-accent-soft)] disabled:shadow-none",
+    "bg-[var(--color-accent)] text-[var(--color-on-accent)] shadow-[var(--shadow-raised),var(--sheen-top)] hover:bg-[var(--color-accent-hover)] active:bg-[var(--color-accent-active)] active:shadow-none disabled:bg-[var(--color-accent-soft)] disabled:text-[var(--color-ink-3)] disabled:shadow-none focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
   secondary:
-    "bg-[var(--color-surface-3)] text-[var(--color-ink)] hover:bg-[#242935] active:bg-[var(--color-surface-2)] border border-[var(--color-line-2)]",
+    "bg-[var(--color-surface-3)] text-[var(--color-ink)] hover:bg-[var(--color-line)] active:bg-[var(--color-surface-2)] border border-[var(--color-line-2)]",
   ghost:
     "text-[var(--color-ink-2)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)] active:bg-[var(--color-surface-3)]",
   danger:

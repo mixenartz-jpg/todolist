@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Screen, ScreenHeader, ScreenBody } from "@/components/Screen";
 import { Button } from "@/components/Button";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
@@ -93,19 +94,20 @@ export function RoutineList() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <header className="flex items-center border-b border-[var(--color-line)] px-4 py-3 md:px-5">
-        <h1 className="mr-auto text-[length:var(--text-xl)] font-semibold tracking-[-0.015em]">
-          Rutinler
-        </h1>
-        {!creating && (
-          <Button variant="primary" size="sm" onClick={() => setCreating(true)}>
-            Yeni rutin
-          </Button>
-        )}
-      </header>
+    <Screen>
+      <ScreenHeader
+        title="Rutinler"
+        width="2xl"
+        actions={
+          !creating ? (
+            <Button variant="primary" size="sm" onClick={() => setCreating(true)}>
+              Yeni rutin
+            </Button>
+          ) : undefined
+        }
+      />
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 md:px-5">
+      <ScreenBody width="2xl">
         {creating && (
           <div className="mb-5 rounded-xl border border-[var(--color-line-2)] bg-[var(--color-surface)] p-4">
             <h2 className="mb-4 text-[length:var(--text-lg)] font-medium">
@@ -216,7 +218,7 @@ export function RoutineList() {
             </ul>
           </section>
         )}
-      </div>
+      </ScreenBody>
 
       {pendingDelete && (
         <ConfirmDialog
@@ -249,7 +251,7 @@ export function RoutineList() {
         token={toast.token}
         onDismiss={toast.dismiss}
       />
-    </div>
+    </Screen>
   );
 }
 

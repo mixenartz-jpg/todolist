@@ -1,4 +1,5 @@
 "use client";
+import { ScreenBody } from "@/components/Screen";
 
 import { useEffect, useMemo, useState } from "react";
 import { eachDay, endOfIsoWeek } from "@/lib/date/date";
@@ -97,7 +98,7 @@ export function PlanlamaWeekScreen() {
         />
       </PlanlamaHeader>
 
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 py-5 md:px-6">
+      <ScreenBody width="6xl">
         {tasksQuery.isPending ? (
           <PlanSkeleton scale="week" />
         ) : (
@@ -109,17 +110,9 @@ export function PlanlamaWeekScreen() {
               onError={toast.show}
             />
 
+            {/* Kağıt ÖNCE, havuz sonra — ay ekranıyla aynı sıra.
+                Havuz ≥1280px'de sağda, altında üstte. */}
             <div className="planLayout">
-              <PlanBacklog
-                tasks={range.backlog}
-                categoryById={categories.categoryById}
-                selectedId={placingId}
-                addPending={actions.addPending}
-                onSelect={setPlacingId}
-                onAdd={actions.addBacklog}
-                onError={toast.show}
-              />
-
               <PlanWeekGrid
                 buckets={range.buckets}
                 today={today}
@@ -135,10 +128,20 @@ export function PlanlamaWeekScreen() {
                 onUnschedule={actions.onUnschedule}
                 onReorder={actions.onReorder}
               />
+
+              <PlanBacklog
+                tasks={range.backlog}
+                categoryById={categories.categoryById}
+                selectedId={placingId}
+                addPending={actions.addPending}
+                onSelect={setPlacingId}
+                onAdd={actions.addBacklog}
+                onError={toast.show}
+              />
             </div>
           </>
         )}
-      </div>
+      </ScreenBody>
 
       <Toast
         message={toast.message}

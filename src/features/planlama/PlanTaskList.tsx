@@ -28,14 +28,14 @@ interface PlanTaskListProps {
 }
 
 /**
- * Bir günün görev listesi — hafta sütununun ve ay kutusunun ortak içi.
+ * Bir günün görev listesi — ajanda kağıdındaki gün satırının içi.
  *
- * ── Neden ortak bir KUTU bileşeni değil de yalnızca liste? ──
- * Hafta sütunu içeriği kadar uzar, ay kutusu sabit boydadır ve içinde
- * kaydırılır; başlıkları da farklıdır (biri gün adını, diğeri plan
- * noktasını taşır). Kutuyu ortaklaştırmak `fixedHeight?`, `hasPlan?`,
- * `inScope?` gibi dört-beş boolean kaçış deliği demekti. Gerçekten
- * birebir aynı olan tek parça bu liste.
+ * ── Kutu artık ortak ──
+ * Eskiden hafta sütunu ve ay kutusu ayrı bileşenlerdi ve bu yorum
+ * "kutuyu ortaklaştırmak dört-beş boolean kaçış deliği demekti"
+ * diyordu. Doğruydu, ama ay kutusunun sabit boyu ve iç kaydırıcısı
+ * kalkınca iki kabın davranışı BİREBİR aynı oldu; ortak kap artık
+ * `PlanDayRow` ve kaçış deliği gerekmedi.
  *
  * ── Sıralama neden burada? ──
  * Gün içi sıra Bugün ekranıyla AYNI kuralı izler: önce saatliler saate
@@ -81,8 +81,13 @@ export function PlanTaskList({
              * "bu günü düzenliyorum" bağlamı kurulmuş.
              */
             marker={category && <CategoryDot category={category} size={7} />}
-            // Sütun ~150px: simgeler başlığın altına iner.
-            compact
+            /* `compact` ARTIK GEÇİLMİYOR: 150px'lik sütun kısıtı
+             * kalktı. Görev alanı en dar hâlinde bile ~280px ve
+             * simgeler başlığın yanında kalabiliyor.
+             *
+             * Prop `TaskItem`'dan KALDIRILMADI — `WeekDayColumn`
+             * (features/week) hâlâ dar sütunlar çiziyor ve ona
+             * ihtiyacı var. */
             onToggle={() => onToggle(task)}
             onDelete={() => onDelete(task)}
             onRename={(title) => onRename(task, title)}

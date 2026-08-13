@@ -1,3 +1,4 @@
+import { Screen, ScreenHeader, ScreenBody } from "@/components/Screen";
 import type { PlanScale } from "./range";
 import { PlanSkeleton } from "./PlanSkeleton";
 
@@ -14,20 +15,23 @@ import { PlanSkeleton } from "./PlanSkeleton";
  */
 export function PlanBoot({ scale }: { scale: PlanScale }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <header className="border-b border-[var(--color-line)] px-4 py-3 md:px-5">
-        {/* Başlığın yüksekliğini tutan boş şerit — yazı yok, çünkü
-            hangi ay/hafta olduğu henüz bilinmiyor ve yanlış bir metin
-            göstermektense yer tutmak doğru. */}
-        <div
-          className="h-7 w-40 animate-pulse rounded-md bg-[var(--color-surface-2)]"
-          aria-hidden
-        />
-      </header>
+    <Screen>
+      {/* Başlığın yüksekliğini tutan boş şerit — yazı yok, çünkü hangi
+          ay/hafta olduğu henüz bilinmiyor ve yanlış bir metin
+          göstermektense yer tutmak doğru. */}
+      <ScreenHeader
+        width="6xl"
+        title={
+          <span
+            className="block h-7 w-40 animate-pulse rounded-md bg-[var(--color-surface-2)]"
+            aria-hidden
+          />
+        }
+      />
 
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 py-5 md:px-6">
+      <ScreenBody width="6xl">
         <PlanSkeleton scale={scale} />
-      </div>
-    </div>
+      </ScreenBody>
+    </Screen>
   );
 }

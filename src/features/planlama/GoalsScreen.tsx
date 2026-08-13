@@ -1,4 +1,5 @@
 "use client";
+import { ScreenBody } from "@/components/Screen";
 
 import { useMemo, useState } from "react";
 import { Button } from "@/components/Button";
@@ -75,7 +76,7 @@ export function GoalsScreen() {
         onAnchorChange={setAnchor}
       />
 
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-4 py-5 md:px-6">
+      <ScreenBody width="2xl">
         <SectionHeading
           sectionKey="planlama.goals"
           onError={toast.show}
@@ -166,7 +167,7 @@ export function GoalsScreen() {
             )}
           </>
         )}
-      </div>
+      </ScreenBody>
 
       <Toast
         message={toast.message}

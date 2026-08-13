@@ -461,7 +461,7 @@ function TimeEditor({
         value={task.startTime ?? ""}
         aria-label="Başlangıç saati"
         onChange={(e) => onSet(e.target.value || null, task.durationMinutes)}
-        className="tabular h-8 rounded-md border border-[var(--color-line-2)] bg-[var(--color-surface-2)] px-2 text-[length:var(--text-sm)] outline-none focus:border-[var(--color-accent)]"
+        className="tabular h-8 rounded-md border border-[var(--color-line-2)] bg-[var(--color-surface-2)] px-2 text-[length:var(--text-sm)] outline-none focus:border-[var(--color-line-3)]"
       />
 
       {task.startTime &&

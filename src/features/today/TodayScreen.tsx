@@ -1,4 +1,5 @@
 "use client";
+import { ScreenBody } from "@/components/Screen";
 
 import { useMemo, useState } from "react";
 import { addDays, todayStr } from "@/lib/date/date";
@@ -117,7 +118,7 @@ export function TodayScreen() {
         hasWork={score.possible > 0}
       />
 
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-7 px-4 py-5 md:px-6">
+      <ScreenBody width="2xl">
         {isLoading ? (
           <TodaySkeleton />
         ) : (
@@ -271,7 +272,7 @@ export function TodayScreen() {
             </section>
           </>
         )}
-      </div>
+      </ScreenBody>
 
       <Toast
         message={toast.message}

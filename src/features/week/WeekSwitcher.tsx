@@ -1,5 +1,6 @@
 "use client";
 
+import { ScreenHeader } from "@/components/Screen";
 import { Button } from "@/components/Button";
 import { addDays } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
@@ -26,18 +27,16 @@ export function WeekSwitcher({
   isCurrentWeek,
 }: WeekSwitcherProps) {
   return (
-    <header className="flex items-center gap-2 border-b border-[var(--color-line)] px-4 py-3 md:px-5">
-      <h1 className="mr-auto text-[length:var(--text-xl)] font-semibold tracking-[-0.015em]">
-        {formatWeekRange(weekStart, addDays(weekStart, 6))}
-      </h1>
-
-      {!isCurrentWeek && (
-        <Button size="sm" variant="ghost" onClick={onThisWeek}>
-          Bu hafta
-        </Button>
-      )}
-
-      <div className="flex items-center gap-1">
+    <ScreenHeader
+      title={formatWeekRange(weekStart, addDays(weekStart, 6))}
+      actions={
+        <>
+          {!isCurrentWeek && (
+            <Button size="sm" variant="ghost" onClick={onThisWeek}>
+              Bu hafta
+            </Button>
+          )}
+          <div className="flex items-center gap-1">
         <Button
           size="sm"
           variant="ghost"
@@ -56,8 +55,10 @@ export function WeekSwitcher({
         >
           <Chevron direction="right" />
         </Button>
-      </div>
-    </header>
+          </div>
+        </>
+      }
+    />
   );
 }
 

@@ -47,7 +47,7 @@ export function EmptyState({
       {actionLabel && actionHref && (
         <Link
           href={actionHref}
-          className="mt-5 inline-flex h-10 items-center rounded-lg bg-[var(--color-accent)] px-4 font-medium text-white shadow-[var(--shadow-raised),var(--sheen-top)] transition-[background-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out-expo)] hover:bg-[#4a94ea] active:scale-[0.97]"
+          className="mt-5 inline-flex h-10 items-center rounded-lg bg-[var(--color-accent)] px-4 font-medium text-[var(--color-on-accent)] transition-[background-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out-expo)] hover:bg-[var(--color-accent-hover)] active:scale-[0.97]"
         >
           {actionLabel}
         </Link>

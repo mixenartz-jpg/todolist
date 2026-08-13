@@ -1,4 +1,5 @@
 "use client";
+import { ScreenBody } from "@/components/Screen";
 
 import { useMemo, useState } from "react";
 import { startOfIsoWeek, todayStr } from "@/lib/date/date";
@@ -66,7 +67,7 @@ export function WeekScreen() {
         isCurrentWeek={weekStart === startOfIsoWeek(today)}
       />
 
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 py-5 md:px-6">
+      <ScreenBody width="6xl">
         {tasksQuery.isPending ? (
           <WeekSkeleton />
         ) : (
@@ -135,7 +136,7 @@ export function WeekScreen() {
             />
           </>
         )}
-      </div>
+      </ScreenBody>
 
       <Toast
         message={toast.message}

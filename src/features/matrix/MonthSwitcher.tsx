@@ -1,5 +1,6 @@
 "use client";
 
+import { ScreenHeader } from "@/components/Screen";
 import { Button } from "@/components/Button";
 import { formatMonthYear } from "@/lib/ui/tr";
 
@@ -19,18 +20,16 @@ export function MonthSwitcher({
   isCurrentMonth,
 }: MonthSwitcherProps) {
   return (
-    <header className="flex items-center gap-2 border-b border-[var(--color-line)] px-4 py-3 md:px-5">
-      <h1 className="mr-auto text-[length:var(--text-xl)] font-semibold tracking-[-0.015em]">
-        {formatMonthYear(year, month)}
-      </h1>
-
-      {!isCurrentMonth && (
-        <Button size="sm" variant="ghost" onClick={onToday}>
-          Bugün
-        </Button>
-      )}
-
-      <div className="flex items-center gap-1">
+    <ScreenHeader
+      title={formatMonthYear(year, month)}
+      actions={
+        <>
+          {!isCurrentMonth && (
+            <Button size="sm" variant="ghost" onClick={onToday}>
+              Bugün
+            </Button>
+          )}
+          <div className="flex items-center gap-1">
         <Button
           size="sm"
           variant="ghost"
@@ -49,8 +48,10 @@ export function MonthSwitcher({
         >
           <Chevron direction="right" />
         </Button>
-      </div>
-    </header>
+          </div>
+        </>
+      }
+    />
   );
 }
 

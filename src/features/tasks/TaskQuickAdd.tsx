@@ -52,7 +52,7 @@ export function TaskQuickAdd({ dueDate, pending = false, onAdd }: TaskQuickAddPr
           onChange={(e) => setTitle(e.target.value)}
           maxLength={200}
           placeholder={dueDate ? "Görev ekle" : "Tarihsiz görev ekle"}
-          className="h-11 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] pl-9 pr-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-accent)]"
+          className="h-11 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] pl-9 pr-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-line-3)]"
         />
       </div>
 
@@ -60,7 +60,7 @@ export function TaskQuickAdd({ dueDate, pending = false, onAdd }: TaskQuickAddPr
         <button
           type="submit"
           disabled={pending}
-          className="h-11 shrink-0 rounded-xl bg-[var(--color-accent)] px-4 font-medium text-white transition-colors duration-[var(--duration-fast)] hover:bg-[#4a94ea] disabled:opacity-50"
+          className="h-11 shrink-0 rounded-xl bg-[var(--color-accent)] px-4 font-medium text-[var(--color-on-accent)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
         >
           Ekle
         </button>

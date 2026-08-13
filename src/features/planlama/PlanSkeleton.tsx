@@ -1,46 +1,51 @@
 import type { PlanScale } from "./range";
 import "./planlama.css";
 
-/** Ay iskeletinin hafta satırı sayısı — beş hafta tipik bir aydır. */
+/** Ay iskeletinin hafta bölümü sayısı — beş hafta tipik bir aydır. */
 const MONTH_WEEKS = 5;
 
 /**
- * Izgaranın yüklenme iskeleti.
+ * Ajanda kağıdının yüklenme iskeleti.
  *
- * Ay dalı gerçek yerleşimi taklit eder: hafta satırları ve masaüstünde
- * 20rem kutular (`.planMonthDay` ile aynı boy). Kare hücreler
- * çizseydi veri gelince gözle görülür bir yeniden akış olurdu.
+ * Gerçek yerleşimi taklit eder: aynı kağıt, aynı tarih kanalı, aynı
+ * satır yüksekliği. Başka bir şekil çizseydi veri gelince gözle
+ * görülür bir yeniden akış olurdu.
  *
- * Mobilde kutu boyu SABİT DEĞİL, içerik kadar uzuyor — iskeletin
- * oradaki boyu bir tahmindir. Boş bir günün gerçek yüksekliğini
- * (başlık + hızlı ekleme) seçmek, en yaygın durumda sıçramayı sıfıra
- * indirir; dolu günlerde biraz açılmak kaçınılmaz.
+ * ── Satır yüksekliği neden boş günün boyu? ──
+ * Ayın ~%60'ı boş; en yaygın durumu seçmek sıçramayı çoğunlukta sıfıra
+ * indirir. Dolu günlerde biraz açılmak kaçınılmaz ve doğru olan da bu:
+ * iskelet bir söz verir, gerçeğinden büyük olmamalı.
  */
 export function PlanSkeleton({ scale }: { scale: PlanScale }) {
-  if (scale === "week") {
-    return (
-      <div className="planWeekGrid" aria-hidden>
-        {Array.from({ length: 7 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-32 animate-pulse rounded-xl bg-[var(--color-surface-2)]"
-            style={{ animationDelay: `${i * 30}ms` }}
-          />
-        ))}
-      </div>
-    );
-  }
+  const weeks = scale === "week" ? 1 : MONTH_WEEKS;
 
   return (
-    <div className="planMonthWeeks" aria-hidden>
-      {Array.from({ length: MONTH_WEEKS }).map((_, week) => (
-        <div key={week} className="planMonthWeek">
-          {Array.from({ length: 7 }).map((_, day) => (
-            <div
-              key={day}
-              className="h-24 animate-pulse rounded-xl bg-[var(--color-surface-2)] md:h-80"
-              style={{ animationDelay: `${(week * 7 + day) * 20}ms` }}
+    <div className="planSheet" aria-hidden>
+      {Array.from({ length: weeks }).map((_, week) => (
+        <div key={week} className="planWeekSection">
+          <div className="planWeekLabel">
+            <span
+              className="block h-3 w-28 animate-pulse rounded-[var(--r-xs)] bg-[var(--color-surface-3)]"
+              style={{ animationDelay: `${week * 40}ms` }}
             />
+          </div>
+
+          {Array.from({ length: 7 }).map((_, day) => (
+            <div key={day} className="planDayRow">
+              <div className="planDayGutter">
+                <span
+                  className="block h-4 w-5 animate-pulse rounded-[var(--r-xs)] bg-[var(--color-surface-3)]"
+                  style={{ animationDelay: `${(week * 7 + day) * 25}ms` }}
+                />
+              </div>
+
+              <div className="planDayField">
+                <span
+                  className="block h-9 w-full animate-pulse rounded-[var(--r-lg)] bg-[var(--color-surface-2)]"
+                  style={{ animationDelay: `${(week * 7 + day) * 25}ms` }}
+                />
+              </div>
+            </div>
           ))}
         </div>
       ))}

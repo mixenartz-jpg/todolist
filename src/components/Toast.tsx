@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/ui/cn";
 import "./toast.css";
+import "./glass.css";
 
 export type ToastVariant = "error" | "info";
 
@@ -75,15 +76,19 @@ export function Toast({
       aria-live={isError ? "assertive" : "polite"}
       className={cn(
         "toast",
+        // `glassChrome`: bildirim sayfanın üstünde yüzer ve altından
+        // içerik akar — malzemenin doğru kullanımı. Zemin, blur ve
+        // geri düşüşler glass.css'ten gelir.
+        "glassChrome",
         "fixed inset-x-4 bottom-20 z-[var(--z-toast)] mx-auto flex max-w-sm items-start gap-3",
-        "rounded-lg bg-[var(--color-surface-2)] px-4 py-3 md:bottom-6",
-        "shadow-[var(--shadow-overlay),var(--sheen-top)]",
+        "rounded-xl px-4 py-3 md:bottom-6",
+        "shadow-[var(--shadow-overlay)]",
         // Kenarlık yerine `ring`: Tailwind ring'i gölgeyle aynı
         // `box-shadow` bileşiminde ayrı bir değişkende taşır, ikisi
         // birbirini ezmez. Yan şerit YOK — çevreyi saran ince hat.
         isError
           ? "ring-1 ring-[color-mix(in_oklch,var(--color-danger)_38%,transparent)]"
-          : "ring-1 ring-[var(--color-line-2)]",
+          : "ring-1 ring-[var(--glass-line-strong)]",
       )}
     >
       <span

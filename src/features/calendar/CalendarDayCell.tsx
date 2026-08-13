@@ -70,7 +70,9 @@ export const CalendarDayCell = memo(function CalendarDayCell({
           style={{
             background: levelVar(level),
             // Açık uçlarda koyu metin, koyu uçlarda açık metin.
-            color: level >= 3 ? "#0b0d11" : "var(--color-ink-2)",
+            // `--color-on-accent` = "açık dolgu üstündeki mürekkep".
+            color:
+              level >= 3 ? "var(--color-on-accent)" : "var(--color-ink-2)",
           }}
           aria-hidden
         >

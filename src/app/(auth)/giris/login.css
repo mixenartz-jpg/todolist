@@ -57,7 +57,7 @@
   position: absolute;
   width: 33px;
   height: 33px;
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 }
 
 @media (prefers-reduced-transparency: reduce) {

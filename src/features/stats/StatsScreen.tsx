@@ -5,6 +5,7 @@ import { minDate, todayStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { formatPercent } from "@/lib/ui/tr";
+import { Screen, ScreenHeader, ScreenBody } from "@/components/Screen";
 import { EmptyState } from "@/components/EmptyState";
 import { ChartIcon } from "@/components/icons";
 import { EMPTY_ENTRIES, useEntries } from "@/features/entries/queries";
@@ -90,12 +91,8 @@ export function StatsScreen() {
 
   if (!isLoading && (allRoutines ?? []).length === 0) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col">
-        <header className="border-b border-[var(--color-line)] px-4 py-3 md:px-5">
-          <h1 className="text-[length:var(--text-xl)] font-semibold tracking-[-0.015em]">
-            İstatistik
-          </h1>
-        </header>
+      <Screen>
+        <ScreenHeader title="İstatistik" width="3xl" />
         <EmptyState
           icon={<ChartIcon size={22} />}
           title="Henüz veri yok"
@@ -103,19 +100,15 @@ export function StatsScreen() {
           actionLabel="Rutin ekle"
           actionHref="/rutinler"
         />
-      </div>
+      </Screen>
     );
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <header className="border-b border-[var(--color-line)] px-4 py-3 md:px-5">
-        <h1 className="text-[length:var(--text-xl)] font-semibold tracking-[-0.015em]">
-          İstatistik
-        </h1>
-      </header>
+    <Screen>
+      <ScreenHeader title="İstatistik" width="3xl" />
 
-      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 py-4 md:px-6 md:py-5">
+      <ScreenBody width="3xl">
         {/* Tek filtre satırı, kapsadığı her şeyin üstünde. Grafik
             başına ayrı filtre, kartların farklı dönemleri göstermesine
             ve karşılaştırmanın anlamsızlaşmasına yol açar. */}
@@ -155,8 +148,8 @@ export function StatsScreen() {
             <RoutineBreakdown summaries={summaries} today={today} />
           </>
         )}
-      </div>
-    </div>
+      </ScreenBody>
+    </Screen>
   );
 }
 

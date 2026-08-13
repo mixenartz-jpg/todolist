@@ -58,7 +58,7 @@ export function RoutineForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Sabah sporu"
-          className="h-10 rounded-lg border border-[var(--color-line-2)] bg-[var(--color-surface)] px-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-accent)]"
+          className="h-10 rounded-lg border border-[var(--color-line-2)] bg-[var(--color-surface)] px-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-line-3)]"
         />
       </label>
 

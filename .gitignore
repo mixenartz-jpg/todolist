@@ -13,6 +13,12 @@
 # testing
 /coverage
 
+# playwright — oturum çerezi ve görsel çekimler repoya girmez
+/e2e/.auth/
+/e2e/__shots__/
+/test-results/
+/playwright-report/
+
 # next.js
 /.next/
 /out/

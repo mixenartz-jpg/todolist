@@ -1,0 +1,137 @@
+/*
+ * Cam malzeme — YALNIZCA altından içerik akan yüzen kabuk için.
+ *
+ * ── Nerede kullanılır ──
+ *   masaüstü gezinme şeridi · mobil sekme çubuğu · yapışkan ekran
+ *   başlığı · sheet · dialog · toast
+ *
+ * ── Nerede ASLA kullanılmaz ──
+ *   İçerik kartları. Kart opaktır ve kenarlıkla ayrılır. Her yüzeye
+ *   blur atmak "premium" değil SİSLİ yapar; malzemenin anlamı
+ *   "bunun altından bir şey akıyor"dur ve akmayan yerde yalandır.
+ *
+ *   ÖZEL İSTİSNA — `.matrixScroll` içi. `matrix.css` yapışkan
+ *   isim/başlık/köşe hücrelerinin OPAK olmasını şart koşuyor: saydam
+ *   olsalar altlarından hücreler geçerdi (iOS'ta en kötüsü). Matris
+ *   ızgarasının hiçbir parçasına cam sınıfı verilmez.
+ *
+ * ── Neden React bileşeni değil de sınıf kümesi? ──
+ * `<Glass>` sarmalayıcısı `position: fixed` ve `<dialog>` zincirlerinin
+ * içine kutu modeli yük taşıyan fazladan bir düğüm eklerdi. Sınıf
+ * kümesi doğru şekil ve geri düşüşlerin hepsini tek yere koyuyor.
+ */
+
+.glassChrome,
+.glassPanel {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+
+  /*
+   * Tek seferlik katman terfisi.
+   *
+   * `will-change: backdrop-filter` DEĞİL: kalıcı bellek maliyeti var
+   * ve buradaki kazancı yok — bu elemanlar zaten sürekli composited
+   * kalıyor. `translateZ(0)` terfiyi bir kez yapar ve biter.
+   */
+  transform: translateZ(0);
+}
+
+/*
+ * Yönlü gölge: ışık yukarıdan gelir.
+ *
+ * Alt sekme çubuğunda simetrik gölge, kabuk gibi değil yüzen bir hap
+ * gibi okunur. Kıl çizgi `--color-line` DEĞİL alfa-beyaz: saydam
+ * yüzeye atılan KATI çizgi "malzemeye sürülmüş boya" gibi durur ve
+ * illüzyonu öldürür.
+ */
+.glassChrome--top {
+  border-bottom: 1px solid var(--glass-line);
+  box-shadow: var(--glass-shadow-down), var(--glass-sheen);
+}
+
+.glassChrome--bottom {
+  border-top: 1px solid var(--glass-line);
+  box-shadow: var(--glass-shadow-up);
+}
+
+.glassChrome--side {
+  border-right: 1px solid var(--glass-line);
+}
+
+/*
+ * Panel: sheet, dialog. Daha büyük yüzey → daha güçlü blur, daha
+ * opak zemin. Blur yarıçapı yüzeyin KENDİ boyutuyla ölçeklenmeli;
+ * 20px'lik çekirdek tam genişlik bir panelin arkasındaki sayfayı
+ * sakinleştirmeye yetmez.
+ */
+.glassPanel {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur-strong);
+  backdrop-filter: var(--glass-blur-strong);
+  border: 1px solid var(--glass-line-strong);
+  box-shadow: var(--shadow-modal), var(--glass-sheen);
+}
+
+/* Karartma perdesi — `<dialog>::backdrop` için. */
+.glassScrim {
+  background: var(--glass-scrim);
+  -webkit-backdrop-filter: var(--glass-scrim-blur);
+  backdrop-filter: var(--glass-scrim-blur);
+}
+
+/*
+ * ── TEK GERİ DÜŞÜŞ NOKTASI ──
+ *
+ * Desteklemeyen tarayıcıda saydam zemin okunamaz bir şerit bırakırdı;
+ * opak yüzeye düşer. `-webkit-` öneki de sorgulanır: iOS Safari uzun
+ * süre yalnızca önekli sürümü destekledi.
+ */
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  .glassChrome,
+  .glassPanel {
+    background: var(--color-surface);
+  }
+
+  .glassScrim {
+    background: oklch(0 0 0 / 0.78);
+  }
+}
+
+/*
+ * Saydamlık kısıtlaması opsiyonel değildir.
+ *
+ * `login.css` bu tercihi zaten gözetiyor; burası o emsali genişletiyor,
+ * yeni bir şey icat etmiyor. Hareket kısıtlamasından AYRI bir tercih:
+ * kullanıcı hareketi değil saydamlığı kapatmış olabilir.
+ */
+@media (prefers-reduced-transparency: reduce) {
+  .glassChrome,
+  .glassPanel {
+    background: var(--color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .glassScrim {
+    background: oklch(0 0 0 / 0.78);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/*
+ * Yüksek kontrast tercihi: malzeme tamamen katılaşır ve tanımlı bir
+ * kenarlık alır. Saydamlık kontrastı doğası gereği düşürür.
+ */
+@media (prefers-contrast: more) {
+  .glassChrome,
+  .glassPanel {
+    background: var(--color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: var(--color-line-3);
+  }
+}

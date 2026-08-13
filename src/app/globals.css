@@ -4,51 +4,244 @@
  * Koyu, veri-yoğun ürün arayüzü. Uygulama yalnızca koyu temadır —
  * `dark:` varyantı hiç kullanılmaz, koyu değerler doğrudan varsayılandır.
  *
+ * ── TOKEN SAHİPLİĞİ (bu dosyanın en önemli kuralı) ──
+ *
+ * HAM DEĞERLERİN TAMAMI `:root`'ta. `@theme` YALNIZCA Tailwind
+ * yardımcı sınıfı üretmesi gereken token'lar için takma ad tutar.
+ *
+ * Gerekçe: Tailwind v4 `@theme` değişkenlerini tree-shake eder — bir
+ * değişken hiçbir sınıf adında geçmiyorsa CSS çıktısına HİÇ yazılmaz.
+ * `bg-[var(--color-surface)]` bir sınıf adı sayıldığı için yüzey
+ * renkleri bugüne kadar ayakta kaldı; bu tasarım değil ŞANS. Yalnızca
+ * el yazımı CSS'ten (`glass.css`, `matrix.css`) ya da inline `style`
+ * içinden okunan bir token `@theme`'de olsaydı sessizce boş kalır ve
+ * hiçbir derleme hatası vermezdi. Sahipliği ters çevirmek bu hata
+ * modunu yapısal olarak imkânsız kılar.
+ *
+ * ── YÜZEY DOKTRİNİ ──
+ *
+ * Opak yüzey kenarlık VEYA gölge kullanır, ikisini birden değil.
+ * Cam kabuk kıl çizgi VE gölge kullanır — çünkü oradaki kıl çizgi bir
+ * MALZEME KENARIDIR (maddenin parçası), çizilmiş bir sınır değil.
+ * Cam bu kuralın tek istisnasıdır.
+ *
+ * Zemin #080808'e indiği için siyah gölge tek başına neredeyse
+ * görünmez: içerik kartı ayrımını KENARLIKLA bildirir, gölge yüzen
+ * kabuğun hakkıdır (orada zeminden değil, altından akan içerikten
+ * ayırır).
+ *
  * Rutin kimlik renkleri ve yoğunluk rampası `dataviz` validator'ından
- * geçirilmiştir (yüzey #111318): renk körlüğü ayrımı, normal görüş
- * ayrımı, açıklık bandı ve kontrast kontrollerinin tamamı PASS.
+ * geçirilmiştir; gerekçe ve doğrulama aşağıda, kapısı
+ * `src/lib/ui/colors.contrast.test.ts`.
  */
 
 @theme {
-  /* ── Yüzeyler ───────────────────────────────────────────────── */
-  --color-bg: #0b0d11;
-  --color-surface: #111318;
-  --color-surface-2: #161920;
-  --color-surface-3: #1c2028;
-
-  /* ── Mürekkep ───────────────────────────────────────────────── */
-  --color-ink: #f2f4f8;
-  --color-ink-2: #a8b0bf;
-  --color-ink-3: #6b7385;
-
-  /* ── Çizgiler ───────────────────────────────────────────────── */
-  --color-line: #232833;
-  --color-line-2: #2e3440;
-
-  /* ── Vurgu (marka: kobalt) ──────────────────────────────────── */
-  --color-accent: #3987e5;
-  --color-accent-soft: #1d3f6b;
-
-  /* ── Durum ──────────────────────────────────────────────────── */
-  --color-good: #0ca30c;
-  --color-warn: #fab219;
-  --color-danger: #e66767;
-
-  /* ── Tipografi: tek aile, sabit rem ölçeği (fluid değil) ─────── */
+  /*
+   * Tipografi ailesi.
+   *
+   * `font-sans` yardımcı sınıfı bugün hiçbir yerde kullanılmıyor
+   * (gövde `@layer base`'de doğrudan `var(--font-sans)` okuyor), ama
+   * burada duruyor: Tailwind'in KENDİ `--font-sans` varsayılanını
+   * ezmesi gerekiyor, yoksa ileride yazılacak bir `font-sans` sınıfı
+   * sessizce yanlış aileye düşerdi.
+   */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", sans-serif;
 
-  --text-2xs: 0.6875rem;
-  --text-xs: 0.75rem;
-  --text-sm: 0.8125rem;
-  --text-base: 0.875rem;
-  --text-lg: 1rem;
-  --text-xl: 1.125rem;
-  --text-2xl: 1.375rem;
-  --text-3xl: 1.75rem;
-  --text-4xl: 2rem;
+  /*
+   * Yarıçap ölçeği Tailwind'in varsayılanını EZER.
+   *
+   * `rounded-md` (40×), `rounded-lg` (41×), `rounded-xl` (37×)
+   * uygulamada 118 yerde geçiyor; hepsi bu beş satırdan yönetilir ve
+   * tek bir bileşen düzenlemesi gerekmez. Değerler `:root`'taki
+   * `--r-*`'den gelir ki el yazımı CSS de aynı ölçeği okuyabilsin.
+   */
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-2xl: var(--r-2xl);
+}
 
-  /* ── Hareket: durum bildirir, dekore etmez ──────────────────── */
+:root {
+  /* ══ Yüzeyler — nötr siyah rampa (chroma 0) ═══════════════════════
+   * Eski palet mavimsi kroma taşıyordu (#0b0d11, #111318) ve sonuç
+   * nötr değil "kirli koyu mavi"ydi. `oklch(L 0 0)` kromanın SIFIR
+   * olduğunu yapısal olarak söyler — "gri gibi duran bir hex" değil. */
+  --color-bg: oklch(0.135 0 0); /* ≈ #080808 */
+  --color-surface: oklch(0.175 0 0); /* ≈ #101010 */
+  --color-surface-2: oklch(0.215 0 0); /* ≈ #191919 */
+  --color-surface-3: oklch(0.25 0 0); /* ≈ #212121 */
+
+  /* ══ Mürekkep ════════════════════════════════════════════════════ */
+  --color-ink: oklch(0.965 0 0); /* 18.0:1 / bg */
+  --color-ink-2: oklch(0.78 0 0); /* 11.2:1 / bg */
+  /* KURAL: `ink-3` surface-3 ÜZERİNDE metin için kullanılmaz (4.19:1,
+   * AA'nın altında). bg ve surface üzerinde geçerlidir. */
+  --color-ink-3: oklch(0.605 0 0); /* 5.2:1 / bg */
+  /* ASLA metin değil: eksen çizgisi, sönük ikon, ayraç. */
+  --color-ink-4: oklch(0.46 0 0); /* 2.8:1 */
+
+  /* ══ Çizgiler ════════════════════════════════════════════════════ */
+  --color-line: oklch(0.285 0 0); /* varsayılan kart kenarı */
+  --color-line-2: oklch(0.335 0 0); /* girdi, ayrım */
+  --color-line-3: oklch(0.42 0 0); /* hover / seçili kenar */
+
+  /* ══ Vurgu: artık kobalt DEĞİL, mürekkebin kendisi ════════════════
+   * Kabuk monokrom; renk yalnızca VERİYİ ayırt ettiği yerde yaşar.
+   * İsim korunuyor çünkü anlamı korunuyor: "bu, öne çıkan". */
+  --color-accent: var(--color-ink);
+  --color-accent-hover: oklch(0.9 0 0);
+  --color-accent-active: oklch(0.83 0 0);
+  --color-accent-soft: oklch(0.3 0 0); /* devre dışı dolgu */
+  --color-on-accent: oklch(0.14 0 0); /* beyaz dolgu üstündeki metin */
+
+  /* ══ Odak — accent'ten AYRI bir token ═════════════════════════════
+   * accent artık beyaz; beyaz dolgulu birincil düğmede beyaz halka
+   * tamamen kaybolurdu. Ayrı token + iki katmanlı (koyu-sonra-açık)
+   * halka bunu çözer. `--color-focus` ASLA accent'e takma ad yapılmaz. */
+  --color-focus: oklch(0.99 0 0);
+  --shadow-focus: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-focus);
+
+  /* ══ Durum ═══════════════════════════════════════════════════════
+   * `danger` eskiden slot-7 (#e66767) ile neredeyse aynıydı. Tek
+   * renkli bir kabukta kırmızının tek anlamı "hata" olmalı: danger
+   * daha sıcak ve daha parlak bir kırmızıya çekildi, slot-7 dokunulmadı.
+   *
+   * `good` yalnızca VERİ içindir (grafik, oran). "Başarılı" geri
+   * bildirimi mürekkeple verilir — yeşil onay rozeti kabuğu renklendirir. */
+  --color-danger: oklch(0.7 0.19 25);
+  --color-warn: oklch(0.82 0.155 82);
+  --color-good: oklch(0.72 0.17 148);
+
+  /* ══ Yarıçap ═════════════════════════════════════════════════════ */
+  --r-xs: 4px; /* ısı haritası hücresi, çip */
+  --r-sm: 6px; /* matris işareti, küçük rozet */
+  --r-md: 8px; /* küçük düğme */
+  --r-lg: 10px; /* düğme, girdi, nav öğesi */
+  --r-xl: 14px; /* kart */
+  --r-2xl: 18px; /* sheet, dialog, büyük panel */
+
+  /* ══ Tipografi: tek aile, sabit rem ölçeği (fluid değil) ══════════
+   * `2xs` BİLEREK büyümüyor: sabit 68px'lik mobil sekmeyi ("İstat.")
+   * ve ısı haritası ay etiketlerini besliyor. Yoğun ızgaralar dar
+   * metriğini korur — revizyonun kuralı bu. */
+  --text-2xs: 0.6875rem; /* 11px — DEĞİŞMEDİ */
+  --text-xs: 0.8125rem; /* 12 → 13 */
+  --text-sm: 0.875rem; /* 13 → 14 */
+  --text-base: 0.9375rem; /* 14 → 15 */
+  --text-lg: 1.0625rem; /* 16 → 17 */
+  --text-xl: 1.25rem; /* 18 → 20 */
+  --text-2xl: 1.5rem; /* 22 → 24 */
+  --text-3xl: 1.875rem; /* 28 → 30 */
+  --text-4xl: 2.25rem; /* 32 → 36 */
+
+  /* ══ Satır yüksekliği ════════════════════════════════════════════
+   * Kod `text-[length:var(--text-sm)]` biçimini kullanıyor ve bu biçim
+   * Tailwind'in eşlik eden line-height'ını GETİRMEZ — bugüne kadar her
+   * şey body'den tek bir dar değeri miras alıyordu. Boğukluğun yarısı
+   * buradan geliyordu. */
+  --leading-tight: 1.2; /* başlık */
+  --leading-snug: 1.35; /* yoğun satır, tablo */
+  --leading-normal: 1.55; /* gövde */
+  --leading-relaxed: 1.7; /* not gövdesi, uzun açıklama */
+
+  /* ══ Yerleşim: "nefes alma" tek yerden ═══════════════════════════
+   * 19 ekran aynı başlık ve gövde ölçüsünü tekrarlıyordu. Buraya
+   * toplanınca ferahlama 17 düzenleme değil tek satır oldu. */
+  --screen-px: 1rem;
+  --screen-py: 1.75rem; /* 20 → 28 */
+  --header-px: 1rem;
+  --header-py: 1.25rem; /* 12 → 20 */
+  /*
+   * Yapışkan ekran başlığının yüksekliği — İLK BOYAMA İÇİN YEDEK.
+   *
+   * Gerçek değeri `ScreenHeader` bir `ResizeObserver` ile ölçüp
+   * `documentElement`'e yazar (bkz. Screen.tsx): başlık `subtitle` ve
+   * filtre çubuğu taşıyabildiği için yükseklik ekrandan ekrana
+   * değişiyor ve sabit bir sayı yanlış olurdu.
+   *
+   * Buradaki değer yalnızca ölçüm gelene kadarki tek kare için
+   * geçerli. İÇERİDEKİ yapışkan elemanlar (Planlama'nın hafta
+   * başlığı) bu kadar aşağıdan tutunur; `top: 0` verselerdi ekran
+   * başlığıyla çakışırlardı.
+   */
+  --header-h: calc(1.5rem + 2 * var(--header-py) + 1px);
+  --stack-gap: 1.75rem; /* 20 → 28 */
+  --stack-gap-sm: 1rem;
+  --card-p: 1.25rem; /* 16 → 20 */
+  --card-p-sm: 0.875rem;
+  --row-gap: 0.625rem;
+
+  /* ══ Planlama — ajanda kağıdı ölçüleri ═══════════════════════════
+   * Ay ve hafta ölçeği 7 dar sütun yerine geniş yatay gün satırlarına
+   * döner. Bütün ölçüler burada ki ayarlamak tek dosyadan olsun. */
+  --plan-gutter: 4rem; /* sol tarih kanalı */
+  --plan-row-min: 3.5rem; /* boş günün ince şeridi */
+  --plan-task-col: 17.5rem; /* çoklu sütun akışının taban ölçüsü */
+  --plan-sheet-max: 72rem; /* kağıdın azami genişliği */
+
+  /* ══ Cam — YALNIZCA altından içerik akan yüzen kabuk ══════════════
+   *
+   * İçerik kartları opaktır. Cam kabuk = masaüstü şerit, mobil sekme
+   * çubuğu, yapışkan başlık, sheet, dialog, toast. Her yere blur atmak
+   * premium değil sisli yapar.
+   *
+   * ── 0.72 alfa neden? ──
+   * `backdrop-filter` ORTALAMA alır, yüksek kontrastlı kenarı gizlemez.
+   * ~0.60 altında 15px beyaz glif 56px çubuğun altından geçerken hâlâ
+   * okunabilir dalga bırakır. ~0.85 üstünde malzemenin derleme
+   * maliyetini ödeyip opak çubuk çizmiş olursun. 0.72, geçen glifin
+   * belirsiz bir gri alana dağıldığı ama altındaki HAREKETİN
+   * hissedildiği yer — malzeme modelinin bütün amacı bu.
+   *
+   * ── saturate(160%) neden? ──
+   * Chroma-0 kabukta altından geçen tek doygun şey slot noktaları,
+   * kategori noktaları ve ısı haritası. Doygunluğu yükseltmek onları
+   * malzemenin içinden renk ipucu olarak okunur tutar; camı gri bir
+   * scrim'den ayıran da tam olarak bu. Panel daha az alır (140%):
+   * daha büyük ve sakin bir yüzey güçlü doygunlukta tonlu görünür.
+   *
+   * ── blur 20 çubuk / 32 panel neden? ──
+   * Blur yarıçapı yüzeyin KENDİ boyutuyla ölçeklenmeli. 56px'lik
+   * çubukta 32px blur neredeyse çubuk yüksekliğinin tamamını örnekler
+   * ve bulaşık görünür. Tam genişlik sheet arkasında çok daha fazla
+   * sayfa gösterir ve sakin durmak için büyük çekirdek ister.
+   *
+   * ── kıl çizgi neden `--color-line` DEĞİL? ──
+   * Saydam yüzeye atılan KATI çizgi "malzemeye sürülmüş boya" gibi
+   * okunur ve illüzyonu öldürür. Alfa-beyaz kıl çizgi malzemenin kendi
+   * parlaklığını alır ve gerçek bir kenar gibi davranır.
+   *
+   * ── gölge neden YÖNLÜ? ──
+   * Işık yukarıdan gelir. Alt sekme çubuğunda simetrik gölge yüzen bir
+   * hap gibi okunur, kabuk gibi değil. */
+  --glass-bg: oklch(0.175 0 0 / 0.72);
+  --glass-bg-strong: oklch(0.155 0 0 / 0.86);
+  --glass-blur: blur(20px) saturate(160%);
+  --glass-blur-strong: blur(32px) saturate(140%);
+  --glass-line: oklch(1 0 0 / 0.08);
+  --glass-line-strong: oklch(1 0 0 / 0.12);
+  --glass-sheen: inset 0 1px 0 oklch(1 0 0 / 0.07);
+  --glass-shadow-down: 0 1px 0 oklch(0 0 0 / 0.6), 0 8px 24px oklch(0 0 0 / 0.32);
+  --glass-shadow-up: 0 -1px 0 oklch(0 0 0 / 0.6), 0 -8px 24px oklch(0 0 0 / 0.32);
+  --glass-scrim: oklch(0 0 0 / 0.6);
+  --glass-scrim-blur: blur(12px);
+
+  /* ══ Yükseklik ═══════════════════════════════════════════════════
+   * Zemin #080808'e indi ve eski opaklıklarda gölge görünmez oldu;
+   * hepsi yükseltildi. Yine de gölge artık İÇERİK KARTININ aracı
+   * değil (bkz. yüzey doktrini) — yüzen kabuğa ait. */
+  --shadow-raised: 0 1px 2px oklch(0 0 0 / 0.4), 0 2px 6px oklch(0 0 0 / 0.3);
+  --shadow-overlay: 0 4px 12px oklch(0 0 0 / 0.5), 0 16px 36px oklch(0 0 0 / 0.4);
+  --shadow-modal: 0 8px 24px oklch(0 0 0 / 0.6), 0 32px 72px oklch(0 0 0 / 0.5);
+
+  /* Yükseltilmiş yüzeyin üst kenarında ışık yakalaması. */
+  --sheen-top: inset 0 1px 0 oklch(1 0 0 / 0.06);
+
+  /* ══ Hareket: durum bildirir, dekore etmez ═══════════════════════
+   * BİLİNÇLİ OLARAK DEĞİŞMEDİ. "Boğuk" hissin kaynağı hareket değil,
+   * palet ve boşluktu; hareket sistemi zaten doğru. */
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   /* Giriş/çıkış için daha güçlü eğri. `quart` renk ve hover geçişleri
    * için doğru ama bir panel girerken fazla yumuşak kalıyor: kullanıcı
@@ -58,40 +251,25 @@
   --duration-fast: 120ms;
   --duration-base: 180ms;
   --duration-slow: 260ms;
+  /* 18px yarıçaplı büyük panel 260ms'de kesik hissediyor. */
+  --duration-sheet: 320ms;
 
-  /* ── Yükseklik ──────────────────────────────────────────────────
-   * Gölge dekorasyon değil, katman bildirimidir. Koyu temada gölge
-   * tek başına zayıf okunur; her adım bir `inset` üst ışıkla eşlenir
-   * (aşağıdaki --sheen-top). KURAL: bir yüzey ya kenarlık ya gölge
-   * kullanır, ikisini birden değil. */
-  --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.32), 0 2px 6px rgb(0 0 0 / 0.22);
-  --shadow-overlay: 0 4px 10px rgb(0 0 0 / 0.36), 0 12px 28px rgb(0 0 0 / 0.28);
-  --shadow-modal: 0 8px 20px rgb(0 0 0 / 0.42), 0 24px 56px rgb(0 0 0 / 0.36);
-
-  /* Yükseltilmiş yüzeyin üst kenarında ışık yakalaması. Koyu temada
-   * yüzeyleri kenarlığa muhtaç bırakmadan ayıran tek doğru araç. */
-  --sheen-top: inset 0 1px 0 rgb(255 255 255 / 0.045);
-
-  /* ── Katman sırası (asla rastgele z-index yok) ──────────────── */
+  /* ══ Katman sırası (asla rastgele z-index yok) ═══════════════════ */
   --z-sticky: 10;
   --z-dropdown: 20;
   --z-overlay: 30;
   --z-modal: 40;
   --z-toast: 50;
-}
 
-/*
- * Rutin kimlik renkleri ve yoğunluk rampası.
- *
- * Bunlar `@theme` içinde DEĞİL, gerçek `:root` bloğunda tanımlanır.
- * Tailwind v4 `@theme` değişkenlerini tree-shake eder: bir sınıf
- * adında geçmiyorlarsa CSS çıktısına hiç yazılmazlar. Bu değerler
- * yalnızca inline `style` içinde `var()` ile kullanıldığı için
- * `@theme`'de tanımlansalardı sessizce boş kalırlardı.
- */
-:root {
-  /* Slot SIRASI renk körlüğü güvenliğinin mekanizmasıdır; asla
-     değişmez ve asla döngüye sokulmaz. 9. rutin 1. slota döner. */
+  /* ══ Rutin kimlik renkleri — SEKİZİ DE DOKUNULMADI ════════════════
+   *
+   * Slot SIRASI renk körlüğü güvenliğinin mekanizmasıdır; asla
+   * değişmez ve asla döngüye sokulmaz. 9. rutin 1. slota döner.
+   *
+   * Yüzey #111318 → #101010'a KOYULAŞTI. Sabit bir ön plan için
+   * kontrast oranı daha koyu zeminde monoton olarak ARTAR, yani
+   * "her slot ≥3:1" kontrolü evleviyetle geçmeye devam eder.
+   * Slot-slot ΔE zeminden bağımsızdır. Yeniden ayar GEREKMEZ. */
   --color-slot-0: #3987e5;
   --color-slot-1: #d95926;
   --color-slot-2: #199e70;
@@ -101,12 +279,28 @@
   --color-slot-6: #9085e9;
   --color-slot-7: #e66767;
 
-  /* Yoğunluk rampası: matris skor satırı, takvim tonlaması, ısı haritası. */
-  --color-level-0: #171b24;
-  --color-level-1: #184f95;
-  --color-level-2: #2a78d6;
-  --color-level-3: #5598e7;
-  --color-level-4: #9ec5f4;
+  /* ══ Yoğunluk rampası — YENİDEN DEMİRLENDİ ════════════════════════
+   * Matris skor satırı, takvim tonlaması, ısı haritası.
+   *
+   * `level-0` (#171b24) eski MAVİMSİ yüzeyin hemen üstünde durmak için
+   * seçilmişti; nötr zeminde tek başına mavi bir leke oluyordu. Artık
+   * nötr: "veri yok" bir seviye değildir, yokluktur.
+   *
+   * 1-4 tek hue (250), eşit açıklık adımı (0.13), koyulaşan zemine
+   * karşı bir tık aydınlatıldı. */
+  --color-level-0: oklch(0.215 0 0);
+  --color-level-1: oklch(0.4 0.09 250);
+  --color-level-2: oklch(0.53 0.13 250);
+  --color-level-3: oklch(0.66 0.145 250);
+  --color-level-4: oklch(0.8 0.12 250);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --screen-px: 1.5rem;
+    --header-px: 1.5rem;
+    --plan-gutter: 4.5rem;
+  }
 }
 
 /*
@@ -137,6 +331,10 @@ body {
     color: var(--color-ink);
     font-family: var(--font-sans);
     font-size: var(--text-base);
+    /* Satır yüksekliği artık token: `text-[length:...]` biçimi
+     * Tailwind'in eşlik eden değerini getirmiyor, hepsi buradan
+     * miras alıyor. */
+    line-height: var(--leading-normal);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -146,14 +344,27 @@ body {
     font-variant-numeric: tabular-nums;
   }
 
+  /* Başlıklar kendi satır yüksekliğini alır: gövdenin 1.55'i büyük
+   * puntoda dağınık durur. */
+  h1,
+  h2,
+  h3 {
+    line-height: var(--leading-tight);
+    /* Satır uzunluklarını dengeler — çok satırlı başlıkta tek kelimelik
+     * yetim satır bırakmaz. */
+    text-wrap: balance;
+  }
+
+  /* Odak halkası accent'i DEĞİL `--color-focus`'u kullanır: accent
+   * artık beyaz ve birincil düğmenin dolgusu da beyaz. */
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
-    border-radius: 3px;
+    border-radius: var(--r-xs);
   }
 
   ::selection {
-    background: var(--color-accent-soft);
+    background: var(--color-surface-3);
     color: var(--color-ink);
   }
 }

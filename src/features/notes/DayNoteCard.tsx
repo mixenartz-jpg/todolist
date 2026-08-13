@@ -71,7 +71,7 @@ export function DayNoteCard({
         maxLength={2000}
         rows={3}
         placeholder="Bugüne dair bir not…"
-        className="mt-3 w-full resize-y rounded-lg border border-[var(--color-line)] bg-[var(--color-bg)] px-3 py-2.5 text-[length:var(--text-base)] leading-relaxed outline-none transition-colors duration-[var(--duration-fast)] placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-accent)]"
+        className="mt-3 w-full resize-y rounded-lg border border-[var(--color-line)] bg-[var(--color-bg)] px-3 py-2.5 text-[length:var(--text-base)] leading-relaxed outline-none transition-colors duration-[var(--duration-fast)] placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-line-3)]"
       />
 
       <p

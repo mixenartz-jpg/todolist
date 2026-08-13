@@ -15,6 +15,7 @@ import {
   TargetIcon,
 } from "@/components/icons";
 import "./nav-bar.css";
+import "./glass.css";
 
 interface NavItem {
   href: string;
@@ -87,7 +88,16 @@ function NavRail() {
   return (
     <nav
       aria-label="Ana gezinme"
-      className="hidden w-52 shrink-0 flex-col border-r border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-5 md:flex"
+      /*
+       * `sticky top-0 h-dvh`: şerit ekranda sabit kalır ve İÇERİK
+       * ONUN YANINDAN akar. Cam malzemenin şart koştuğu şey bu —
+       * altından hiçbir şey geçmeyen bir yüzeyde blur yalan olurdu.
+       *
+       * `fixed` DEĞİL: `fixed` şeridi akıştan çıkarır ve `<main>`'e
+       * elle `margin-left` vermek gerekirdi. `sticky` flex satırındaki
+       * yerini korur, genişlik hesabı kendiliğinden doğru kalır.
+       */
+      className="glassChrome glassChrome--side sticky top-0 hidden h-dvh w-52 shrink-0 flex-col px-3 py-5 md:flex"
     >
       <div className="mb-6 px-2">
         <span className="text-[length:var(--text-lg)] font-semibold tracking-[-0.02em]">
@@ -104,12 +114,16 @@ function NavRail() {
               className={cn(
                 "group flex h-9 items-center gap-2.5 rounded-md px-2.5 text-[length:var(--text-base)]",
                 "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-quart)]",
-                // Vurgu rengi mevcut seçimi bildirir — dekorasyon değil.
-                // Yan şerit KULLANILMAZ; ikon renklenir ve zemin
-                // vurgunun kendi tonuna kayar.
+                // Vurgu mevcut seçimi bildirir — dekorasyon değil.
+                // Yan şerit KULLANILMAZ; ikon aydınlanır ve zemin
+                // mürekkebin kendi tonuna kayar.
+                //
+                // %15 → %10: vurgu kobalttan BEYAZA döndü ve aynı oran
+                // artık gözü acıtan bir parlaklık veriyordu. Cam
+                // şeridin üstünde okunması için bu kadarı yeterli.
                 isActive(pathname, item.href)
-                  ? "bg-[color-mix(in_oklch,var(--color-accent)_15%,transparent)] font-medium text-[var(--color-ink)]"
-                  : "text-[var(--color-ink-2)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]",
+                  ? "bg-[color-mix(in_oklch,var(--color-ink)_10%,transparent)] font-medium text-[var(--color-ink)]"
+                  : "text-[var(--color-ink-2)] hover:bg-[color-mix(in_oklch,var(--color-ink)_5%,transparent)] hover:text-[var(--color-ink)]",
               )}
             >
               <span
@@ -183,7 +197,7 @@ function MobileTabBar() {
        * kaydırır. Ayrı bir odak durağı, klavye kullanıcısına anlamsız
        * bir fazladan Tab bastırırdı.
        */
-      className="tabBar fixed inset-x-0 bottom-0 z-[var(--z-sticky)] border-t border-[var(--color-line)] bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="tabBar glassChrome glassChrome--bottom fixed inset-x-0 bottom-0 z-[var(--z-sticky)] pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       {NAV.map((item) => {
         const active = isActive(pathname, item.href);

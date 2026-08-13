@@ -22,7 +22,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b0d11",
+  /* `--color-bg` ile aynı değer; `manifest.ts` ile birlikte değişir.
+   * `statusBarStyle: "black-translucent"` (yukarıda) ilk kez gerçekten
+   * doğru: durum çubuğu artık altındaki cam kabuğun üstünde duruyor. */
+  themeColor: "#080808",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

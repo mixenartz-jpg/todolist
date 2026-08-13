@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Screen, ScreenHeader, ScreenBody } from "@/components/Screen";
 import { Button } from "@/components/Button";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
@@ -104,19 +105,20 @@ export function MistakesScreen() {
   const formOpen = composing || editing !== null;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <header className="flex items-center gap-3 border-b border-[var(--color-line)] px-4 py-3 md:px-6">
-        <h1 className="mr-auto text-[length:var(--text-xl)] font-semibold tracking-[-0.015em]">
-          Yanlışlar
-        </h1>
-        {!formOpen && (
-          <Button variant="primary" size="sm" onClick={() => setComposing(true)}>
-            Yanlış ekle
-          </Button>
-        )}
-      </header>
+    <Screen>
+      <ScreenHeader
+        title="Yanlışlar"
+        width="2xl"
+        actions={
+          !formOpen ? (
+            <Button variant="primary" size="sm" onClick={() => setComposing(true)}>
+              Yanlış ekle
+            </Button>
+          ) : undefined
+        }
+      />
 
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-4 py-5 md:px-6">
+      <ScreenBody width="2xl">
         {/* Hata ÖNCE gelir. Hatayı boş durum gibi göstermek "verilerin
             gitti" demek olurdu — oysa yalnızca yüklenemedi. */}
         {error && (
@@ -192,7 +194,7 @@ export function MistakesScreen() {
             />
           </>
         )}
-      </div>
+      </ScreenBody>
 
       {pendingRename && (
         <ConfirmDialog
@@ -242,7 +244,7 @@ export function MistakesScreen() {
         token={toast.token}
         onDismiss={toast.dismiss}
       />
-    </div>
+    </Screen>
   );
 }
 

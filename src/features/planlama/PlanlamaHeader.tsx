@@ -1,4 +1,5 @@
 "use client";
+import { ScreenHeader } from "@/components/Screen";
 
 import type { ReactNode } from "react";
 import { addDays, endOfMonth, startOfIsoWeek, startOfMonth, toParts } from "@/lib/date/date";
@@ -42,21 +43,27 @@ export function PlanlamaHeader({
       : formatMonthYear(year, month);
 
   return (
-    <header className="border-b border-[var(--color-line)] px-4 py-3 md:px-5">
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="mr-auto text-[length:var(--text-xl)] font-semibold tracking-[-0.015em]">
-          {title}
-        </h1>
+    <ScreenHeader
+      title={title}
+      width="6xl"
+      subtitle={
+        openTotal > 0 ? (
+          <>
+            <span className="tabular">{openTotal}</span> açık iş
+          </>
+        ) : undefined
+      }
+      actions={
+        <>
+          {/* Yalnızca başka bir aralıktayken görünür: bulunduğun yere
+              götüren bir düğme hiçbir şey yapmaz. */}
+          {!isCurrent && (
+            <Button size="sm" variant="ghost" onClick={() => onAnchorChange(current)}>
+              {scale === "week" ? "Bu hafta" : "Bu ay"}
+            </Button>
+          )}
 
-        {/* Yalnızca başka bir aralıktayken görünür: bulunduğun yere
-            götüren bir düğme hiçbir şey yapmaz. */}
-        {!isCurrent && (
-          <Button size="sm" variant="ghost" onClick={() => onAnchorChange(current)}>
-            {scale === "week" ? "Bu hafta" : "Bu ay"}
-          </Button>
-        )}
-
-        <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1">
           <Button
             size="sm"
             variant="ghost"
@@ -75,17 +82,12 @@ export function PlanlamaHeader({
           >
             <Chevron direction="right" />
           </Button>
-        </div>
-      </div>
-
-      {openTotal > 0 && (
-        <p className="mt-1 text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
-          <span className="tabular">{openTotal}</span> açık iş
-        </p>
-      )}
-
+          </div>
+        </>
+      }
+    >
       {children}
-    </header>
+    </ScreenHeader>
   );
 }
 

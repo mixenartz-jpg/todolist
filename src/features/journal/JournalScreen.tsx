@@ -2,6 +2,9 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/Button";
+import { Card } from "@/components/Card";
+import { Screen, ScreenHeader, ScreenBody } from "@/components/Screen";
+import { SectionTitle } from "@/components/SectionTitle";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
 import { NoteIcon } from "@/components/icons";
@@ -84,19 +87,20 @@ export function JournalScreen() {
   const searching = query.trim().length > 0;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <header className="flex items-center gap-3 border-b border-[var(--color-line)] px-4 py-3 md:px-6">
-        <h1 className="mr-auto text-[length:var(--text-xl)] font-semibold tracking-[-0.015em]">
-          Notlar
-        </h1>
-        {!composing && !editing && (
-          <Button variant="primary" size="sm" onClick={() => setComposing(true)}>
-            Yeni not
-          </Button>
-        )}
-      </header>
+    <Screen>
+      <ScreenHeader
+        title="Notlar"
+        width="2xl"
+        actions={
+          !composing && !editing ? (
+            <Button variant="primary" size="sm" onClick={() => setComposing(true)}>
+              Yeni not
+            </Button>
+          ) : undefined
+        }
+      />
 
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-4 py-5 md:px-6">
+      <ScreenBody width="2xl">
         {/* Hata boş durum GİBİ gösterilmez. "Henüz not yok" demek,
             veriler yüklenememişken kullanıcıya notlarının silindiğini
             düşündürür. */}
@@ -110,10 +114,8 @@ export function JournalScreen() {
         )}
 
         {composing && (
-          <section className="rounded-xl bg-[var(--color-surface)] p-4 shadow-[var(--shadow-raised),var(--sheen-top)]">
-            <h2 className="mb-3.5 text-[length:var(--text-lg)] font-medium">
-              Yeni not
-            </h2>
+          <Card as="section">
+            <SectionTitle className="mb-3.5">Yeni not</SectionTitle>
             <NoteForm
               defaultDate={today}
               submitLabel="Kaydet"
@@ -121,14 +123,12 @@ export function JournalScreen() {
               onSubmit={handleCreate}
               onCancel={() => setComposing(false)}
             />
-          </section>
+          </Card>
         )}
 
         {editing && (
-          <section className="rounded-xl bg-[var(--color-surface)] p-4 shadow-[var(--shadow-raised),var(--sheen-top)]">
-            <h2 className="mb-3.5 text-[length:var(--text-lg)] font-medium">
-              Notu düzenle
-            </h2>
+          <Card as="section">
+            <SectionTitle className="mb-3.5">Notu düzenle</SectionTitle>
             <NoteForm
               initial={{
                 title: editing.title,
@@ -141,7 +141,7 @@ export function JournalScreen() {
               onSubmit={handleUpdate}
               onCancel={() => setEditing(null)}
             />
-          </section>
+          </Card>
         )}
 
         {isPending ? (
@@ -186,14 +186,14 @@ export function JournalScreen() {
             <div className="flex flex-col gap-6">
               {groups.map((group) => (
                 <section key={group.date}>
-                  <h2 className="mb-2 text-[length:var(--text-sm)] font-medium text-[var(--color-ink-2)]">
+                  <SectionTitle level={3} className="mb-2">
                     {formatLongDate(group.date)}
                     {group.date === today && (
-                      <span className="ml-1.5 text-[var(--color-accent)]">
+                      <span className="ml-1.5 text-[var(--color-ink)]">
                         bugün
                       </span>
                     )}
-                  </h2>
+                  </SectionTitle>
 
                   {/*
                     Aramada notlar KENDİLİĞİNDEN açılır: eşleşme
@@ -227,7 +227,7 @@ export function JournalScreen() {
             </div>
           </>
         )}
-      </div>
+      </ScreenBody>
 
       {pendingDelete && (
         <ConfirmDialog
@@ -256,7 +256,7 @@ export function JournalScreen() {
         token={toast.token}
         onDismiss={toast.dismiss}
       />
-    </div>
+    </Screen>
   );
 }
 
@@ -290,7 +290,7 @@ function SearchField({
         onChange={(e) => onChange(e.target.value)}
         placeholder="Notlarda ara"
         aria-label="Notlarda ara"
-        className="h-10 w-full rounded-lg border border-[var(--color-line-2)] bg-[var(--color-surface)] pl-9 pr-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-accent)]"
+        className="h-10 w-full rounded-lg border border-[var(--color-line-2)] bg-[var(--color-surface)] pl-9 pr-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-line-3)]"
       />
     </div>
   );

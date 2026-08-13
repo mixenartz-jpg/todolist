@@ -23,21 +23,30 @@
 }
 
 .confirmDialog::backdrop {
-  background: rgb(0 0 0 / 0.6);
-  backdrop-filter: blur(2px);
+  background: var(--glass-scrim);
+  -webkit-backdrop-filter: var(--glass-scrim-blur);
+  backdrop-filter: var(--glass-scrim-blur);
 }
 
 .confirmPanel {
   width: calc(100% - 2rem);
   max-width: 25rem;
 
-  background: var(--color-surface);
-  border-radius: 14px;
-  padding: 1.25rem;
+  border-radius: var(--r-2xl);
+  padding: var(--card-p);
 
-  /* Kenarlık YOK — yükseklik gölge ile bildirilir. Kenarlık ve geniş
-   * gölge aynı elemanda birlikte kullanılmaz. */
-  box-shadow: var(--shadow-modal), var(--sheen-top);
+  /*
+   * `.glassPanel` (glass.css) ile aynı malzeme.
+   *
+   * Buradaki kıl çizgi + gölge birlikteliği yüzey doktrininin TEK
+   * istisnasıdır: bu bir kenarlık değil MALZEME KENARIDIR, camın
+   * kendi parlaklığını yakalayan bir eşik. Gerekçe globals.css'te.
+   */
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur-strong);
+  backdrop-filter: var(--glass-blur-strong);
+  border: 1px solid var(--glass-line-strong);
+  box-shadow: var(--shadow-modal), var(--glass-sheen);
 
   /* Modal ortadan ölçeklenir: bir tetikleyiciye bağlı değildir.
    * `scale(0)` ASLA — hiçbir şey yokluktan belirmez. */
@@ -56,8 +65,31 @@
   .confirmPanel {
     animation: none;
   }
+}
+
+/* Cam geri düşüşleri — gerekçe `glass.css` ve `sheet.css` ile aynı. */
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  .confirmPanel {
+    background: var(--color-surface);
+  }
 
   .confirmDialog::backdrop {
+    background: oklch(0 0 0 / 0.8);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .confirmPanel {
+    background: var(--color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .confirmDialog::backdrop {
+    background: oklch(0 0 0 / 0.8);
+    -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 }

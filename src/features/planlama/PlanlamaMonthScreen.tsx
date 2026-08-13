@@ -1,4 +1,5 @@
 "use client";
+import { ScreenBody } from "@/components/Screen";
 
 import { useEffect, useMemo, useState } from "react";
 import { endOfMonth, startOfMonth, toParts } from "@/lib/date/date";
@@ -126,7 +127,7 @@ export function PlanlamaMonthScreen() {
         />
       </PlanlamaHeader>
 
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-5 px-4 py-5 md:px-6">
+      <ScreenBody width="6xl">
         {tasksQuery.isPending ? (
           <PlanSkeleton scale="month" />
         ) : (
@@ -138,20 +139,14 @@ export function PlanlamaMonthScreen() {
               onError={toast.show}
             />
 
-            {/* Havuz YANDA değil ÜSTTE: 16rem'lik sütun gün kutularını
-                ~113px'e indirir ve görev başlıkları dört satıra sarardı
-                (hesap için bkz. planlama.css → .planLayoutWide). */}
-            <div className="planLayoutWide">
-              <PlanBacklog
-                tasks={range.backlog}
-                categoryById={categories.categoryById}
-                selectedId={placingId}
-                addPending={actions.addPending}
-                onSelect={setPlacingId}
-                onAdd={actions.addBacklog}
-                onError={toast.show}
-              />
+            {/* Havuz ≥1280px'de SAĞDA, altında üstte. Eski yerleşimde
+                üste alınmıştı çünkü 16rem'lik sütun 7 gün kutusunu
+                ~113px'e indiriyordu; ajanda kağıdı tek sütun olduğu için
+                o hesap düştü (bkz. planlama.css → .planLayout).
 
+                DOM sırası: kağıt ÖNCE. Havuz görsel olarak sağda ama
+                okuma ve klavye sırasında ikincil — asıl yüzey kağıt. */}
+            <div className="planLayout">
               <PlanMonthGrid
                 buckets={range.buckets}
                 today={today}
@@ -172,10 +167,20 @@ export function PlanlamaMonthScreen() {
                 onUnschedule={actions.onUnschedule}
                 onReorder={actions.onReorder}
               />
+
+              <PlanBacklog
+                tasks={range.backlog}
+                categoryById={categories.categoryById}
+                selectedId={placingId}
+                addPending={actions.addPending}
+                onSelect={setPlacingId}
+                onAdd={actions.addBacklog}
+                onError={toast.show}
+              />
             </div>
           </>
         )}
-      </div>
+      </ScreenBody>
 
       {openDay !== null && (
         <PlanDaySheet

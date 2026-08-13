@@ -1,283 +1,385 @@
 /*
- * Plan ekranının ızgaraları — hafta ve ay ölçeği.
+ * Plan ekranı — AJANDA KAĞIDI.
  *
  * `week.css`'ten AYRI bir dosya: Takvim'in hafta ekranı yalnızca
  * göstermek için var, buradaki yüzeyler kurmak için. Aynı dosyada
  * tutmak, iki ekranın birbirinin yerleşimini sessizce bozmasına açık
  * kapı bırakırdı.
  *
- * İki ölçek de artık gerçek görev satırları taşır; aradaki fark
- * BÜYÜME davranışıdır: hafta sütunu içeriği kadar uzar, ay kutusu
- * sabit boydadır ve içinde kaydırılır (gerekçe aşağıda).
- */
-
-/* ── Hafta ölçeği ─────────────────────────────────────────────────
- * Mobilde dikey yığın, masaüstünde yedi sütun.
+ * ── Neden 7 sütun DEĞİL? ──
+ * Önceki sürüm masaüstünde `repeat(7, 1fr)` çiziyordu ve 1104px'lik
+ * gövdede sütun başına ~152px kalıyordu. Bunun bedeli kodda itiraf
+ * edilmişti: `PlanTaskList` yorumu "sütun ~150px, simgeler başlığın
+ * altına iner" diyor ve kategori seçicisi sığmadığı için sadece nokta
+ * gösteriliyordu. Üstüne ay kutuları SABİT 20rem'di ve her biri kendi
+ * içinde kaydırılıyordu — 42 ayrı mini pencere.
  *
- * Mobilde yatay kaydırma DEĞİL: 320px'de yedi sütuna bölününce sütun
- * başına ~40px kalır ve bu ne bir görev başlığına ne de dokunma
- * hedefine yeter. Kaydırma ise günleri bir hareketin arkasına saklar —
- * planlarken tüm haftayı görmek gerekir. `week.css` ile aynı karar.
+ * ── Yeni model ──
+ * Tek kağıt, geniş yatay gün satırları. Solda SABİT genişlikte tarih
+ * kanalı (tarihler bütün ay boyunca tek dikey hatta hizalanır — kağıt
+ * ajandanın tarama hızını veren şey bu), sağda tam genişlik görev
+ * alanı. Görevler `auto-fill` ile sütunlara akar: 8 işi olan gün geniş
+ * ekranda 8 satır değil 3 satır eder.
+ *
+ * Yükseklik: boş gün ince şerit, dolu gün içeriği kadar. İç kaydırma
+ * YOK — hiçbir görev gizlenmez.
+ *
+ * Mobil ve masaüstü AYNI yerleşimi kullanır; tek fark kanal genişliği
+ * ve kaç görev sütununun sığdığı. İki ayrı yerleşimin bakımı bitti.
  */
-.planWeekGrid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-}
 
-.planDay {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  padding: 10px;
+/* ── Kağıt yüzeyi ─────────────────────────────────────────────────
+ * Tek yüzey, çok satır. Her gün ayrı kart DEĞİL: günler arası ayrımı
+ * kıl çizgi yapar, boşluk değil. 42 kutu → 1 kağıt.
+ */
+.planSheet {
+  max-width: var(--plan-sheet-max);
+  width: 100%;
   border: 1px solid var(--color-line);
-  border-radius: 12px;
+  border-radius: var(--r-xl);
   background: var(--color-surface);
 
-  transition:
-    border-color var(--duration-fast) var(--ease-out-quart),
-    opacity var(--duration-fast) var(--ease-out-quart);
+  /*
+   * `overflow: hidden` KULLANILMAZ.
+   *
+   * Köşeleri kırpmak için doğal seçim oydu ama `overflow` bir kaydırma
+   * bağlamı yaratır ve içerideki `position: sticky` hafta başlığını o
+   * kutuya HAPSEDER: etiket sayfayla birlikte akıp gider, hiç
+   * yapışmaz. Ölçümle doğrulandı (e2e/sticky-check.mjs) — `hidden`
+   * varken etiket `top: 3px`'te değil kendi bölümünün içinde kalıyordu.
+   *
+   * Yerine `clip-path`: aynı köşe kırpmasını yapar ama kaydırma
+   * bağlamı YARATMAZ, yapışkanlık sayfa köküne bağlı kalır.
+   */
+  clip-path: inset(0 round var(--r-xl));
 }
 
-/* Bugün: kenarlık vurgusu, dolgu değil — takvimdeki dille aynı. */
-.planDayToday {
-  border-color: var(--color-accent);
-}
-
-/* Geçmiş günler geri planda kalır ama okunur ve kullanılabilir. */
-.planDayPast {
-  opacity: 0.55;
-}
-
-.planDayPast:hover,
-.planDayPast:focus-within {
-  opacity: 1;
-}
-
-/*
- * Yerleştirme modu: havuzdan bir görev seçiliyken günler hedef olur.
- * Kesikli kenarlık "buraya bırakılabilir" der; renk tek başına bilgi
- * taşımasın diye hücrenin aria-label'ı da değişir (bkz. PlanDayCell).
+/* ── Hafta bölümü ─────────────────────────────────────────────────
+ * Hafta başlığı yapışkan VE cam: ay artık dikey bir akış ve
+ * tutamaksız bir listede hangi haftaya bakıldığı kaybolur. Altından
+ * gün satırları geçtiği için malzeme burada gerçekten hak edilmiş —
+ * kabuk değil, içerik de değil, tam ortada duran bir yer işareti.
  */
-.planDayTarget {
-  border-style: dashed;
-  border-color: var(--color-accent);
-  cursor: pointer;
-}
-
-.planDayTarget:hover {
-  background: color-mix(in oklch, var(--color-accent) 10%, transparent);
-}
-
-@media (min-width: 768px) {
-  .planWeekGrid {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 6px;
-  }
-
-  .planDay {
-    min-height: 9rem;
-  }
-}
-
-/* ── Ay ölçeği ────────────────────────────────────────────────────
- * Hafta SATIRLARI, gerçek görev satırları taşıyan kutular.
- *
- * ── Neden 6×7'lik tek ızgara DEĞİL? ──
- * Tek ızgarada satır yüksekliğini o satırın en dolu günü belirler ve
- * yanındaki altı boş kutu da onunla birlikte şişer. Haftaya bir bölüm
- * bunu keser; ayrıca her satır kendi başlığını (hafta aralığı)
- * taşıyabilir, yani aşağı kaydırırken hangi haftada olunduğu
- * kaybolmaz.
- *
- * ── Neden kare hücre ve sadece sayı DEĞİL? ──
- * Eski gerekçe "42 kare hücreye görev satırı sığmaz" idi ve hücrelerin
- * kare + hepsinin tek ekranda olmasını varsayıyordu. Ay dikey olarak
- * kaydırılınca bu varsayım düşer: kutuya 20rem verilebilir ve
- * "hangileri" sorusu paneli açmadan cevaplanır.
- */
-.planMonthWeeks {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-/*
- * Hafta başlığı — kaydırırken yer belirtir.
- *
- * `sticky` opsiyonel değil: ay artık masaüstünde beş-altı ekran,
- * mobilde otuz kutu ediyor ve tutamaksız bir listede hangi haftaya
- * bakıldığı kaybolur. Zemin saydam bırakılamaz, altından kutular
- * geçer.
- */
-.planMonthWeekLabel {
+.planWeekLabel {
   position: sticky;
-  top: 0;
-  z-index: 1;
+  /*
+   * Ekran başlığının ALTINDAN tutunur, `top: 0`'dan DEĞİL.
+   *
+   * `ScreenHeader` de yapışkan ve aynı kaydırma kökünde; ikisi de
+   * `top: 0` deseydi hafta etiketi başlığın arkasına girer ve
+   * kaydırırken okunmaz olurdu — yani var olma sebebi ortadan kalkardı.
+   * `--header-h` başlığın kendi ölçtüğü gerçek yükseklik (bkz.
+   * Screen.tsx); filtre çubuğu sardığında da doğru kalır.
+   *
+   * Yedek değer: `--header-h` henüz yayımlanmamışsa (ilk boyama)
+   * makul bir tahminle başlar.
+   */
+  top: var(--header-h, 4rem);
+  /*
+   * Ekran başlığından bir kat AŞAĞIDA: aynı z katmanında olsalardı
+   * boyama sırası kazanır ve etiket başlığın ÜSTÜNE binerdi.
+   */
+  z-index: calc(var(--z-sticky) - 1);
 
-  margin-bottom: 6px;
-  padding: 6px 0;
-  background: var(--color-bg);
+  margin: 0;
+  padding: 0.5rem var(--card-p);
 
   font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: var(--leading-snug);
+  letter-spacing: 0.01em;
   color: var(--color-ink-3);
 }
 
-/*
- * Mobilde dikey yığın, masaüstünde yedi sütun — `.planWeekGrid` ile
- * AYNI karar ve aynı gerekçe: 320px'de yedi sütuna bölününce sütun
- * başına ~40px kalır, ne başlık ne dokunma hedefi sığar.
- */
-.planMonthWeek {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
+/* Bölümler arası ayrım yok: kağıt kesintisiz akar, haftaları
+ * ayıran şey başlığın kendisidir. */
+.planWeekSection + .planWeekSection .planWeekLabel {
+  border-top: 1px solid var(--color-line);
 }
 
-.planMonthDay {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+/* ── Gün satırı ───────────────────────────────────────────────────
+ * Sol kanal SABİT genişlikte: tarihler bütün ay boyunca tek dikey
+ * hatta hizalanır ve göz aşağı kayarken hiç kaymaz. Kağıt ajandanın
+ * tarama hızını veren şey budur.
+ */
+.planDayRow {
+  display: grid;
+  grid-template-columns: var(--plan-gutter) minmax(0, 1fr);
+  align-items: stretch;
 
-  padding: 10px;
-  border: 1px solid var(--color-line);
-  border-radius: 12px;
-  background: var(--color-surface);
+  min-height: var(--plan-row-min);
+  border-top: 1px solid var(--color-line);
 
   transition:
-    border-color var(--duration-fast) var(--ease-out-quart),
+    background-color var(--duration-fast) var(--ease-out-quart),
     opacity var(--duration-fast) var(--ease-out-quart);
 }
 
+/* İlk satırın üst çizgisi kağıdın kendi kenarıyla çakışırdı. */
+.planWeekLabel + .planDayRow {
+  border-top: none;
+}
+
+/* ── Tarih kanalı ─────────────────────────────────────────────────
+ * Kağıdın kenar boşluğu çizgisi: sürekli, satırdan satıra kesilmeyen
+ * tek dikey hat. Hizalanmayı gözle GÖRÜNÜR kılan şey bu.
+ */
+.planDayGutter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+
+  padding: 0.75rem 0.25rem;
+  border-right: 1px solid var(--color-line);
+  background: var(--color-bg);
+
+  text-align: center;
+}
+
+.planDayGutterButton {
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out-quart);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .planDayGutterButton:hover {
+    background: var(--color-surface-2);
+  }
+}
+
+.planDayNum {
+  font-size: var(--text-lg);
+  font-weight: 500;
+  line-height: 1;
+  color: var(--color-ink);
+}
+
+.planDayWeekday {
+  font-size: var(--text-2xs);
+  line-height: 1.4;
+  color: var(--color-ink-3);
+}
+
+/* Sıfırken hiç gösterilmez: "0" bilgi değil gürültüdür ve ayda 42 kez
+ * tekrarlanırdı. */
+.planDayCount {
+  margin-top: 0.25rem;
+  font-size: var(--text-2xs);
+  line-height: 1;
+  color: var(--color-ink-4);
+}
+
+.planDayDot {
+  width: 4px;
+  height: 4px;
+  margin-top: 0.25rem;
+  border-radius: 50%;
+  background: var(--color-ink-3);
+}
+
+/* ── Görev alanı ──────────────────────────────────────────────────── */
+.planDayField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-gap);
+  min-width: 0;
+  padding: 0.75rem var(--card-p) 0.75rem 0.875rem;
+}
+
 /*
- * Komşu aydan taşan günler geri planda kalır ama gerçek günlerdir.
+ * Görevler genişliği DOLDURAN sütunlara akar.
  *
- * Kare hücrede 0.4 yeterliydi: içinde okunacak tek bir rakam vardı.
- * Burada METİN var — 0.55 ve odaklanınca tam opaklık.
+ * `auto-fit` + `minmax`: 390px'de tek sütun, 768px'de iki, 1280px'de
+ * üç. Kırılma noktası tanımlamaya gerek yok — `.summaryGrid` zaten
+ * aynı deseni kullanıyor, dilde yeni bir şey değil.
+ *
+ * ── `auto-fit`, `auto-fill` DEĞİL ──
+ * `auto-fill` sığabilecek KADAR sütun yuvası açar ve boş kalanları da
+ * yerinde tutar; iki görevi olan bir gün üç yuvalık ızgarada iki dar
+ * kutu + bir boşluk olarak duruyordu. `auto-fit` boş yuvaları
+ * çökertir, kalan sütunlar genişliği paylaşır ve satır dengeli görünür.
+ *
+ * Akış SATIR öncelikli (varsayılan): `splitDaySchedule` saatlileri öne
+ * alıyor ve kullanıcı "sıradaki iş" diye sol üste bakıyor. Sütun
+ * öncelikli akış o sırayı gizlerdi.
  */
-.planMonthDayOutside {
-  opacity: 0.55;
+.planDayTasks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--plan-task-col), 1fr));
+  gap: var(--row-gap) 1.25rem;
+  align-content: start;
+  min-width: 0;
 }
 
-.planMonthDayOutside:hover,
-.planMonthDayOutside:focus-within {
+/* ── Durumlar ─────────────────────────────────────────────────────── */
+
+/*
+ * Bugün: kanal TERS ÇEVRİLİR — mürekkep dolgu, koyu rakam.
+ *
+ * `border-color: accent` yeterli değil çünkü accent artık beyaz ve
+ * "hedef" durumu da beyaz kenarlık kullanıyordu; ikisi ayırt
+ * edilemezdi. Monokrom palette bir tık kontrast en güçlü sinyaldir ve
+ * ters çevrilmiş tek satır, kağıtta bugünü kalemle çerçevelemenin
+ * karşılığıdır.
+ */
+.planDayRowToday .planDayGutter {
+  background: var(--color-ink);
+  /* Ters çevrilmiş kanal kağıdın kenarına dayanıyor; sağ kıl çizgi
+   * beyaz dolgunun üstünde görünmez ve gereksiz. */
+  border-right-color: transparent;
+}
+
+.planDayRowToday .planDayNum {
+  color: var(--color-on-accent);
+  font-weight: 600;
+}
+
+.planDayRowToday .planDayWeekday,
+.planDayRowToday .planDayCount {
+  color: color-mix(in oklch, var(--color-on-accent) 70%, transparent);
+}
+
+.planDayRowToday .planDayDot {
+  background: var(--color-on-accent);
+}
+
+/*
+ * Geçmiş gün: YALNIZCA kanal solar, görevler tam opak kalır.
+ *
+ * Eskiden tüm satır `opacity: 0.55` alıyordu ve dün yazdığın iş
+ * okunmaz oluyordu. Geçmiş, silik değil sadece geçmiştir.
+ */
+.planDayRowPast .planDayGutter {
+  opacity: 0.5;
+}
+
+.planDayRowPast:hover .planDayGutter,
+.planDayRowPast:focus-within .planDayGutter {
   opacity: 1;
 }
 
-.planMonthDayToday {
-  border-color: var(--color-accent);
+/*
+ * Hafta sonu: kanal bir tık açılır VE satırın kendisi hafifçe tonlanır.
+ *
+ * Kağıt ajandalarda cumartesi-pazar farklı tonda basılır; ayın nerede
+ * bölündüğünü gösteren ritim budur. Tek başına kanal tonlaması
+ * yetmiyordu — 56px'lik dar bir şeritteki 1 basamaklık açıklık farkı
+ * göz tarama hızında kayboluyor. Satır zemini farkı taşıyan ikinci
+ * kanal.
+ *
+ * `:not(.planDayRowToday)`: bugünün ters çevrilmiş kanalı ezilmemeli.
+ */
+.planDayRowWeekend:not(.planDayRowToday) .planDayGutter {
+  background: var(--color-surface-3);
 }
 
-.planMonthDayPast {
-  opacity: 0.6;
+.planDayRowWeekend:not(.planDayRowToday) {
+  background: color-mix(in oklch, var(--color-ink) 2%, transparent);
 }
 
-.planMonthDayPast:hover,
-.planMonthDayPast:focus-within {
+/* Komşu aydan taşan günler geri planda ama gerçek günlerdir. */
+.planDayRowOutside {
+  opacity: 0.45;
+}
+
+.planDayRowOutside:hover,
+.planDayRowOutside:focus-within {
   opacity: 1;
 }
 
-/* Yerleştirme modu: kesikli kenarlık "buraya bırakılabilir" der.
-   Tıklama hedefi kutunun kendisi DEĞİL, içindeki ayrı düğmedir —
-   kutuda checkbox ve metin girdisi var. */
-.planMonthDayTarget {
-  border-style: dashed;
-  border-color: var(--color-accent);
+/* Yerleştirme modu: satırın kendisi hedef. */
+.planDayRowTarget {
+  background: color-mix(in oklch, var(--color-ink) 3%, transparent);
 }
 
-.planMonthDayTasks {
-  min-height: 0;
+/*
+ * Bırakma şeridi — bir gün = BİR hedef.
+ *
+ * Önceki sürüm her kutuya ayrı küçük bir düğme koyuyordu (ayda 42
+ * düğme). Geniş satırda şerit görev alanının tamamını kaplar ve nişan
+ * alması kolaydır. Kesikli kenar + zemin yıkaması: durum tek kanalla
+ * değil iki kanalla taşınır.
+ */
+.planDropStrip {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px dashed var(--color-line-3);
+  border-radius: var(--r-lg);
+  background: color-mix(in oklch, var(--color-ink) 4%, transparent);
+
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+  text-align: left;
+  cursor: pointer;
+
+  transition:
+    background-color var(--duration-fast) var(--ease-out-quart),
+    border-color var(--duration-fast) var(--ease-out-quart);
 }
 
-@media (min-width: 768px) {
-  .planMonthWeek {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 6px;
-  }
-
-  .planMonthDay {
-    /*
-     * SABİT yükseklik, `min-height` DEĞİL.
-     *
-     * `min-height` ile bir satırdaki en dolu gün diğer altısını da
-     * kendi boyuna çeker ve boş günler ekranı yer. Sabit boy + iç
-     * kaydırma, ayın kaç ekran ettiğini öngörülebilir kılar.
-     *
-     * 20rem (320px): başlık (~28px) + hızlı ekleme (~40px) + boşluklar
-     * (~26px) çıkınca listeye ~226px kalır; sarmayan bir `compact`
-     * satır ~46px, yani dört buçuk satır görünür. Dördüncünün
-     * yarısının görünmesi bilinçli — kaydırılabilir olduğunu gölge ya
-     * da çubuk gerekmeden söyler.
-     */
-    height: 20rem;
-  }
-
-  .planMonthDayTasks {
-    flex: 1;
-    overflow-y: auto;
-    /* Kutunun sonuna gelince kaydırma sayfaya sıçramasın. */
-    overscroll-behavior: contain;
-    /* Çubuk belirip kaybolurken satırlar yeniden sarmasın. */
-    scrollbar-gutter: stable;
-    /* Satırların odak halkası kaydırıcı tarafından kırpılmasın. */
-    padding: 2px;
-    margin: -2px;
+@media (hover: hover) and (pointer: fine) {
+  .planDropStrip:hover {
+    background: color-mix(in oklch, var(--color-ink) 9%, transparent);
+    border-color: var(--color-ink-3);
+    color: var(--color-ink);
   }
 }
 
 /*
- * Geniş ekranda sütun ~170px eder, başlıklar daha az sarar ve aynı
- * boya daha çok satır sığar — yükseklik yine SABİT kalır.
+ * Boş gün: ince şerit.
+ *
+ * Ayın ~%60'ı boş olabiliyor. Hepsi tam yükseklikte dursa ay beş ekran
+ * ederdi; böyle tipik bir ay ~2.5 ekran tutuyor — eski 6×20rem
+ * yerleşiminden KISA. Ekleme kutusu satır içinde kalır ve gün her an
+ * doldurulabilir durumdadır.
  */
-@media (min-width: 1280px) {
-  .planMonthDay {
-    height: 22rem;
-  }
+.planDayRowEmpty .planDayField {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.planDayRowEmpty .planDayGutter {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
 }
 
 /* ── Havuz ────────────────────────────────────────────────────────
- * Masaüstünde ızgaranın yanında sabit bir sütun, mobilde üstünde tam
- * genişlikte bir blok. Yan yana koymak, "havuzdan güne taşı"
- * hareketinin iki ucunu aynı anda görünür kılar.
+ *
+ * Mobilde kağıdın üstünde tam genişlik blok, geniş ekranda SAĞDA
+ * sabit bir sütun. Yan yana durmak "havuzdan güne taşı" hareketinin
+ * iki ucunu aynı anda görünür kılar.
+ *
+ * ── Neden 1280px ve neden ARTIK ay ölçeğinde de yanda? ──
+ * Eski gerekçe hesabı yedi sütun üzerinden yapıyordu: havuz yandayken
+ * ızgaraya (1104 − 256 − 16) / 7 ≈ 113px kalıyor ve başlıklar dört
+ * satıra sarıyordu — o yüzden ay ölçeğinde havuz üste alınmıştı.
+ *
+ * Tek sütunlu kağıtta o hesap düşer: 1280px'de havuz yandayken kağıda
+ * ~960px kalır ve içinde hâlâ üç görev sütunu sığar. Yani ay ölçeği de
+ * yan yerleşimi kaldırıyor ve `.planLayoutWide` ayrımına gerek kalmıyor.
+ *
+ * Kırılma 1024 → 1280: 1024'te havuz + kağıt yan yana sıkışıktı.
  */
 .planLayout {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
+  gap: var(--stack-gap-sm);
   align-items: start;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   .planLayout {
-    grid-template-columns: 16rem 1fr;
+    /* Kağıt ÖNCE, havuz sonra: kaydırma kağıdın kendi ölçüsünü
+     * korumasını gerektiriyor ve `1fr` onu esnek uçta tutuyor. */
+    grid-template-columns: minmax(0, 1fr) 16rem;
   }
 
   .planBacklog {
     position: sticky;
-    top: 12px;
+    /* Yapışkan hafta başlığının altında kalmasın. */
+    top: var(--stack-gap-sm);
   }
-}
-
-/*
- * Ay ölçeğinin yerleşimi: havuz ÜSTTE, tam genişlikte.
- *
- * Hafta ölçeğinde havuz yanda durur (yukarı bkz.) çünkü orada yedi
- * sütun 16rem'i kaybetmeye dayanır. Ay ölçeğinde ızgara da yedi sütun
- * ama artık gerçek görev satırları taşıyor ve hesap tutmuyor:
- *
- *   yanda:  (1104 − 256 − 16) / 7 ≈ 113px  → başlık dört satıra sarar
- *   üstte:   1104 / 7           ≈ 152px  → hafta ekranından (~140px)
- *                                            bile geniş
- *
- * Yani havuzu yanda tutmak, ızgaranın var olma sebebini yerdi.
- * Yan yana olmanın kazandırdığı şey — "taşımanın iki ucunu bir arada
- * gör" — üstte de korunur: havuz ilk haftayla aynı ekranda kalır.
- */
-.planLayoutWide {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
 }
 
 /*

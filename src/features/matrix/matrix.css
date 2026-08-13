@@ -125,7 +125,7 @@
 .cellMark {
   width: 18px;
   height: 18px;
-  border-radius: 5px;
+  border-radius: var(--r-sm);
   display: grid;
   place-items: center;
   transition:
@@ -171,13 +171,26 @@
   }
 }
 
-/* ── Bugün sütunu ──────────────────────────────────────────────── */
+/* ── Bugün sütunu ──────────────────────────────────────────────────
+ *
+ * Vurgu kobalttan mürekkebe (beyaz) döndü ve bu, "bugün" ile "hafta
+ * sonu" tonlamasını AYNI hue'ya indirdi: ikisi de beyaz yıkaması,
+ * aralarında yalnızca alfa farkı kalırdı (%7 ve %2.5) ve bugün
+ * sütununun okunması biterdi.
+ *
+ * Çözüm durumu TEK kanala bırakmamak: yıkama %10'a çıkar VE sütunun
+ * iki yanına dikey çizgi gelir. Renk körlüğünden bağımsız olarak
+ * "bu sütun işaretli" der. */
 .todayColumn {
-  background: color-mix(in oklch, var(--color-accent) 7%, transparent);
+  background: color-mix(in oklch, var(--color-accent) 10%, transparent);
+  border-left: 1px solid var(--color-line-3);
+  border-right: 1px solid var(--color-line-3);
 }
 
+/* Başlık tam mürekkep: sütunun içindeki en yüksek kontrastlı eleman
+ * odur ve gözü oraya çeken şey budur. */
 .todayHeader {
-  color: var(--color-accent);
+  color: var(--color-ink);
   font-weight: 600;
 }
 
@@ -188,9 +201,12 @@
   border-left: 1px solid var(--color-line-2);
 }
 
-/* ── Hafta sonu ────────────────────────────────────────────────── */
+/* ── Hafta sonu ────────────────────────────────────────────────────
+ * Bugün sütunu %10'a çıktığı için hafta sonu %2'ye iner: ikisi arasında
+ * beş kat fark kalır ve hangisinin işaret, hangisinin ritim olduğu
+ * bir bakışta ayrışır. */
 .weekend {
-  background: color-mix(in oklch, var(--color-ink) 2.5%, transparent);
+  background: color-mix(in oklch, var(--color-ink) 2%, transparent);
 }
 
 /* ── Skor satırı ───────────────────────────────────────────────── */

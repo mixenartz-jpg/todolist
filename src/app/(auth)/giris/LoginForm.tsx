@@ -86,9 +86,11 @@ export function LoginForm() {
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          /* Zemin `surface-2`: alan artık `surface` üzerindeki bir
-             kartın içinde ve aynı renk olsaydı girdi kutusu kaybolurdu. */
-          className="h-10 rounded-lg border border-[var(--color-line-2)] bg-[var(--color-surface-2)] px-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] focus:border-[var(--color-accent)]"
+          /* Zemin `surface-2`: alan `surface` üzerindeki bir kartın
+             içinde ve aynı renk olsaydı girdi kutusu kaybolurdu.
+             Odakta kenar `line-3`'e çıkar — `accent` artık BEYAZ ve
+             odaklanan alanın kenarı gözü acıtırdı. */
+          className="h-11 rounded-lg border border-[var(--color-line-2)] bg-[var(--color-surface-2)] px-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] focus:border-[var(--color-line-3)]"
         />
       </label>
 
@@ -103,9 +105,11 @@ export function LoginForm() {
           autoComplete={mode === "signup" ? "new-password" : "current-password"}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          /* Zemin `surface-2`: alan artık `surface` üzerindeki bir
-             kartın içinde ve aynı renk olsaydı girdi kutusu kaybolurdu. */
-          className="h-10 rounded-lg border border-[var(--color-line-2)] bg-[var(--color-surface-2)] px-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] focus:border-[var(--color-accent)]"
+          /* Zemin `surface-2`: alan `surface` üzerindeki bir kartın
+             içinde ve aynı renk olsaydı girdi kutusu kaybolurdu.
+             Odakta kenar `line-3`'e çıkar — `accent` artık BEYAZ ve
+             odaklanan alanın kenarı gözü acıtırdı. */
+          className="h-11 rounded-lg border border-[var(--color-line-2)] bg-[var(--color-surface-2)] px-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] focus:border-[var(--color-line-3)]"
         />
       </label>
 

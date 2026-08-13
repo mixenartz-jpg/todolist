@@ -8,8 +8,11 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Rutinlerini takip et, istatistiklerini gör",
     start_url: "/",
     display: "standalone",
-    background_color: "#0b0d11",
-    theme_color: "#0b0d11",
+    /* `globals.css` → `--color-bg: oklch(0.135 0 0)`. Manifest hex
+     * ister; ikisi birlikte değişir, yoksa PWA splash eski mavi-siyahta
+     * kalır ve uygulama açılışta bir kare yanlış renk gösterir. */
+    background_color: "#080808",
+    theme_color: "#080808",
     orientation: "portrait",
     lang: "tr",
     icons: [

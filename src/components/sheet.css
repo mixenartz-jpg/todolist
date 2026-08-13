@@ -33,11 +33,22 @@
   justify-content: center;
 }
 
+/*
+ * Perde: `blur(2px)` bir malzeme değil, sadece bulanık bir cam
+ * görüntüsüydü. `--glass-scrim-blur` (12px) arkadaki sayfayı gerçekten
+ * geri iter — panel öne çıkar, sayfa "geride" durur.
+ */
 .daySheet::backdrop {
-  background: rgb(0 0 0 / 0.55);
-  backdrop-filter: blur(2px);
+  background: var(--glass-scrim);
+  -webkit-backdrop-filter: var(--glass-scrim-blur);
+  backdrop-filter: var(--glass-scrim-blur);
 }
 
+/*
+ * Panel cam: altından sayfa akıyor ve malzeme tam olarak bunun için
+ * var. Zemin, blur, kenarlık ve gölge `.glassPanel`'den geliyor
+ * (glass.css) — burada yalnızca sheet'e özgü ölçüler kalıyor.
+ */
 .daySheetPanel {
   width: 100%;
   max-width: 34rem;
@@ -45,14 +56,24 @@
   overflow-y: auto;
   overscroll-behavior: contain;
 
-  background: var(--color-surface);
-  border: 1px solid var(--color-line-2);
-  border-radius: 16px 16px 0 0;
+  /* `.glassPanel` (glass.css) ile aynı malzeme. Sınıfı JSX'e eklemek
+   * yerine burada kompoze ediliyor: `daySheetPanel` iki özellik
+   * tarafından paylaşılıyor ve malzemenin ikisinde de aynı olması
+   * kuralı tek yerde durmalı. */
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: var(--glass-blur-strong);
+  backdrop-filter: var(--glass-blur-strong);
+  border: 1px solid var(--glass-line-strong);
+  box-shadow: var(--shadow-modal), var(--glass-sheen);
+
+  border-radius: var(--r-2xl) var(--r-2xl) 0 0;
 
   /* Alt güvenli alan (iPhone çentik/çubuk). */
   padding-bottom: env(safe-area-inset-bottom);
 
-  animation: sheetRise var(--duration-base) var(--ease-out-quart);
+  /* `--duration-sheet`: 18px yarıçaplı büyük bir panel 180ms'de
+   * kesik hissediyor. */
+  animation: sheetRise var(--duration-sheet) var(--ease-out-expo);
 }
 
 @keyframes sheetRise {
@@ -68,7 +89,7 @@
   }
 
   .daySheetPanel {
-    border-radius: 14px;
+    border-radius: var(--r-2xl);
     max-height: 82dvh;
     animation-name: sheetFade;
   }
@@ -84,5 +105,39 @@
 @media (prefers-reduced-motion: reduce) {
   .daySheetPanel {
     animation: none;
+  }
+}
+
+/*
+ * Cam geri düşüşleri — `glass.css`'tekilerle aynı kurallar.
+ *
+ * `.daySheetPanel` cam sınıfını JSX'ten değil bu dosyadan alıyor
+ * (yukarıdaki gerekçe), dolayısıyla geri düşüşlerini de burada
+ * taşıması gerekiyor: desteklenmeyen ya da saydamlığı kapatılmış bir
+ * tarayıcıda saydam bir panel okunamaz hâle gelirdi.
+ */
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  .daySheetPanel {
+    background: var(--color-surface);
+  }
+
+  .daySheet::backdrop {
+    background: oklch(0 0 0 / 0.78);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .daySheetPanel {
+    background: var(--color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .daySheet::backdrop {
+    background: oklch(0 0 0 / 0.78);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }

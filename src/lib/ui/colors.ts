@@ -1,14 +1,27 @@
 /**
  * Rutin kimlik renkleri ve yoğunluk rampası.
  *
- * Her iki set de `dataviz` doğrulayıcısından geçmiştir (koyu yüzey
- * #111318): renk körlüğü ayrımı ΔE 8.4, normal görüş ΔE 19.3, tüm
- * slotlar ≥3:1 kontrast; rampa tek hue, monoton açıklık, komşu adımlar
- * arası görünür fark.
+ * ── Uygulamadaki TEK renk ──
+ * Kabuk monokromdur (bkz. `globals.css`): gezinme, düğmeler, kartlar
+ * ve tipografi siyah-beyazdır. Renk yalnızca VERİYİ ayırt ettiği
+ * yerde yaşar — rutin kimlikleri, kategori noktaları, ısı haritası
+ * ve hata/uyarı durumları. Dekoratif renk yoktur.
+ *
+ * ── Doğrulama ──
+ * Her iki set de `dataviz` doğrulayıcısından geçmiştir. Doğrulama
+ * yüzeyi #111318 → **#101010**'a koyulaştı; sabit bir ön plan için
+ * kontrast oranı daha koyu zeminde monoton olarak ARTAR, dolayısıyla
+ * "her slot ≥3:1" evleviyetle geçmeye devam eder ve slot-slot ΔE
+ * zeminden bağımsızdır.
+ *
+ * İddia artık YORUM DEĞİL, KAPI: `colors.contrast.test.ts` slot
+ * kontrastlarını, rampanın monotonluğunu ve mürekkep eşiklerini her
+ * `npm test` çalıştırmasında ölçer.
  *
  * Slot SIRASI renk körlüğü güvenliğinin mekanizmasıdır — kozmetik
  * değildir ve değiştirilmemelidir. Renk rutinin KİMLİĞİNİ takip eder;
  * sırasını değil. Bir rutin silinince diğerlerinin rengi değişmez.
+ * (Sıra testte dondurulmuştur; değiştirmek kırmızıya döner.)
  */
 
 export const SLOT_COUNT = 8;
