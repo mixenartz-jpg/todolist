@@ -61,6 +61,16 @@ interface PlanMonthGridProps {
    */
   collapsedDays: ReadonlySet<DateStr>;
   onToggleCollapsed: (date: DateStr) => void;
+  /**
+   * Katlanmış haftalar — bölüm başlangıç tarihiyle anahtarlanır.
+   *
+   * Varsayılan KAPALI (bkz. useCollapsedWeeks): dolu bir ay altı
+   * hafta × yedi gün açılırsa sayfa metrelerce uzar. Bugünün haftası
+   * açık gelir ki ekran açıldığında "şu an ne yapmalıyım" cevabı
+   * hazır dursun.
+   */
+  collapsedWeeks: ReadonlySet<DateStr>;
+  onToggleWeek: (weekStart: DateStr) => void;
   onPlace: (date: DateStr) => void;
   /** Gün panelini açar — plan metni, kategori ve hedef seçicileri orada. */
   onOpenDay: (date: DateStr) => void;
@@ -86,6 +96,8 @@ export function PlanMonthGrid({
   addPending,
   collapsedDays,
   onToggleCollapsed,
+  collapsedWeeks,
+  onToggleWeek,
   onPlace,
   onOpenDay,
   onAdd,
@@ -105,11 +117,23 @@ export function PlanMonthGrid({
         const last = week[week.length - 1];
         if (!first || !last) return null;
 
+        /* Haftanın açık iş sayısı: kapalıyken içeride ne olduğunu
+           söyleyen tek işaret. Gün sayaçlarının toplamı — ayrı bir
+           hesap değil, aynı `openCount` alanının toplanmışı. */
+        const openCount = week.reduce((sum, b) => sum + b.openCount, 0);
+
         return (
           <PlanWeekSection
             key={first.date}
             id={`hafta-${first.date}`}
             label={formatWeekRange(first.date, last.date)}
+            openCount={openCount}
+            collapsed={collapsedWeeks.has(first.date)}
+            onToggle={() => onToggleWeek(first.date)}
+            /* Yerleştirme modunda katlama devre dışı: kapalı bir
+               haftanın günleri DOM'da olmasaydı oraya iş atamanın
+               hiçbir yolu kalmazdı (bkz. PlanSheet). */
+            forceOpen={placing}
           >
             {week.map((bucket) => (
               <PlanDayRow

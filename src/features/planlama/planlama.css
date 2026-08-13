@@ -82,8 +82,9 @@
   z-index: calc(var(--z-sticky) - 1);
 
   margin: 0;
-  padding: 0.5rem var(--card-p);
-
+  /* Dolgu artık DÜĞMEDE: hedef başlığın tamamı olmalı, içine
+   * gömülmüş küçük bir alan değil. */
+  padding: 0;
   font-size: var(--text-xs);
   font-weight: 500;
   line-height: var(--leading-snug);
@@ -91,8 +92,59 @@
   color: var(--color-ink-3);
 }
 
-/* Bölümler arası ayrım yok: kağıt kesintisiz akar, haftaları
- * ayıran şey başlığın kendisidir. */
+/*
+ * Hafta başlığının tamamı katlama düğmesi.
+ *
+ * Ayrı bir ok düğmesi, tıklanabilir bir başlığın yanında ikinci ve
+ * daha küçük bir hedef üretirdi. Tam genişlik: nişan almak gerekmez.
+ */
+.planWeekToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+
+  padding: 0.625rem var(--card-p);
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+
+  transition:
+    background-color var(--duration-fast) var(--ease-out-quart),
+    color var(--duration-fast) var(--ease-out-quart);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .planWeekToggle:hover {
+    background: color-mix(in oklch, var(--color-ink) 5%, transparent);
+    color: var(--color-ink-2);
+  }
+}
+
+.planWeekRange {
+  min-width: 0;
+}
+
+/* Sayı sağa yaslanır: tarih solda, ağırlık sağda — göz iki ucu
+ * ayrı ayrı tarar. */
+.planWeekCount {
+  margin-left: auto;
+  color: var(--color-ink-4);
+}
+
+/* Kapalı haftada sayı bir tık öne çıkar: o an tek bilgi taşıyan
+ * işaret odur. */
+.planWeekSection:has(.planWeekToggle[aria-expanded="false"]) .planWeekCount {
+  color: var(--color-ink-3);
+}
+
+/*
+ * Bölümler arası kıl çizgi.
+ *
+ * Haftalar artık varsayılan KAPALI ve kapalı bir hafta tek satırlık
+ * bir şerit. Çizgisiz olsalardı arka arkaya gelen dört şerit tek bir
+ * blok gibi okunur, hangisinin nerede bittiği belli olmazdı.
+ */
 .planWeekSection + .planWeekSection .planWeekLabel {
   border-top: 1px solid var(--color-line);
 }

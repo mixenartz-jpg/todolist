@@ -7,7 +7,7 @@ import type { DateStr } from "@/lib/date/types";
 import { Toast, useToast } from "@/components/Toast";
 import { monthGrid } from "@/features/calendar/grid";
 import { useTasks } from "@/features/tasks/queries";
-import { buildPlanRange } from "./range";
+import { buildPlanRange, chunkWeeks } from "./range";
 import { CategoryFilterBar } from "./CategoryFilterBar";
 import { daySummaries } from "./dayplan";
 import { useSetTaskCategory, useSetTaskGoal } from "./mutations";
@@ -21,6 +21,7 @@ import { PlanSkeleton } from "./PlanSkeleton";
 import { usePlanlamaSurface } from "./usePlanlamaSurface";
 import { usePlanCategories } from "./usePlanCategories";
 import { useCollapsedDays } from "./useCollapsedDays";
+import { useCollapsedWeeks } from "./useCollapsedWeeks";
 import { usePlanTaskActions } from "./usePlanTaskActions";
 import "./planlama.css";
 
@@ -82,6 +83,24 @@ export function PlanlamaMonthScreen() {
   const summaries = useMemo(
     () => daySummaries(range.buckets, planDaysQuery.data ?? new Set()),
     [range.buckets, planDaysQuery.data],
+  );
+
+  /*
+   * Hafta bölümlerinin başlangıç tarihleri.
+   *
+   * `PlanMonthGrid` ile AYNI `chunkWeeks` çağrısı: bölümleme iki
+   * yerde ayrı hesaplansaydı katlama anahtarları ile çizilen
+   * bölümler sessizce ayrışabilirdi.
+   */
+  const weekStarts = useMemo(
+    () => chunkWeeks(range.buckets).map((w) => w[0]?.date).filter((d) => d !== undefined),
+    [range.buckets],
+  );
+
+  const { collapsedWeeks, toggleWeek } = useCollapsedWeeks(
+    anchor,
+    weekStarts,
+    today,
   );
 
   /* Ayın hedefleri — gün panelindeki hedef seçici için. */
@@ -158,6 +177,8 @@ export function PlanlamaMonthScreen() {
                 addPending={actions.addPending}
                 collapsedDays={collapsedDays}
                 onToggleCollapsed={toggleCollapsed}
+                collapsedWeeks={collapsedWeeks}
+                onToggleWeek={toggleWeek}
                 onPlace={handlePlace}
                 // Gün numarası yerleştirme modunda da paneli açar:
                 // yerleştirmenin kendi düğmesi var, aynı hedefin anlamı
