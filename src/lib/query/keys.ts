@@ -116,7 +116,8 @@ export const qk = {
    * olurdu.
    *
    * Ay başına ayrı anahtar (`planGoalsMonth` ile aynı gerekçe):
-   * planlar yıllar boyunca birikir ama ekran hep tek ay okur.
+   * notlar yıllar boyunca birikir ama ekran hep tek ay okur.
    */
-  monthPlan: (month: DateStr) => ["month-plan", month] as const,
+  monthPlans: () => ["month-plans"] as const,
+  monthPlansMonth: (month: DateStr) => ["month-plans", month] as const,
 } as const;

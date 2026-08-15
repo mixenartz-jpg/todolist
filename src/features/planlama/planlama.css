@@ -599,15 +599,18 @@
   gap: 8px;
 }
 
-/* ── Hedef listesi ────────────────────────────────────────────────
+/* ── Kart listesi (Hedefler + Genel planlama) ─────────────────────
+ *
+ * Adı `goalList` çünkü önce Hedefler için yazıldı; Genel planlama da
+ * AYNI ölçekte, aynı boyda kartlar gösterdiği için yeniden kullanıyor.
+ * Birinde kayan listenin ötekinde sayfayı uzatması tutarsızlık olurdu.
  *
  * ── Bu dosyanın başındaki "iç kaydırma YOK" kuralının İSTİSNASI ──
  * O kural ajanda KAĞIDI için yazıldı ve orada haklıdır: gizlenen şey
- * bir GÖREVDİR, gizlenmesi işin unutulması demektir. Hedefler başka
+ * bir GÖREVDİR, gizlenmesi işin unutulması demektir. Bu listeler başka
  * bir yüzey — ay başında yazılan, sabit sayıda, taranan değil OKUNAN
- * bir liste. Sınırsız uzadığında "Hedef ekle" düğmesi ekranın dibine
- * düşüyor ve her yeni hedef sayfayı sonuna kadar kaydırmayı
- * gerektiriyordu.
+ * kartlar. Sınırsız uzadığında "ekle" düğmesi ekranın dibine düşüyor
+ * ve her yeni kart sayfayı sonuna kadar kaydırmayı gerektiriyordu.
  *
  * `max-height` bir EŞİKTİR, sabit yükseklik değil: üç hedefli bir ay
  * kutuya hiç değmez ve kaydırma çubuğu görünmez. Davranış yalnızca

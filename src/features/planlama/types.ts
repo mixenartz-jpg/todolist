@@ -57,30 +57,33 @@ export interface PlanGoalDraft {
 }
 
 /**
- * Ayın GENEL planı — serbest metin.
+ * Ayın genel planlama notu — tek kart.
  *
- * `PlanGoal` ile aynı ay çapasını paylaşır ama başka bir işi yapar:
- * hedefler yapılandırılmıştır (başlık + sayaç + renk), bu ise
- * yapılandırılmamış düşünme alanıdır ("bu ay neye odaklanıyorum,
- * hangi riskler var").
- *
- * `id` TAŞIMAZ: ekran satırı kimliğiyle değil AYIYLA adresliyor
- * (`upsert … onConflict: user_id,month`) ve kimliği taşımak,
- * kullanılmayan bir alanı önbellekte tutmak olurdu.
+ * `PlanGoal` ile aynı ay çapasını ve aynı rengi paylaşır; farkı
+ * ÖLÇÜLMEMESİDİR. Hedefin sayacı ve ilerleme çubuğu vardır, notun
+ * yoktur: "bu ay sınav haftası var, ona göre plan yap" bir hedef değil
+ * bir bağlamdır. Bu yüzden `targetCount`/`doneCount` alanları YOKTUR —
+ * taşınsalardı arayüzde her kartta gizlenmeleri gerekirdi.
  */
 export interface MonthPlan {
+  id: string;
   /** Ayın 1'i — `startOfMonth()` ile üretilir. */
   month: DateStr;
-  /**
-   * Metin. Satır YOKSA boş dizedir, null DEĞİL: "sunucudan yanıt
-   * geldi ama satır yok" ile "henüz yanıt gelmedi" ayrımı sorgunun
-   * `undefined`'ına bırakılmıştır (bkz. queries.ts).
-   */
-  body: string;
+  title: string;
+  /** İsteğe bağlı ayrıntı; null → başlık tek başına yeterli. */
+  body: string | null;
+  colorSlot: number;
+  sortOrder: number;
 }
 
-/** DB kısıtını aynalar (0009); textarea'da `maxLength` olarak tüketilir. */
-export const MONTH_PLAN_MAX = 10000;
+export interface MonthPlanDraft {
+  month: DateStr;
+  title: string;
+  body: string | null;
+  colorSlot: number;
+  /** Sona eklemek için: o aydaki mevcut not sayısı. */
+  sortOrder: number;
+}
 
 /**
  * Kategori filtresi.

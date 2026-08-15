@@ -103,19 +103,21 @@ export interface PlanGoalRow {
 }
 
 /**
- * Ayın GENEL planı — serbest metin (0009).
+ * Ayın genel planlama NOTU — kart başına bir satır (0009).
  *
- * `PlanGoalRow` ile aynı ay temsilini kullanır ('YYYY-MM-01') ama ay
- * başına TEK satırdır: hedefler yapılandırılmış bir listedir, bu ise
- * yapılandırılmamış düşünme alanı. `body` `not null` — satırın var
- * olması metnin var olması demektir; boşaltıldığında uygulama satırı
- * siler.
+ * `PlanGoalRow` ile aynı ay temsilini ('YYYY-MM-01') ve aynı renk
+ * paletini kullanır; farkı ÖLÇÜLMEMESİDİR. Hedefin `target_count` /
+ * `done_count`'u ve ilerleme çubuğu vardır, notun yoktur — "bu ay
+ * sınav haftası var" bir hedef değil bir bağlamdır.
  */
 export interface MonthPlanRow {
   id: string;
   user_id: string;
   month: string;
-  body: string;
+  title: string;
+  body: string | null;
+  color_slot: number;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }

@@ -15,6 +15,14 @@ import type { Category } from "./types";
 
 export const GOAL_TITLE_MAX = 120;
 export const GOAL_NOTE_MAX = 2000;
+/*
+ * Genel planlama notu, hedefle AYNI sınırları kullanır (0009): ikisi de
+ * aynı formda, aynı genişlikte yazılan bir başlık ve bir ayrıntıdır.
+ * Ayrı sabitler tanımlamak, iki ekranda iki farklı kesilme noktası
+ * demek olurdu — kullanıcı için görünür bir tutarsızlık.
+ */
+export const MONTH_PLAN_TITLE_MAX = GOAL_TITLE_MAX;
+export const MONTH_PLAN_BODY_MAX = GOAL_NOTE_MAX;
 export const CATEGORY_NAME_MAX = 40;
 /** DB kısıtı: 1..9999. */
 export const GOAL_TARGET_MAX = 9999;

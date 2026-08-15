@@ -3,14 +3,19 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { qk } from "@/lib/query/keys";
 import { createClient } from "@/lib/supabase/client";
-import type { CategoryRow, PlanGoalRow } from "@/lib/db/database.types";
+import type {
+  CategoryRow,
+  MonthPlanRow,
+  PlanGoalRow,
+} from "@/lib/db/database.types";
 import type { DateStr } from "@/lib/date/types";
 import type { Task } from "@/features/tasks/types";
-import { toCategory, toPlanGoal } from "./queries";
+import { toCategory, toMonthPlan, toPlanGoal } from "./queries";
 import type {
   Category,
   CategoryDraft,
   MonthPlan,
+  MonthPlanDraft,
   PlanGoal,
   PlanGoalDraft,
 } from "./types";
@@ -490,73 +495,136 @@ export function useSetTaskGoal(onError?: (message: string) => void) {
 }
 
 /**
- * Ayın GENEL planını kaydeder.
+ * Genel planlama notu yazma hook'ları.
  *
- * `notes/mutations.ts`'teki `useSaveDayPlan`'ın ayrı-tablo sürümü:
- * aynı "Kaydet düğmesi yok, yazdıkça kaydet" deseni, aynı boşalınca-sil
- * mantığı. Fark, tek satırlık bir tabloya yazması ve komşu sütun
- * çatışması olmaması — burada `plan`/`note`/`mood` gibi paylaşılan bir
- * satır yok, dolayısıyla kısmi geri alma gerekmiyor.
+ * Hedef hook'larının (`useCreateGoal` / `useUpdateGoal` /
+ * `useDeleteGoal`) birebir ikizi: aynı optimistic desen, aynı hata
+ * kanalı. Ekran da aynı etkileşimi sunuyor (tıkla-düzenle, Kaydet, Sil)
+ * ve iki sekme arasında geçen kullanıcı ikisini de aynı şekilde
+ * kullanabilmeli.
+ *
+ * ARŞİVLEME YOK — hedeften ayrıldığı tek yer. Arşiv, hedefin geçmiş ay
+ * özetini bozmadan "bunu artık takip etmiyorum" demenin yoluydu; not
+ * hiçbir özete girmiyor, dolayısıyla silmenin geri alınamaz olması
+ * dışında koruyacak bir şey yok. Üçüncü bir durum eklemek, kartta
+ * kullanılmayan bir düğme demekti.
  */
-export function useSaveMonthPlan(onError?: (message: string) => void) {
+export function useCreateMonthPlan(onError?: (message: string) => void) {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ month, body }: { month: DateStr; body: string }) => {
+    mutationFn: async (draft: MonthPlanDraft) => {
       const supabase = createClient();
-      const trimmed = body.trim();
 
-      /*
-       * Metin boşaldıysa satır SİLİNİR — `day_notes` ile aynı karar:
-       * boş metin bir kayıt değildir ve saklamak, kullanıcının hiç
-       * yazmadığı aylar için çöp satır biriktirmek olurdu.
-       *
-       * `body` sütunu `not null` olduğu için boş dize yazmak da
-       * mümkündü; silmek tercih edildi ki "planı olan aylar" sorgusu
-       * ileride gerekirse satır varlığına bakabilsin.
-       */
-      if (trimmed.length === 0) {
-        const { error } = await supabase
-          .from("month_plans")
-          .delete()
-          .eq("month", month);
-        if (error) throw error;
-        return;
-      }
+      const { data, error } = await supabase
+        .from("month_plans")
+        .insert({
+          month: draft.month,
+          title: draft.title.trim(),
+          body: draft.body,
+          color_slot: draft.colorSlot,
+          sort_order: draft.sortOrder,
+        })
+        .select()
+        .single();
 
+      if (error) throw error;
+      return toMonthPlan(data as MonthPlanRow);
+    },
+
+    // Oluşturma optimistic DEĞİL — kimliği sunucu üretiyor
+    // (useCreateGoal ile aynı gerekçe).
+    onSuccess: (plan) =>
+      qc.invalidateQueries({ queryKey: qk.monthPlansMonth(plan.month) }),
+    onError: (error) => onError?.(errorText(error)),
+  });
+}
+
+interface UpdateMonthPlanVars {
+  id: string;
+  month: DateStr;
+  title: string;
+  body: string | null;
+  colorSlot: number;
+}
+
+export function useUpdateMonthPlan(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: UpdateMonthPlanVars) => {
+      const supabase = createClient();
       const { error } = await supabase
         .from("month_plans")
-        .upsert({ month, body: trimmed }, { onConflict: "user_id,month" });
+        .update({
+          title: input.title.trim(),
+          body: input.body,
+          color_slot: input.colorSlot,
+        })
+        .eq("id", input.id);
       if (error) throw error;
     },
 
-    onMutate: async ({ month, body }) => {
-      await qc.cancelQueries({ queryKey: qk.monthPlan(month) });
-      const previous = qc.getQueryData<MonthPlan>(qk.monthPlan(month));
+    onMutate: async (vars) => {
+      const key = qk.monthPlansMonth(vars.month);
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<MonthPlan[]>(key);
 
-      qc.setQueryData<MonthPlan>(qk.monthPlan(month), { month, body });
+      qc.setQueryData<MonthPlan[]>(key, (list) =>
+        list?.map((p) =>
+          p.id === vars.id
+            ? {
+                ...p,
+                title: vars.title.trim(),
+                body: vars.body,
+                colorSlot: vars.colorSlot,
+              }
+            : p,
+        ),
+      );
 
-      return { previous };
+      return { previous, key };
     },
 
-    onError: (error, { month }, context) => {
-      qc.setQueryData(qk.monthPlan(month), context?.previous);
+    onError: (error, _vars, context) => {
+      if (context) qc.setQueryData(context.key, context.previous);
       onError?.(errorText(error));
     },
 
-    /*
-     * `onSettled` / `invalidateQueries` YOK — bu, `useSaveDayPlan`'dan
-     * BİLİNÇLİ sapmadır, unutulmuş bir satır değil.
-     *
-     * Orada invalidation ay ızgarasının nokta haritası içindi
-     * (`notePlansMonth`): plan yazılınca hücredeki noktanın belirmesi
-     * gerekiyordu. Burada öyle bir TÜREV veri yok — bu metni okuyan tek
-     * yer, metni zaten optimistic olarak yazdığımız ekranın kendisi.
-     *
-     * Üstelik zararlı olurdu: kullanıcı yazmaya devam ediyorken gelen
-     * bir refetch imleci ve son cümleyi geri sarardı
-     * (notes/mutations.ts:116-118'deki aynı gerekçe).
-     */
+    onSettled: (_data, _error, vars) =>
+      qc.invalidateQueries({ queryKey: qk.monthPlansMonth(vars.month) }),
+  });
+}
+
+export function useDeleteMonthPlan(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id }: { id: string; month: DateStr }) => {
+      const supabase = createClient();
+      const { error } = await supabase.from("month_plans").delete().eq("id", id);
+      if (error) throw error;
+    },
+
+    onMutate: async (vars) => {
+      const key = qk.monthPlansMonth(vars.month);
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<MonthPlan[]>(key);
+
+      qc.setQueryData<MonthPlan[]>(key, (list) =>
+        list?.filter((p) => p.id !== vars.id),
+      );
+
+      return { previous, key };
+    },
+
+    onError: (error, _vars, context) => {
+      if (context) qc.setQueryData(context.key, context.previous);
+      onError?.(errorText(error));
+    },
+
+    onSettled: (_data, _error, vars) =>
+      qc.invalidateQueries({ queryKey: qk.monthPlansMonth(vars.month) }),
   });
 }
 
