@@ -598,3 +598,57 @@
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 8px;
 }
+
+/* ── Hedef listesi ────────────────────────────────────────────────
+ *
+ * ── Bu dosyanın başındaki "iç kaydırma YOK" kuralının İSTİSNASI ──
+ * O kural ajanda KAĞIDI için yazıldı ve orada haklıdır: gizlenen şey
+ * bir GÖREVDİR, gizlenmesi işin unutulması demektir. Hedefler başka
+ * bir yüzey — ay başında yazılan, sabit sayıda, taranan değil OKUNAN
+ * bir liste. Sınırsız uzadığında "Hedef ekle" düğmesi ekranın dibine
+ * düşüyor ve her yeni hedef sayfayı sonuna kadar kaydırmayı
+ * gerektiriyordu.
+ *
+ * `max-height` bir EŞİKTİR, sabit yükseklik değil: üç hedefli bir ay
+ * kutuya hiç değmez ve kaydırma çubuğu görünmez. Davranış yalnızca
+ * liste eşiği aştığında devreye girer — ayrı bir "uzun mu?" ölçümü
+ * ya da JS'e gerek yok.
+ */
+.goalList {
+  max-height: var(--goal-list-max);
+  overflow-y: auto;
+
+  /* Çubuk göründüğünde kartlar daralıp genişlik zıplamasın. */
+  scrollbar-gutter: stable;
+  padding-right: 0.25rem;
+
+  /*
+   * Alt kenarda soluma: listenin DEVAMI olduğunu söyleyen işaret.
+   * Kaydırma çubuğu tek başına yetmez — overlay çubuklar dokunmatik
+   * cihazda parmak kalkınca kaybolur ve kesilmiş liste "hedeflerim
+   * silinmiş" olarak okunur.
+   *
+   * `mask-image` ayrı bir overlay katmanı gerektirmez: gradient
+   * kutunun kendi içeriğine uygulanır ve kaydırdıkça onunla akar.
+   * Üst kenarda da 0.75rem'lik bir pay var, yoksa yukarı kaydırınca
+   * ilk kart kutunun tepesinden keskin biçimde kesilirdi.
+   */
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 0.75rem,
+    #000 calc(100% - 1.5rem),
+    transparent 100%
+  );
+}
+
+/*
+ * Dokunmatikte kaydırma MOMENTUM'la biter ve liste sonuna gelince
+ * hareket SAYFAYA devrolur — kullanıcı hedeflerin sonuna varır varmaz
+ * sayfa altındaki "Hedef ekle" düğmesini geçip gider. Zincir kesilir.
+ */
+@media (pointer: coarse) {
+  .goalList {
+    overscroll-behavior-y: contain;
+  }
+}

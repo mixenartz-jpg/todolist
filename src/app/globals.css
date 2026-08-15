@@ -181,6 +181,17 @@
   --plan-task-col: 17.5rem; /* çoklu sütun akışının taban ölçüsü */
   --plan-sheet-max: 72rem; /* kağıdın azami genişliği */
 
+  /*
+   * Hedef listesinin kaydırma EŞİĞİ (≈6 kart). Altında kaydırma hiç
+   * görünmez, üstünde liste kendi içinde kayar. Altı, ekranın yarısını
+   * aşmadan "bu ayın hedefleri" hissini veren sayı; yediden fazlası
+   * zaten hedef değil görev listesidir.
+   *
+   * `vh` DEĞİL `rem`: `vh` mobilde adres çubuğu gizlenince zıplar ve
+   * liste kaydırılırken kutunun yüksekliği değişirdi.
+   */
+  --goal-list-max: 32rem;
+
   /* ══ Cam — YALNIZCA altından içerik akan yüzen kabuk ══════════════
    *
    * İçerik kartları opaktır. Cam kabuk = masaüstü şerit, mobil sekme

@@ -39,6 +39,14 @@ const ROUTES: readonly Route[] = [
   { slug: "05-planlama-ay", path: "/planlama/ay", viewports: ALL },
   { slug: "06-planlama-hafta", path: "/planlama/hafta", viewports: ALL },
   { slug: "07-planlama-hedefler", path: "/planlama/hedefler", viewports: ALL },
+  /*
+   * Slug "07b": sekme sırasında Hedefler ile Özet ARASINDA duruyor ama
+   * numaralar kaydırılMADI. `08-planlama-ozet`'i 09 yapmak, ondan
+   * sonraki her rotayı da kaydırır ve e2e/__shots__ altındaki tüm
+   * referans görüntüleri yetim bırakırdı — sıra numarası okuma
+   * kolaylığı içindir, kimlik değil.
+   */
+  { slug: "07b-planlama-genel", path: "/planlama/genel", viewports: ALL },
   { slug: "08-planlama-ozet", path: "/planlama/ozet", viewports: ALL },
   { slug: "09-istatistik", path: "/istatistik", viewports: ALL },
   { slug: "10-rutinler", path: "/rutinler", viewports: ALL },

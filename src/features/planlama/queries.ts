@@ -2,11 +2,15 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { asDateStr } from "@/lib/date/date";
-import type { CategoryRow, PlanGoalRow } from "@/lib/db/database.types";
+import type {
+  CategoryRow,
+  MonthPlanRow,
+  PlanGoalRow,
+} from "@/lib/db/database.types";
 import { qk } from "@/lib/query/keys";
 import { createClient } from "@/lib/supabase/client";
 import type { DateStr } from "@/lib/date/types";
-import type { Category, PlanGoal } from "./types";
+import type { Category, MonthPlan, PlanGoal } from "./types";
 
 /**
  * Tüm kategoriler — arşivlenmişler DAHİL.
@@ -106,6 +110,56 @@ export function toPlanGoal(row: PlanGoalRow): PlanGoal {
     colorSlot: row.color_slot,
     sortOrder: row.sort_order,
     archivedAt: row.archived_at,
+  };
+}
+
+/**
+ * Ayın GENEL planı.
+ *
+ * `usePlanGoals` ile aynı çapayı okur ama tek satır döner — ikisi
+ * ayrı sorgudur çünkü ayrı tablolardır ve biri değişince ötekinin
+ * tazelenmesi gerekmez.
+ */
+export function useMonthPlan(month: DateStr) {
+  return useQuery({
+    queryKey: qk.monthPlan(month),
+    queryFn: () => fetchMonthPlan(month),
+  });
+}
+
+/**
+ * Satır YOKSA `null` değil, boş gövdeli bir `MonthPlan` döner.
+ *
+ * Gerekçe editörde: `MonthPlanEditor` "sunucu verisi geldi mi" sorusunu
+ * `data !== undefined` ile soruyor (DayPlanEditor'ın senkron guard'ı).
+ * `null` dönseydi "satır yok" ile "henüz yüklenmedi" ayırt edilemez,
+ * guard hiç tetiklenmez ve ay değiştirince alan eski metinde takılı
+ * kalırdı. Boş gövde, var olmayan satırın doğru temsilidir.
+ *
+ * `maybeSingle()` — `single()` DEĞİL: `single()` satır yokken HATA
+ * fırlatır ve planı henüz yazılmamış her ay bir hata ekranı olurdu.
+ */
+async function fetchMonthPlan(month: DateStr): Promise<MonthPlan> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("month_plans")
+    .select("*")
+    .eq("month", month)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (data === null) return { month, body: "" };
+
+  return toMonthPlan(data as MonthPlanRow);
+}
+
+export function toMonthPlan(row: MonthPlanRow): MonthPlan {
+  return {
+    // supabase-js `date`'i 'YYYY-MM-DD' string döndürür; DB kısıtı
+    // değerin ayın 1'i olduğunu garanti eder (toPlanGoal ile aynı).
+    month: asDateStr(row.month),
+    body: row.body,
   };
 }
 

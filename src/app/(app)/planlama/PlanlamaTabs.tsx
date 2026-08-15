@@ -13,9 +13,22 @@ const TABS = [
    * çubuğunda hiçbir etkisi olmayan bir `?kat=` durur ve kullanıcı
    * "neden süzülmüyor" diye sorardı.
    */
+  /*
+   * Sıra ZAMANSAL DARALMADAN SOYUTLAMAYA gider: önce ızgaralar
+   * (Ay → Hafta), sonra ay ölçeğinde yazı (Hedefler → Genel), en sonda
+   * geriye bakış (Özet). "Genel"i sona koymak, ay bittikten sonra
+   * okunan Özet'i ortaya sıkıştırırdı.
+   */
   { href: "/planlama/ay", label: "Ay", filters: true },
   { href: "/planlama/hafta", label: "Hafta", filters: true },
   { href: "/planlama/hedefler", label: "Hedefler", filters: false },
+  /*
+   * Etiket "Genel", "Genel planlama" DEĞİL: beş sekmenin `max-w-2xl`
+   * kutuya sığması gerekiyor ve iki kelimelik bir etiket dar ekranda
+   * satırı taşırırdı. Başlığın tam adı ekranın içinde duruyor
+   * (SectionHeading → "Genel planlama").
+   */
+  { href: "/planlama/genel", label: "Genel", filters: false },
   { href: "/planlama/ozet", label: "Özet", filters: false },
 ] as const;
 
@@ -31,11 +44,17 @@ const CATEGORY_PARAM = "kat";
  * ekleyemiyor, geri tuşu ölçeği geri almıyordu. Takvim'de Ay/Hafta
  * zaten ayrı rotalar; Planlama'nın da aynı dili konuşması tutarlılık.
  *
- * ── Kategoriler neden BEŞİNCİ sekme değil? ──
+ * ── Kategoriler neden AYRI sekme değil? ──
  * Kategori yönetimi (oluştur, adlandır, renk, arşivle) yılda birkaç
  * kez yapılan bir iştir; ayrı bir sekme ona hedeflerle eşit ağırlık
  * verirdi. Yeri Özet sekmesindeki dağılımın altıdır — kullanıcı
  * kategorilerine zaten oraya bakarken karar verir.
+ *
+ * Ölçüt SEKME SAYISI DEĞİL KULLANIM SIKLIĞIDIR. "Genel" beşinci sekme
+ * olarak eklendi çünkü ay ölçeğinde not almak Hedefler kadar sık bir
+ * iştir; kategori yönetimi o eşiği geçmiyor. Sekme çubuğu bu kadarını
+ * taşır, ama her yeni sekme aynı soruyu yeniden sormalı: bu iş ayda
+ * bir yapılıyor mu, yılda bir mi?
  */
 export function PlanlamaTabs() {
   const pathname = usePathname();
@@ -65,9 +84,24 @@ export function PlanlamaTabs() {
   }
 
   return (
+    /*
+     * Dolgu ve boşluk BEŞİNCİ sekme için daraltıldı (gap-1 → gap-0.5,
+     * px-3 → px-2.5). Ölçümle: dört sekme 320px'de rahat sığıyordu ama
+     * beşi 288px'lik kutuda 307px istiyordu — 19px taşma. Daraltma
+     * gerekliyi 288'in altına indirir ve 320'de de sığar.
+     *
+     * Reddedilen alternatifler:
+     *   `overflow-x-auto` — kaydırılan sekme çubuğu, kaydırıldığında
+     *     ilk sekmeyi GİZLER; gezinme haritasının yarısı görünmez olur.
+     *   "Hafta" → "Hft." — en geniş sekme "Hedefler" (77px), yani
+     *     kısaltma yanlış yeri hedefler ve okunabilirliği boşuna bozar.
+     *
+     * Dokunma hedefi korunur: `py-1.5` + satır yüksekliği ≈ 32px ve
+     * en dar sekme ("Ay") 35px kalır.
+     */
     <nav
       aria-label="Planlama görünümleri"
-      className="flex gap-1 rounded-lg bg-[var(--color-surface-2)] p-1"
+      className="flex gap-0.5 rounded-lg bg-[var(--color-surface-2)] p-1"
     >
       {TABS.map((tab) => {
         const active = pathname.startsWith(tab.href);
@@ -78,7 +112,7 @@ export function PlanlamaTabs() {
             href={hrefFor(tab)}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "rounded-md px-3 py-1.5 text-[length:var(--text-sm)]",
+              "rounded-md px-2.5 py-1.5 text-[length:var(--text-sm)]",
               "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-quart)]",
               active
                 ? "bg-[var(--color-surface-3)] font-medium text-[var(--color-ink)]"

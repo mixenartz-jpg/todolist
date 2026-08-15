@@ -102,6 +102,24 @@ export interface PlanGoalRow {
   updated_at: string;
 }
 
+/**
+ * Ayın GENEL planı — serbest metin (0009).
+ *
+ * `PlanGoalRow` ile aynı ay temsilini kullanır ('YYYY-MM-01') ama ay
+ * başına TEK satırdır: hedefler yapılandırılmış bir listedir, bu ise
+ * yapılandırılmamış düşünme alanı. `body` `not null` — satırın var
+ * olması metnin var olması demektir; boşaltıldığında uygulama satırı
+ * siler.
+ */
+export interface MonthPlanRow {
+  id: string;
+  user_id: string;
+  month: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface DayNoteRow {
   user_id: string;
   date: string;

@@ -7,7 +7,13 @@ import type { CategoryRow, PlanGoalRow } from "@/lib/db/database.types";
 import type { DateStr } from "@/lib/date/types";
 import type { Task } from "@/features/tasks/types";
 import { toCategory, toPlanGoal } from "./queries";
-import type { Category, CategoryDraft, PlanGoal, PlanGoalDraft } from "./types";
+import type {
+  Category,
+  CategoryDraft,
+  MonthPlan,
+  PlanGoal,
+  PlanGoalDraft,
+} from "./types";
 
 /**
  * Kategori yazma hook'ları.
@@ -480,6 +486,77 @@ export function useSetTaskGoal(onError?: (message: string) => void) {
     },
 
     onSettled: () => qc.invalidateQueries({ queryKey: qk.tasks() }),
+  });
+}
+
+/**
+ * Ayın GENEL planını kaydeder.
+ *
+ * `notes/mutations.ts`'teki `useSaveDayPlan`'ın ayrı-tablo sürümü:
+ * aynı "Kaydet düğmesi yok, yazdıkça kaydet" deseni, aynı boşalınca-sil
+ * mantığı. Fark, tek satırlık bir tabloya yazması ve komşu sütun
+ * çatışması olmaması — burada `plan`/`note`/`mood` gibi paylaşılan bir
+ * satır yok, dolayısıyla kısmi geri alma gerekmiyor.
+ */
+export function useSaveMonthPlan(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ month, body }: { month: DateStr; body: string }) => {
+      const supabase = createClient();
+      const trimmed = body.trim();
+
+      /*
+       * Metin boşaldıysa satır SİLİNİR — `day_notes` ile aynı karar:
+       * boş metin bir kayıt değildir ve saklamak, kullanıcının hiç
+       * yazmadığı aylar için çöp satır biriktirmek olurdu.
+       *
+       * `body` sütunu `not null` olduğu için boş dize yazmak da
+       * mümkündü; silmek tercih edildi ki "planı olan aylar" sorgusu
+       * ileride gerekirse satır varlığına bakabilsin.
+       */
+      if (trimmed.length === 0) {
+        const { error } = await supabase
+          .from("month_plans")
+          .delete()
+          .eq("month", month);
+        if (error) throw error;
+        return;
+      }
+
+      const { error } = await supabase
+        .from("month_plans")
+        .upsert({ month, body: trimmed }, { onConflict: "user_id,month" });
+      if (error) throw error;
+    },
+
+    onMutate: async ({ month, body }) => {
+      await qc.cancelQueries({ queryKey: qk.monthPlan(month) });
+      const previous = qc.getQueryData<MonthPlan>(qk.monthPlan(month));
+
+      qc.setQueryData<MonthPlan>(qk.monthPlan(month), { month, body });
+
+      return { previous };
+    },
+
+    onError: (error, { month }, context) => {
+      qc.setQueryData(qk.monthPlan(month), context?.previous);
+      onError?.(errorText(error));
+    },
+
+    /*
+     * `onSettled` / `invalidateQueries` YOK — bu, `useSaveDayPlan`'dan
+     * BİLİNÇLİ sapmadır, unutulmuş bir satır değil.
+     *
+     * Orada invalidation ay ızgarasının nokta haritası içindi
+     * (`notePlansMonth`): plan yazılınca hücredeki noktanın belirmesi
+     * gerekiyordu. Burada öyle bir TÜREV veri yok — bu metni okuyan tek
+     * yer, metni zaten optimistic olarak yazdığımız ekranın kendisi.
+     *
+     * Üstelik zararlı olurdu: kullanıcı yazmaya devam ediyorken gelen
+     * bir refetch imleci ve son cümleyi geri sarardı
+     * (notes/mutations.ts:116-118'deki aynı gerekçe).
+     */
   });
 }
 

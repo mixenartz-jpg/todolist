@@ -107,7 +107,19 @@ export function GoalsScreen() {
                 günlük işlerin neye hizmet ettiğini görünür kılar.
               </p>
             ) : (
-              <ul className="flex flex-col gap-2">
+              /*
+               * `.goalList` uzun listede kendi içinde kayar (ölçü ve
+               * gerekçe planlama.css'te).
+               *
+               * `tabIndex={0}` YOK — bilerek. Kaydırılabilir bir bölge
+               * normalde klavyeyle de kaydırılabilmelidir, ama buradaki
+               * her kart zaten odaklanabilir düğmeler içeriyor (başlık,
+               * ±1, Arşivle, Sil) ve Tab ile ilerleyen kullanıcıyı
+               * tarayıcı görünür alana kendisi kaydırıyor. Listeye ayrıca
+               * odak vermek, ekran okuyucu kullanıcısına hiçbir şey
+               * söylemeyen boş bir durak eklemekten ibaret olurdu.
+               */
+              <ul className="goalList flex flex-col gap-2">
                 {progresses.map((progress) => (
                   <GoalCard
                     key={progress.goal.id}

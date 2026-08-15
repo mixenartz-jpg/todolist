@@ -100,4 +100,23 @@ export const qk = {
    */
   planGoals: () => ["plan-goals"] as const,
   planGoalsMonth: (month: DateStr) => ["plan-goals", month] as const,
+
+  /*
+   * Ayın genel planı — serbest metin (0009).
+   *
+   * Anahtar "month-plan": TİRELİ TEK PARÇA, tıpkı "plan-goals" gibi ve
+   * tam olarak aynı gerekçeyle. `["plan", "month", ...]` yazılsaydı
+   * ileride eklenecek herhangi bir `qk.plan(...)` anahtarı önek
+   * eşleşmesiyle bunu da geçersiz kılardı.
+   *
+   * `qk.notes()` ALTINDA DEĞİL: ikisi ayrı tablo, ayrı yaşam döngüsü.
+   * Bir gün notu kaydetmek ayın genel planını tazelemeyi gerektirmez
+   * ve tersi de doğru — `notePlansMonth`'un öneke GİRME gerekçesinin
+   * tersi yön: orada tazeleme gerçekten isteniyordu, burada boşuna iş
+   * olurdu.
+   *
+   * Ay başına ayrı anahtar (`planGoalsMonth` ile aynı gerekçe):
+   * planlar yıllar boyunca birikir ama ekran hep tek ay okur.
+   */
+  monthPlan: (month: DateStr) => ["month-plan", month] as const,
 } as const;

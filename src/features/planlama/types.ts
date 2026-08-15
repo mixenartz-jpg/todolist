@@ -57,6 +57,32 @@ export interface PlanGoalDraft {
 }
 
 /**
+ * Ayın GENEL planı — serbest metin.
+ *
+ * `PlanGoal` ile aynı ay çapasını paylaşır ama başka bir işi yapar:
+ * hedefler yapılandırılmıştır (başlık + sayaç + renk), bu ise
+ * yapılandırılmamış düşünme alanıdır ("bu ay neye odaklanıyorum,
+ * hangi riskler var").
+ *
+ * `id` TAŞIMAZ: ekran satırı kimliğiyle değil AYIYLA adresliyor
+ * (`upsert … onConflict: user_id,month`) ve kimliği taşımak,
+ * kullanılmayan bir alanı önbellekte tutmak olurdu.
+ */
+export interface MonthPlan {
+  /** Ayın 1'i — `startOfMonth()` ile üretilir. */
+  month: DateStr;
+  /**
+   * Metin. Satır YOKSA boş dizedir, null DEĞİL: "sunucudan yanıt
+   * geldi ama satır yok" ile "henüz yanıt gelmedi" ayrımı sorgunun
+   * `undefined`'ına bırakılmıştır (bkz. queries.ts).
+   */
+  body: string;
+}
+
+/** DB kısıtını aynalar (0009); textarea'da `maxLength` olarak tüketilir. */
+export const MONTH_PLAN_MAX = 10000;
+
+/**
  * Kategori filtresi.
  *
  *   null    → filtre yok, hepsi görünür
