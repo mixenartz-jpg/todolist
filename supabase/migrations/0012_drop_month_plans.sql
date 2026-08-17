@@ -1,0 +1,36 @@
+-- ═══════════════════════════════════════════════════════════════════
+-- 0012 — month_plans KALDIRILDI
+-- ═══════════════════════════════════════════════════════════════════
+--
+-- 0009 bu tabloyu "ayın genel planı" olarak kurdu, 0010 onu tek serbest
+-- metinden not KARTLARINA çevirdi. İkisi de doğru inşa edildi ama
+-- yanlış şeyi çözdü:
+--
+--   Genel planlama notu YAZILIYOR ama ÖLÇÜLMÜYORDU. Kullanıcı ay
+--   başında "bu ay sınav var, ona göre plan yap" yazıyor, sonra o metne
+--   bir daha dönmüyordu. Not, üzerinde işlem yapılabilen bir şey
+--   üretmediği için sekme ölü ağırlık haline geldi.
+--
+-- Yerine 0011'in `week_goals` tablosu geldi: aynı yazma sürtünmesi,
+-- ama sayaçlı ve tamamlanabilir — yani hafta sonunda "neyi bitirdim"
+-- sorusuna cevap veren bir yapı.
+--
+-- ── Neden 0009/0010 dosyaları silinmiyor? ──
+-- Migration'lar APPEND-ONLY (gerekçe 0010:13-26). Geçmiş dosyaları
+-- düzenlemek, o migration'ları çalıştırmış bir veritabanıyla yeni
+-- kurulan bir veritabanını farklı durumlara götürür. Tablo burada,
+-- ileriye doğru düşürülür.
+--
+-- ── `cascade` neden? ──
+-- Tabloya bağlı dört RLS policy'si ve iki trigger var (0009:79-111).
+-- `cascade` onları tabloyla birlikte düşürür; tek tek `drop policy`
+-- yazmak aynı sonucu verir ama 0010'un eklediği kısıtlar gibi ileride
+-- eklenmiş olabilecek bağımlılıkları kaçırma riski taşır.
+--
+-- VERİ KAYBI: bu migration mevcut genel planlama notlarını KALICI
+-- olarak siler. Kullanıcı kararı budur — notlar taşınmıyor, çünkü
+-- serbest metin bir haftalık hedefe (başlık + sayaç) anlamlı şekilde
+-- dönüşmüyor.
+-- ═══════════════════════════════════════════════════════════════════
+
+drop table if exists public.month_plans cascade;

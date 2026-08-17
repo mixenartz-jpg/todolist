@@ -13,16 +13,15 @@
 
 import type { Category } from "./types";
 
+/*
+ * Aylık ve haftalık hedefler AYNI sınırları paylaşır (0008 / 0011):
+ * ikisi de aynı formda, aynı genişlikte yazılan bir başlık ve bir
+ * ayrıntıdır. Ölçek başına ayrı sabitler tanımlamak, iki ekranda iki
+ * farklı kesilme noktası demek olurdu — kullanıcı için görünür bir
+ * tutarsızlık.
+ */
 export const GOAL_TITLE_MAX = 120;
 export const GOAL_NOTE_MAX = 2000;
-/*
- * Genel planlama notu, hedefle AYNI sınırları kullanır (0009): ikisi de
- * aynı formda, aynı genişlikte yazılan bir başlık ve bir ayrıntıdır.
- * Ayrı sabitler tanımlamak, iki ekranda iki farklı kesilme noktası
- * demek olurdu — kullanıcı için görünür bir tutarsızlık.
- */
-export const MONTH_PLAN_TITLE_MAX = GOAL_TITLE_MAX;
-export const MONTH_PLAN_BODY_MAX = GOAL_NOTE_MAX;
 export const CATEGORY_NAME_MAX = 40;
 /** DB kısıtı: 1..9999. */
 export const GOAL_TARGET_MAX = 9999;
@@ -96,6 +95,73 @@ export function stepDoneCount(
   if (next < 0) return 0;
   if (next > target) return target;
   return next;
+}
+
+/**
+ * Haftalık hedefin sayaç durumundan tamamlanma damgasını okur.
+ *
+ * `now` dışarıdan geçilir ki fonksiyon saf kalsın ve test edilebilsin.
+ *
+ * Sayaçsız hedefte (`target === null`) HER ZAMAN null döner: orada
+ * tamamlanma yalnızca elle işaretlenir ve bu fonksiyonun kararı değildir.
+ */
+export function completionStamp(
+  doneCount: number,
+  target: number | null,
+  now: string,
+): string | null {
+  if (target === null) return null;
+  return doneCount >= target ? now : null;
+}
+
+/**
+ * Sayısal hedef DEĞİŞTİĞİNDE sayacın ve tamamlanmanın ne olacağını
+ * hesaplar.
+ *
+ * ── Hedef DEĞİŞMEDİYSE hiçbir şeye dokunulmaz ──
+ * İlk koşul yalnızca bir kısayol değil, DOĞRULUK meselesi: form her
+ * kaydetmede mevcut hedefi olduğu gibi geri gönderiyor, yani "başlıktaki
+ * yazım hatasını düzelt" de buraya `target` değişmemiş olarak gelir.
+ * Erken çıkış olmasaydı tamamlanma o kaydetmede sayaçtan yeniden
+ * hesaplanırdı ve 3/5'te elle işaretlenmiş bir hedef, kullanıcı sadece
+ * başlığa dokunduğu için sessizce işaretsiz kalırdı — `completedAt`'in
+ * sayaçtan bağımsız olması gerektiği kuralının tam ihlali.
+ *
+ * Hedef GERÇEKTEN değiştiyse sayaç sessizce yalana dönebilir ve iki
+ * yönün de ele alınması gerekir:
+ *
+ *   Hedef KALDIRILDI (null) → sayaç sıfırlanır. Kalsaydı, hedef tekrar
+ *     sayısal yapıldığında kullanıcının hiç işaretlemediği eski bir
+ *     ilerleme canlanırdı. `completedAt`'e DOKUNULMAZ: sayaçsız hedefte
+ *     tamamlanma zaten elle işaretlenir ve onu silmek kullanıcının
+ *     kararını geri almak olurdu.
+ *
+ *   Hedef DÜŞÜRÜLDÜ → sayaç yeni hedefe kırpılır ve tamamlanma yeniden
+ *     hesaplanır. Kırpma olmasaydı "7 / 3" gibi bir sayaç çıkardı;
+ *     yeniden hesaplama olmasaydı 2/5'ten 2/2'ye inen hedef
+ *     tamamlanmamış görünür ve `+` düğmesi de sınırda devre dışı
+ *     olduğu için kullanıcı onu sayaçla ASLA tamamlayamazdı.
+ */
+export function recountOnTargetChange(
+  goal: {
+    doneCount: number;
+    completedAt: string | null;
+    /** Kaydetmeden ÖNCEKİ sayısal hedef. */
+    targetCount: number | null;
+  },
+  target: number | null,
+  now: string,
+): { doneCount: number; completedAt: string | null } {
+  if (target === goal.targetCount) {
+    return { doneCount: goal.doneCount, completedAt: goal.completedAt };
+  }
+
+  if (target === null) {
+    return { doneCount: 0, completedAt: goal.completedAt };
+  }
+
+  const doneCount = Math.min(goal.doneCount, target);
+  return { doneCount, completedAt: completionStamp(doneCount, target, now) };
 }
 
 /**

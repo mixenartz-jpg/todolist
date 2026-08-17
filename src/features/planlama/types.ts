@@ -57,31 +57,44 @@ export interface PlanGoalDraft {
 }
 
 /**
- * Ayın genel planlama notu — tek kart.
+ * Bir haftanın hedef kalemi.
  *
- * `PlanGoal` ile aynı ay çapasını ve aynı rengi paylaşır; farkı
- * ÖLÇÜLMEMESİDİR. Hedefin sayacı ve ilerleme çubuğu vardır, notun
- * yoktur: "bu ay sınav haftası var, ona göre plan yap" bir hedef değil
- * bir bağlamdır. Bu yüzden `targetCount`/`doneCount` alanları YOKTUR —
- * taşınsalardı arayüzde her kartta gizlenmeleri gerekirdi.
+ * `PlanGoal`'un hafta ölçeğindeki eşi; iki yerde ayrışır:
+ *
+ *   weekStart   : ay çapası yerine ISO pazartesisi.
+ *   completedAt : `archivedAt` yerine. Arşiv "artık takip etmiyorum"
+ *                 (vazgeçme), tamamlanma "bitirdim" (başarı). Haftalık
+ *                 hedefte istenen ikincisidir ve tamamlanan hedef
+ *                 listeden KALKMAZ, üstü çizili durur — kullanıcı hafta
+ *                 sonunda neyi bitirdiğini görmek istiyor.
+ *
+ * `targetCount` null olduğunda ilerleme HİÇBİR yerden türetilmez:
+ * `PlanGoal`'ün aksine haftalık hedefe görev bağlanmaz. O durumda hedef
+ * sayaçsızdır ve yalnızca elle tamamlanır.
  */
-export interface MonthPlan {
+export interface WeekGoal {
   id: string;
-  /** Ayın 1'i — `startOfMonth()` ile üretilir. */
-  month: DateStr;
+  /** ISO haftasının pazartesisi — `startOfIsoWeek()` ile üretilir. */
+  weekStart: DateStr;
   title: string;
-  /** İsteğe bağlı ayrıntı; null → başlık tek başına yeterli. */
-  body: string | null;
+  note: string | null;
+  /** Sayısal hedef ("3 bölüm"); null → sayaçsız hedef. */
+  targetCount: number | null;
+  /** Elle işaretlenen ilerleme; yalnızca `targetCount` doluyken anlamlı. */
+  doneCount: number;
   colorSlot: number;
   sortOrder: number;
+  /** null → sürüyor. Dolu → tamamlandı; listede kalır, üstü çizilir. */
+  completedAt: string | null;
 }
 
-export interface MonthPlanDraft {
-  month: DateStr;
+export interface WeekGoalDraft {
+  weekStart: DateStr;
   title: string;
-  body: string | null;
+  note: string | null;
+  targetCount: number | null;
   colorSlot: number;
-  /** Sona eklemek için: o aydaki mevcut not sayısı. */
+  /** Sona eklemek için: o haftadaki mevcut hedef sayısı. */
   sortOrder: number;
 }
 

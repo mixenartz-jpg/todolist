@@ -41,14 +41,14 @@ export const SECTION_DEFAULTS = {
   "plan.overdue": "Gecikenler",
 
   "planlama.dayPlan": "Günün planı",
+  "planlama.goals": "Aylık hedefler",
   /*
-   * `planlama.dayPlan`'dan AYRI anahtar: biri günün planı, öteki ayın.
-   * Tek anahtar paylaşsalardı "Günün planı"nı yeniden adlandıran
-   * kullanıcı, hiç dokunmadığı Genel planlama başlığını da sessizce
+   * `planlama.goals`'tan AYRI anahtar: biri ayın hedefleri, öteki
+   * haftanın. Tek anahtar paylaşsalardı "Aylık hedefler"i yeniden
+   * adlandıran kullanıcı, hiç dokunmadığı haftalık başlığı da sessizce
    * değiştirmiş olurdu — ad alanı kuralının var olma sebebi bu.
    */
-  "planlama.monthPlan": "Genel planlama",
-  "planlama.goals": "Aylık hedefler",
+  "planlama.weekGoals": "Haftalık hedefler",
   "planlama.categories": "Kategoriler",
   "planlama.summary": "Ay özeti",
 } as const;

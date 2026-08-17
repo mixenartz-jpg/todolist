@@ -102,22 +102,20 @@ export const qk = {
   planGoalsMonth: (month: DateStr) => ["plan-goals", month] as const,
 
   /*
-   * Ayın genel planı — serbest metin (0009).
+   * Haftalık hedefler (0011).
    *
-   * Anahtar "month-plan": TİRELİ TEK PARÇA, tıpkı "plan-goals" gibi ve
-   * tam olarak aynı gerekçeyle. `["plan", "month", ...]` yazılsaydı
+   * Anahtar "week-goals": TİRELİ TEK PARÇA, tıpkı "plan-goals" gibi ve
+   * tam olarak aynı gerekçeyle. `["plan", "week", ...]` yazılsaydı
    * ileride eklenecek herhangi bir `qk.plan(...)` anahtarı önek
    * eşleşmesiyle bunu da geçersiz kılardı.
    *
-   * `qk.notes()` ALTINDA DEĞİL: ikisi ayrı tablo, ayrı yaşam döngüsü.
-   * Bir gün notu kaydetmek ayın genel planını tazelemeyi gerektirmez
-   * ve tersi de doğru — `notePlansMonth`'un öneke GİRME gerekçesinin
-   * tersi yön: orada tazeleme gerçekten isteniyordu, burada boşuna iş
-   * olurdu.
+   * `planGoals` ALTINDA DEĞİL: ikisi ayrı tablo, ayrı çapa. Aylık bir
+   * hedefi kaydetmek haftalık listeyi tazelemeyi gerektirmez — ortak
+   * bir önek, iki ekranı birbirinin yazmasına bağımlı kılardı.
    *
-   * Ay başına ayrı anahtar (`planGoalsMonth` ile aynı gerekçe):
-   * notlar yıllar boyunca birikir ama ekran hep tek ay okur.
+   * Hafta başına ayrı anahtar (`planGoalsMonth` ile aynı gerekçe):
+   * hedefler yıllar boyunca birikir ama ekran hep tek hafta okur.
    */
-  monthPlans: () => ["month-plans"] as const,
-  monthPlansMonth: (month: DateStr) => ["month-plans", month] as const,
+  weekGoals: () => ["week-goals"] as const,
+  weekGoalsWeek: (weekStart: DateStr) => ["week-goals", weekStart] as const,
 } as const;

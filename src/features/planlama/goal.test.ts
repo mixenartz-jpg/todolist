@@ -3,10 +3,12 @@ import { category } from "@/features/testing/fixtures";
 import {
   CATEGORY_NAME_MAX,
   GOAL_TITLE_MAX,
+  completionStamp,
   isDuplicateCategoryName,
   normalizeCategoryName,
   normalizeGoalTitle,
   parseTargetCount,
+  recountOnTargetChange,
   stepDoneCount,
 } from "./goal";
 
@@ -92,6 +94,141 @@ describe("stepDoneCount", () => {
     // görevlerden okunuyor demektir ve elle oynatmanın anlamı yok.
     expect(stepDoneCount(4, 1, null)).toBe(4);
     expect(stepDoneCount(4, -1, null)).toBe(4);
+  });
+});
+
+describe("completionStamp", () => {
+  const NOW = "2026-08-17T10:00:00.000Z";
+
+  it("sayaç hedefe ulaşınca damgalar", () => {
+    expect(completionStamp(3, 3, NOW)).toBe(NOW);
+  });
+
+  it("sayaç hedefin altındayken null döner", () => {
+    expect(completionStamp(2, 3, NOW)).toBeNull();
+  });
+
+  it("hedefin üstünde de damgalı kalır", () => {
+    // Sayaç normalde kırpılır ama veri eski bir kayıttan gelmiş
+    // olabilir; ">=" karşılaştırması onu da tamamlanmış sayar.
+    expect(completionStamp(5, 3, NOW)).toBe(NOW);
+  });
+
+  it("sayaçsız hedefte HER ZAMAN null döner", () => {
+    // Orada tamamlanma yalnızca elle işaretlenir; bu fonksiyonun
+    // kararı değildir.
+    expect(completionStamp(0, null, NOW)).toBeNull();
+    expect(completionStamp(9, null, NOW)).toBeNull();
+  });
+});
+
+describe("recountOnTargetChange", () => {
+  const NOW = "2026-08-17T10:00:00.000Z";
+  const EARLIER = "2026-08-16T08:00:00.000Z";
+
+  it("hedef DEĞİŞMEDİYSE elle konan işareti KORUR", () => {
+    /*
+     * Regresyon (en sinsi olanı): kullanıcı 3/5'te kutucuğu elle
+     * işaretliyor, sonra yalnızca başlıktaki yazım hatasını düzeltip
+     * kaydediyor. Form her kaydetmede mevcut hedefi olduğu gibi geri
+     * gönderdiği için buraya `target` DEĞİŞMEMİŞ olarak gelir.
+     *
+     * Erken çıkış olmasaydı tamamlanma sayaçtan yeniden hesaplanır
+     * (3 < 5 → null) ve kullanıcı sadece başlığa dokunduğu için işaret
+     * sessizce silinirdi.
+     */
+    expect(
+      recountOnTargetChange(
+        { doneCount: 3, completedAt: EARLIER, targetCount: 5 },
+        5,
+        NOW,
+      ),
+    ).toEqual({ doneCount: 3, completedAt: EARLIER });
+  });
+
+  it("sayaçsız hedefte de değişmemiş hedefe dokunmaz", () => {
+    expect(
+      recountOnTargetChange(
+        { doneCount: 0, completedAt: EARLIER, targetCount: null },
+        null,
+        NOW,
+      ),
+    ).toEqual({ doneCount: 0, completedAt: EARLIER });
+  });
+
+  it("hedef düşünce sayacı kırpar ve hedefi TAMAMLANMIŞ sayar", () => {
+    /*
+     * 2/5'teyken hedef 2'ye çekilirse sayaç artık hedefe eşittir.
+     * Yeniden hesaplanmasaydı kart tamamlanmamış görünür ve `+` düğmesi
+     * de sınırda devre dışı olduğu için kullanıcı o hedefi sayaçla
+     * ASLA tamamlayamazdı.
+     */
+    expect(
+      recountOnTargetChange(
+        { doneCount: 2, completedAt: null, targetCount: 5 },
+        2,
+        NOW,
+      ),
+    ).toEqual({ doneCount: 2, completedAt: NOW });
+  });
+
+  it("sayacı yeni hedefin üstünde bırakmaz", () => {
+    // "7 / 3" gibi bir sayaç anlamsız olurdu.
+    expect(
+      recountOnTargetChange(
+        { doneCount: 7, completedAt: null, targetCount: 10 },
+        3,
+        NOW,
+      ),
+    ).toEqual({ doneCount: 3, completedAt: NOW });
+  });
+
+  it("hedef yükselince tamamlanmayı geri alır", () => {
+    // 3/3 tamamlanmış hedefin sınırı 5'e çıkarsa iş bitmemiştir.
+    expect(
+      recountOnTargetChange(
+        { doneCount: 3, completedAt: EARLIER, targetCount: 3 },
+        5,
+        NOW,
+      ),
+    ).toEqual({ doneCount: 3, completedAt: null });
+  });
+
+  it("hedef kaldırılınca sayacı sıfırlar ama tamamlanmaya DOKUNMAZ", () => {
+    /*
+     * Sayaç sıfırlanır: hedef tekrar sayısal yapıldığında kullanıcının
+     * hiç işaretlemediği eski bir ilerleme canlanmasın diye.
+     *
+     * `completedAt` KORUNUR: sayaçsız hedefte tamamlanma elle
+     * işaretlenir ve onu silmek kullanıcının kararını geri almak olurdu.
+     */
+    expect(
+      recountOnTargetChange(
+        { doneCount: 4, completedAt: EARLIER, targetCount: 9 },
+        null,
+        NOW,
+      ),
+    ).toEqual({ doneCount: 0, completedAt: EARLIER });
+  });
+
+  it("hedef kaldırılınca tamamlanmamış hedef tamamlanmamış kalır", () => {
+    expect(
+      recountOnTargetChange(
+        { doneCount: 4, completedAt: null, targetCount: 9 },
+        null,
+        NOW,
+      ),
+    ).toEqual({ doneCount: 0, completedAt: null });
+  });
+
+  it("sayaçsız hedefe sayı EKLENİNCE sayaç sıfırdan başlar", () => {
+    expect(
+      recountOnTargetChange(
+        { doneCount: 0, completedAt: null, targetCount: null },
+        3,
+        NOW,
+      ),
+    ).toEqual({ doneCount: 0, completedAt: null });
   });
 });
 

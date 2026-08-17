@@ -46,7 +46,7 @@ const ROUTES: readonly Route[] = [
    * referans görüntüleri yetim bırakırdı — sıra numarası okuma
    * kolaylığı içindir, kimlik değil.
    */
-  { slug: "07b-planlama-genel", path: "/planlama/genel", viewports: ALL },
+  { slug: "07b-planlama-haftalik", path: "/planlama/haftalik", viewports: ALL },
   { slug: "08-planlama-ozet", path: "/planlama/ozet", viewports: ALL },
   { slug: "09-istatistik", path: "/istatistik", viewports: ALL },
   { slug: "10-rutinler", path: "/rutinler", viewports: ALL },

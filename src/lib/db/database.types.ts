@@ -103,21 +103,30 @@ export interface PlanGoalRow {
 }
 
 /**
- * Ayın genel planlama NOTU — kart başına bir satır (0009).
+ * Haftalık hedef — hedef başına bir satır (0011).
  *
- * `PlanGoalRow` ile aynı ay temsilini ('YYYY-MM-01') ve aynı renk
- * paletini kullanır; farkı ÖLÇÜLMEMESİDİR. Hedefin `target_count` /
- * `done_count`'u ve ilerleme çubuğu vardır, notun yoktur — "bu ay
- * sınav haftası var" bir hedef değil bir bağlamdır.
+ * `PlanGoalRow`'un hafta ölçeğindeki eşi. İki fark:
+ *
+ *   week_start   : ayın 1'i yerine ISO PAZARTESİSİ ('YYYY-MM-DD')
+ *   completed_at : `archived_at` yerine. Arşiv vazgeçmedir,
+ *                  tamamlanma başarıdır; haftalık hedefte istenen
+ *                  ikincisi ve tamamlanan hedef listede KALIR.
+ *
+ * Haftalık hedefe görev bağlanmaz (`tasks.goal_id` yalnızca
+ * `plan_goals`'a bakar), bu yüzden `target_count` null olduğunda
+ * ilerleme hiçbir yerden türetilmez — sadece sayaçsız hedef demektir.
  */
-export interface MonthPlanRow {
+export interface WeekGoalRow {
   id: string;
   user_id: string;
-  month: string;
+  week_start: string;
   title: string;
-  body: string | null;
+  note: string | null;
+  target_count: number | null;
+  done_count: number;
   color_slot: number;
   sort_order: number;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
 }

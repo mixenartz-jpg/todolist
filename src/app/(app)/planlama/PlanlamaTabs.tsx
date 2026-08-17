@@ -15,20 +15,26 @@ const TABS = [
    */
   /*
    * Sıra ZAMANSAL DARALMADAN SOYUTLAMAYA gider: önce ızgaralar
-   * (Ay → Hafta), sonra ay ölçeğinde yazı (Hedefler → Genel), en sonda
-   * geriye bakış (Özet). "Genel"i sona koymak, ay bittikten sonra
-   * okunan Özet'i ortaya sıkıştırırdı.
+   * (Ay → Hafta), sonra hedefler AYNI daralma yönünde
+   * (Hedefler = aylık → Haftalık), en sonda geriye bakış (Özet).
+   *
+   * "Haftalık"ın yeri "Hedefler"in HEMEN SAĞI: ikisi aynı işin iki
+   * ölçeğidir ve arasına başka bir şey girseydi, aylıktan haftalığa
+   * geçen kullanıcı sekme çubuğunu baştan taramak zorunda kalırdı.
    */
   { href: "/planlama/ay", label: "Ay", filters: true },
   { href: "/planlama/hafta", label: "Hafta", filters: true },
   { href: "/planlama/hedefler", label: "Hedefler", filters: false },
   /*
-   * Etiket "Genel", "Genel planlama" DEĞİL: beş sekmenin `max-w-2xl`
-   * kutuya sığması gerekiyor ve iki kelimelik bir etiket dar ekranda
-   * satırı taşırırdı. Başlığın tam adı ekranın içinde duruyor
-   * (SectionHeading → "Genel planlama").
+   * Etiket "Haftalık", "Haftalık hedefler" DEĞİL: beş sekmenin
+   * `max-w-2xl` kutuya sığması gerekiyor ve iki kelimelik bir etiket
+   * dar ekranda satırı taşırırdı. Başlığın tam adı ekranın içinde
+   * duruyor (SectionHeading → "Haftalık hedefler").
+   *
+   * Yalnız "Hafta" da OLAMAZDI: soldaki ızgara sekmesiyle birebir aynı
+   * kelime olurdu ve ikisi farklı işler yapıyor.
    */
-  { href: "/planlama/genel", label: "Genel", filters: false },
+  { href: "/planlama/haftalik", label: "Haftalık", filters: false },
   { href: "/planlama/ozet", label: "Özet", filters: false },
 ] as const;
 
@@ -50,11 +56,15 @@ const CATEGORY_PARAM = "kat";
  * verirdi. Yeri Özet sekmesindeki dağılımın altıdır — kullanıcı
  * kategorilerine zaten oraya bakarken karar verir.
  *
- * Ölçüt SEKME SAYISI DEĞİL KULLANIM SIKLIĞIDIR. "Genel" beşinci sekme
- * olarak eklendi çünkü ay ölçeğinde not almak Hedefler kadar sık bir
- * iştir; kategori yönetimi o eşiği geçmiyor. Sekme çubuğu bu kadarını
- * taşır, ama her yeni sekme aynı soruyu yeniden sormalı: bu iş ayda
- * bir yapılıyor mu, yılda bir mi?
+ * Ölçüt SEKME SAYISI DEĞİL KULLANIM SIKLIĞIDIR. "Haftalık" beşinci
+ * sekme olarak duruyor çünkü hafta başında hedef yazmak Hedefler kadar
+ * sık bir iştir; kategori yönetimi o eşiği geçmiyor. Sekme çubuğu bu
+ * kadarını taşır, ama her yeni sekme aynı soruyu yeniden sormalı: bu iş
+ * ayda bir yapılıyor mu, yılda bir mi?
+ *
+ * (Beşinci sekme önce "Genel"di — aya bağlı serbest not. Yazılıyor ama
+ * ölçülmüyordu, yani üzerine bir şey yapılamıyordu; yerini sayaçlı ve
+ * tamamlanabilir haftalık hedefler aldı. Tablo 0012'de düşürüldü.)
  */
 export function PlanlamaTabs() {
   const pathname = usePathname();
@@ -85,19 +95,31 @@ export function PlanlamaTabs() {
 
   return (
     /*
-     * Dolgu ve boşluk BEŞİNCİ sekme için daraltıldı (gap-1 → gap-0.5,
-     * px-3 → px-2.5). Ölçümle: dört sekme 320px'de rahat sığıyordu ama
-     * beşi 288px'lik kutuda 307px istiyordu — 19px taşma. Daraltma
-     * gerekliyi 288'in altına indirir ve 320'de de sığar.
+     * Dolgu ve boşluk BEŞİNCİ sekme için iki kez daraltıldı:
+     * gap-1 → gap-0.5 ve px-3 → px-2.5 ("Genel" eklenirken), sonra
+     * px-2.5 → px-2 ("Genel" → "Haftalık" olurken; etiket 3 harf uzadı).
+     *
+     * Ölçüm (e2e/tabfit-check.mjs, gerçek CSS ile):
+     *   px-2.5 → 293px gerekiyor; 320px kutuda 5px taşma
+     *   px-2   → 288px gerekiyor; 320px'de TAM sığar, 375px'te rahat
+     *
+     * 288px'te px-2 hâlâ 17px taşar ve bu KABUL EDİLDİ: 288 en dar test
+     * kutusudur, üretimdeki en dar cihaz 320px. Oraya kadar inmek
+     * px-1.5 gerektiriyordu ve o da "Ay" sekmesinin dokunma hedefini
+     * 28px'e düşürüyordu — WCAG'ın 24px asgarisinin hemen üstü.
      *
      * Reddedilen alternatifler:
      *   `overflow-x-auto` — kaydırılan sekme çubuğu, kaydırıldığında
      *     ilk sekmeyi GİZLER; gezinme haritasının yarısı görünmez olur.
-     *   "Hafta" → "Hft." — en geniş sekme "Hedefler" (77px), yani
-     *     kısaltma yanlış yeri hedefler ve okunabilirliği boşuna bozar.
+     *   "Haftalık" → "H.Hedef" — ÖLÇÜLDÜ, işe yaramıyor: nokta ve iki
+     *     büyük harf yüzünden 72px, yani "Haftalık"tan (70px) DAHA
+     *     geniş. Kısaltma her zaman daraltmaz.
+     *   "Hedefler" → "Aylık" — sığıyor (269px) ama çubukta "Ay" ile
+     *     "Aylık", "Hafta" ile "Haftalık" yan yana gelir ve dört
+     *     sekmenin ikisi birbirine karışır.
      *
      * Dokunma hedefi korunur: `py-1.5` + satır yüksekliği ≈ 32px ve
-     * en dar sekme ("Ay") 35px kalır.
+     * en dar sekme ("Ay") 32px kalır.
      */
     <nav
       aria-label="Planlama görünümleri"
@@ -112,7 +134,7 @@ export function PlanlamaTabs() {
             href={hrefFor(tab)}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "rounded-md px-2.5 py-1.5 text-[length:var(--text-sm)]",
+              "rounded-md px-2 py-1.5 text-[length:var(--text-sm)]",
               "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-quart)]",
               active
                 ? "bg-[var(--color-surface-3)] font-medium text-[var(--color-ink)]"

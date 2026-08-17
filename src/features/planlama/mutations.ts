@@ -5,19 +5,20 @@ import { qk } from "@/lib/query/keys";
 import { createClient } from "@/lib/supabase/client";
 import type {
   CategoryRow,
-  MonthPlanRow,
   PlanGoalRow,
+  WeekGoalRow,
 } from "@/lib/db/database.types";
 import type { DateStr } from "@/lib/date/types";
 import type { Task } from "@/features/tasks/types";
-import { toCategory, toMonthPlan, toPlanGoal } from "./queries";
+import { completionStamp, recountOnTargetChange } from "./goal";
+import { toCategory, toPlanGoal, toWeekGoal } from "./queries";
 import type {
   Category,
   CategoryDraft,
-  MonthPlan,
-  MonthPlanDraft,
   PlanGoal,
   PlanGoalDraft,
+  WeekGoal,
+  WeekGoalDraft,
 } from "./types";
 
 /**
@@ -494,34 +495,38 @@ export function useSetTaskGoal(onError?: (message: string) => void) {
   });
 }
 
+/* ────────────────────────── Haftalık hedefler ───────────────────────── */
+
 /**
- * Genel planlama notu yazma hook'ları.
+ * Haftalık hedef yazma hook'ları.
  *
- * Hedef hook'larının (`useCreateGoal` / `useUpdateGoal` /
- * `useDeleteGoal`) birebir ikizi: aynı optimistic desen, aynı hata
- * kanalı. Ekran da aynı etkileşimi sunuyor (tıkla-düzenle, Kaydet, Sil)
- * ve iki sekme arasında geçen kullanıcı ikisini de aynı şekilde
- * kullanabilmeli.
+ * Aylık hedef hook'larının hafta ölçeğindeki ikizi: aynı optimistic
+ * desen, aynı hata kanalı, hafta başına anahtar geçersizleştirme.
  *
- * ARŞİVLEME YOK — hedeften ayrıldığı tek yer. Arşiv, hedefin geçmiş ay
- * özetini bozmadan "bunu artık takip etmiyorum" demenin yoluydu; not
- * hiçbir özete girmiyor, dolayısıyla silmenin geri alınamaz olması
- * dışında koruyacak bir şey yok. Üçüncü bir durum eklemek, kartta
- * kullanılmayan bir düğme demekti.
+ * İki yerde ayrışır:
+ *
+ *   ARŞİVLEME YOK — yerine `useToggleWeekGoalDone`. Arşiv, hedefi
+ *   geçmiş ay özetini bozmadan gözden çıkarmanın yoluydu; haftalık
+ *   hedefte istenen tersi: hedef BİTİRİLİYOR ve listede kalıyor.
+ *
+ *   `useSetTaskGoal` KARŞILIĞI YOK — haftalık hedefe görev bağlanmaz
+ *   (`tasks.goal_id` yalnızca `plan_goals`'a bakar), dolayısıyla
+ *   silme de `qk.tasks()`'i tazelemez.
  */
-export function useCreateMonthPlan(onError?: (message: string) => void) {
+export function useCreateWeekGoal(onError?: (message: string) => void) {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (draft: MonthPlanDraft) => {
+    mutationFn: async (draft: WeekGoalDraft) => {
       const supabase = createClient();
 
       const { data, error } = await supabase
-        .from("month_plans")
+        .from("week_goals")
         .insert({
-          month: draft.month,
+          week_start: draft.weekStart,
           title: draft.title.trim(),
-          body: draft.body,
+          note: draft.note,
+          target_count: draft.targetCount,
           color_slot: draft.colorSlot,
           sort_order: draft.sortOrder,
         })
@@ -529,57 +534,92 @@ export function useCreateMonthPlan(onError?: (message: string) => void) {
         .single();
 
       if (error) throw error;
-      return toMonthPlan(data as MonthPlanRow);
+      return toWeekGoal(data as WeekGoalRow);
     },
 
     // Oluşturma optimistic DEĞİL — kimliği sunucu üretiyor
     // (useCreateGoal ile aynı gerekçe).
-    onSuccess: (plan) =>
-      qc.invalidateQueries({ queryKey: qk.monthPlansMonth(plan.month) }),
+    onSuccess: (goal) =>
+      qc.invalidateQueries({ queryKey: qk.weekGoalsWeek(goal.weekStart) }),
     onError: (error) => onError?.(errorText(error)),
   });
 }
 
-interface UpdateMonthPlanVars {
+interface UpdateWeekGoalVars {
   id: string;
-  month: DateStr;
+  weekStart: DateStr;
   title: string;
-  body: string | null;
+  note: string | null;
+  /** Formda YAZILAN yeni sayısal hedef. */
+  targetCount: number | null;
   colorSlot: number;
+  /*
+   * Hedefin DÜZENLEMEDEN ÖNCEKİ durumu.
+   *
+   * Üçü de formda düzenlenmiyor; buraya taşınmalarının sebebi
+   * `recountOnTargetChange`'in hem "hedef gerçekten değişti mi"
+   * sorusunu sorması hem de sayacı kırpması. Alternatif, `mutationFn`
+   * içinde önbelleği yeniden okumaktı — ama o zaman sunucuya giden
+   * değer ile `onMutate`'in yamaladığı değer iki farklı anın
+   * görüntüsünden hesaplanır ve ikisi ayrışabilirdi.
+   */
+  previous: {
+    doneCount: number;
+    completedAt: string | null;
+    targetCount: number | null;
+  };
 }
 
-export function useUpdateMonthPlan(onError?: (message: string) => void) {
+export function useUpdateWeekGoal(onError?: (message: string) => void) {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: UpdateMonthPlanVars) => {
+    mutationFn: async (input: UpdateWeekGoalVars) => {
       const supabase = createClient();
+      const recount = recountOnTargetChange(
+        input.previous,
+        input.targetCount,
+        new Date().toISOString(),
+      );
+
       const { error } = await supabase
-        .from("month_plans")
+        .from("week_goals")
         .update({
           title: input.title.trim(),
-          body: input.body,
+          note: input.note,
+          target_count: input.targetCount,
           color_slot: input.colorSlot,
+          done_count: recount.doneCount,
+          completed_at: recount.completedAt,
         })
         .eq("id", input.id);
       if (error) throw error;
     },
 
     onMutate: async (vars) => {
-      const key = qk.monthPlansMonth(vars.month);
+      const key = qk.weekGoalsWeek(vars.weekStart);
       await qc.cancelQueries({ queryKey: key });
-      const previous = qc.getQueryData<MonthPlan[]>(key);
+      const previous = qc.getQueryData<WeekGoal[]>(key);
 
-      qc.setQueryData<MonthPlan[]>(key, (list) =>
-        list?.map((p) =>
-          p.id === vars.id
+      qc.setQueryData<WeekGoal[]>(key, (list) =>
+        list?.map((g) =>
+          g.id === vars.id
             ? {
-                ...p,
+                ...g,
                 title: vars.title.trim(),
-                body: vars.body,
+                note: vars.note,
+                targetCount: vars.targetCount,
                 colorSlot: vars.colorSlot,
+                // `g` DEĞİL `vars.previous`: sunucuya giden değerin
+                // aynısı yamalanmalı, yoksa iyimser görüntü ile
+                // kaydedilen durum ayrışır.
+                ...recountOnTargetChange(
+                  vars.previous,
+                  vars.targetCount,
+                  new Date().toISOString(),
+                ),
               }
-            : p,
+            : g,
         ),
       );
 
@@ -592,27 +632,65 @@ export function useUpdateMonthPlan(onError?: (message: string) => void) {
     },
 
     onSettled: (_data, _error, vars) =>
-      qc.invalidateQueries({ queryKey: qk.monthPlansMonth(vars.month) }),
+      qc.invalidateQueries({ queryKey: qk.weekGoalsWeek(vars.weekStart) }),
   });
 }
 
-export function useDeleteMonthPlan(onError?: (message: string) => void) {
+interface StepWeekGoalVars {
+  id: string;
+  weekStart: DateStr;
+  doneCount: number;
+  /** Hedefin sayısal sınırı; tamamlanmayı belirlemek için gerekli. */
+  targetCount: number | null;
+}
+
+/**
+ * Sayacı bir adım oynatır ve tamamlanmayı OTOMATİK ayarlar — optimistic.
+ *
+ * `useStepGoalProgress`'ten tek farkı bu otomatiklik: sayaç hedefe
+ * ulaştığında `completed_at` damgalanır, altına düştüğünde temizlenir.
+ * Kullanıcıdan "3/3 yaptım, şimdi de kutuyu işaretleyeyim" diye ikinci
+ * bir hareket beklemek gereksiz bir adımdır — sayacı hedefe getirmek
+ * zaten "bitirdim" demenin kendisidir.
+ *
+ * Elle işaretleme (`useToggleWeekGoalDone`) yine de duruyor: sayaçsız
+ * hedefler ve "hedefe ulaşmadım ama bu iş bitti" durumu için.
+ */
+export function useStepWeekGoal(onError?: (message: string) => void) {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id }: { id: string; month: DateStr }) => {
+    mutationFn: async (vars: StepWeekGoalVars) => {
       const supabase = createClient();
-      const { error } = await supabase.from("month_plans").delete().eq("id", id);
+      const { error } = await supabase
+        .from("week_goals")
+        .update({
+          done_count: vars.doneCount,
+          completed_at: completionStamp(
+            vars.doneCount,
+            vars.targetCount,
+            new Date().toISOString(),
+          ),
+        })
+        .eq("id", vars.id);
       if (error) throw error;
     },
 
     onMutate: async (vars) => {
-      const key = qk.monthPlansMonth(vars.month);
+      const key = qk.weekGoalsWeek(vars.weekStart);
       await qc.cancelQueries({ queryKey: key });
-      const previous = qc.getQueryData<MonthPlan[]>(key);
+      const previous = qc.getQueryData<WeekGoal[]>(key);
 
-      qc.setQueryData<MonthPlan[]>(key, (list) =>
-        list?.filter((p) => p.id !== vars.id),
+      const completedAt = completionStamp(
+        vars.doneCount,
+        vars.targetCount,
+        new Date().toISOString(),
+      );
+
+      qc.setQueryData<WeekGoal[]>(key, (list) =>
+        list?.map((g) =>
+          g.id === vars.id ? { ...g, doneCount: vars.doneCount, completedAt } : g,
+        ),
       );
 
       return { previous, key };
@@ -624,7 +702,96 @@ export function useDeleteMonthPlan(onError?: (message: string) => void) {
     },
 
     onSettled: (_data, _error, vars) =>
-      qc.invalidateQueries({ queryKey: qk.monthPlansMonth(vars.month) }),
+      qc.invalidateQueries({ queryKey: qk.weekGoalsWeek(vars.weekStart) }),
+  });
+}
+
+/**
+ * Tamamlanmayı elle çevirir — optimistic.
+ *
+ * Sayaçtan BAĞIMSIZDIR ve bilerek öyle: "5 soru çöz" hedefinde 3'te
+ * durup "bu iş bitti" demek meşru bir karardır ve sayacı yalana
+ * çevirmeden ifade edilebilmeli. Ters yönde de aynı — tamamlanmış bir
+ * hedefin işaretini kaldırmak sayacı geri saymaz.
+ */
+export function useToggleWeekGoalDone(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      done,
+    }: {
+      id: string;
+      weekStart: DateStr;
+      done: boolean;
+    }) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("week_goals")
+        .update({ completed_at: done ? new Date().toISOString() : null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+
+    onMutate: async (vars) => {
+      const key = qk.weekGoalsWeek(vars.weekStart);
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<WeekGoal[]>(key);
+
+      qc.setQueryData<WeekGoal[]>(key, (list) =>
+        list?.map((g) =>
+          g.id === vars.id
+            ? {
+                ...g,
+                completedAt: vars.done ? new Date().toISOString() : null,
+              }
+            : g,
+        ),
+      );
+
+      return { previous, key };
+    },
+
+    onError: (error, _vars, context) => {
+      if (context) qc.setQueryData(context.key, context.previous);
+      onError?.(errorText(error));
+    },
+
+    onSettled: (_data, _error, vars) =>
+      qc.invalidateQueries({ queryKey: qk.weekGoalsWeek(vars.weekStart) }),
+  });
+}
+
+export function useDeleteWeekGoal(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id }: { id: string; weekStart: DateStr }) => {
+      const supabase = createClient();
+      const { error } = await supabase.from("week_goals").delete().eq("id", id);
+      if (error) throw error;
+    },
+
+    onMutate: async (vars) => {
+      const key = qk.weekGoalsWeek(vars.weekStart);
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<WeekGoal[]>(key);
+
+      qc.setQueryData<WeekGoal[]>(key, (list) =>
+        list?.filter((g) => g.id !== vars.id),
+      );
+
+      return { previous, key };
+    },
+
+    onError: (error, _vars, context) => {
+      if (context) qc.setQueryData(context.key, context.previous);
+      onError?.(errorText(error));
+    },
+
+    onSettled: (_data, _error, vars) =>
+      qc.invalidateQueries({ queryKey: qk.weekGoalsWeek(vars.weekStart) }),
   });
 }
 

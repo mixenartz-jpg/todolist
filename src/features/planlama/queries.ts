@@ -4,13 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import { asDateStr } from "@/lib/date/date";
 import type {
   CategoryRow,
-  MonthPlanRow,
   PlanGoalRow,
+  WeekGoalRow,
 } from "@/lib/db/database.types";
 import { qk } from "@/lib/query/keys";
 import { createClient } from "@/lib/supabase/client";
 import type { DateStr } from "@/lib/date/types";
-import type { Category, MonthPlan, PlanGoal } from "./types";
+import type { Category, PlanGoal, WeekGoal } from "./types";
 
 /**
  * Tüm kategoriler — arşivlenmişler DAHİL.
@@ -114,44 +114,55 @@ export function toPlanGoal(row: PlanGoalRow): PlanGoal {
 }
 
 /**
- * Bir ayın genel planlama notları.
+ * Bir haftanın hedefleri.
  *
- * `usePlanGoals`'un ikizi: aynı çapa, aynı sıralama, ay başına ayrı
- * anahtar. İki ayrı sorgudur çünkü iki ayrı tablodur ve biri değişince
- * ötekinin tazelenmesi gerekmez.
+ * `usePlanGoals`'un hafta ölçeğindeki ikizi: aynı desen, hafta başına
+ * ayrı anahtar. İki ayrı sorgudur çünkü iki ayrı tablodur ve biri
+ * değişince ötekinin tazelenmesi gerekmez.
  */
-export function useMonthPlans(month: DateStr) {
+export function useWeekGoals(weekStart: DateStr) {
   return useQuery({
-    queryKey: qk.monthPlansMonth(month),
-    queryFn: () => fetchMonthPlans(month),
+    queryKey: qk.weekGoalsWeek(weekStart),
+    queryFn: () => fetchWeekGoals(weekStart),
   });
 }
 
-async function fetchMonthPlans(month: DateStr): Promise<MonthPlan[]> {
+async function fetchWeekGoals(weekStart: DateStr): Promise<WeekGoal[]> {
   const supabase = createClient();
 
   const { data, error } = await supabase
-    .from("month_plans")
+    .from("week_goals")
     .select("*")
-    .eq("month", month)
-    // Index ile aynı sıra (month_plans_user_month_idx).
+    .eq("week_start", weekStart)
+    /*
+     * `completed_at`'e göre SIRALANMAZ — `fetchPlanGoals`'un
+     * `archived_at`'i öne almasından bilerek ayrılır. Orada arşiv
+     * "gözden çıkarıldı" demekti ve dibe düşmesi doğruydu; burada
+     * tamamlanma bir başarıdır ve hedefin listedeki YERİ değişmemeli:
+     * kullanıcı bir hedefi işaretlediğinde kart gözünün önünde
+     * zıplasaydı, hangisini işaretlediğini kaybederdi. Tamamlanma
+     * yalnızca görsel olarak (üstü çizili) belli olur.
+     */
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
 
   if (error) throw error;
-  return (data as MonthPlanRow[]).map(toMonthPlan);
+  return (data as WeekGoalRow[]).map(toWeekGoal);
 }
 
-export function toMonthPlan(row: MonthPlanRow): MonthPlan {
+export function toWeekGoal(row: WeekGoalRow): WeekGoal {
   return {
     id: row.id,
     // supabase-js `date`'i 'YYYY-MM-DD' string döndürür; DB kısıtı
-    // değerin ayın 1'i olduğunu garanti eder (toPlanGoal ile aynı).
-    month: asDateStr(row.month),
+    // değerin ISO pazartesisi olduğunu garanti eder (toPlanGoal ile aynı).
+    weekStart: asDateStr(row.week_start),
     title: row.title,
-    body: row.body,
+    note: row.note,
+    targetCount: row.target_count,
+    doneCount: row.done_count,
     colorSlot: row.color_slot,
     sortOrder: row.sort_order,
+    completedAt: row.completed_at,
   };
 }
 

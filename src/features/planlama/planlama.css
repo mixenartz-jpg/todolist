@@ -599,23 +599,23 @@
   gap: 8px;
 }
 
-/* ── Kart listesi (Hedefler + Genel planlama) ─────────────────────
+/* ── Kart listesi (Hedefler + Haftalık hedefler) ──────────────────
  *
- * Adı `goalList` çünkü önce Hedefler için yazıldı; Genel planlama da
+ * Adı `goalList` çünkü önce Hedefler için yazıldı; Haftalık hedefler de
  * AYNI ölçekte, aynı boyda kartlar gösterdiği için yeniden kullanıyor.
  * Birinde kayan listenin ötekinde sayfayı uzatması tutarsızlık olurdu.
  *
  * ── Bu dosyanın başındaki "iç kaydırma YOK" kuralının İSTİSNASI ──
  * O kural ajanda KAĞIDI için yazıldı ve orada haklıdır: gizlenen şey
  * bir GÖREVDİR, gizlenmesi işin unutulması demektir. Bu listeler başka
- * bir yüzey — ay başında yazılan, sabit sayıda, taranan değil OKUNAN
+ * bir yüzey — dönem başında yazılan, sabit sayıda, taranan değil OKUNAN
  * kartlar. Sınırsız uzadığında "ekle" düğmesi ekranın dibine düşüyor
  * ve her yeni kart sayfayı sonuna kadar kaydırmayı gerektiriyordu.
  *
- * `max-height` bir EŞİKTİR, sabit yükseklik değil: üç hedefli bir ay
- * kutuya hiç değmez ve kaydırma çubuğu görünmez. Davranış yalnızca
- * liste eşiği aştığında devreye girer — ayrı bir "uzun mu?" ölçümü
- * ya da JS'e gerek yok.
+ * `max-height` bir EŞİKTİR, sabit yükseklik değil: üç hedefli bir
+ * dönem kutuya hiç değmez ve kaydırma çubuğu görünmez. Davranış
+ * yalnızca liste eşiği aştığında devreye girer — ayrı bir "uzun mu?"
+ * ölçümü ya da JS'e gerek yok.
  */
 .goalList {
   max-height: var(--goal-list-max);
@@ -653,5 +653,39 @@
 @media (pointer: coarse) {
   .goalList {
     overscroll-behavior-y: contain;
+  }
+}
+
+/* ── Tamamlanmış haftalık hedef ───────────────────────────────────
+ *
+ * Tamamlanan hedef LİSTEDEN KALKMAZ: kullanıcı hafta sonunda neyi
+ * bitirdiğini görmek istiyor ve gizlenen bir hedef o soruyu
+ * cevaplayamaz. Aylık hedefteki `opacity-60` arşiv görünümünden farkı
+ * ÜSTÜ ÇİZİLİ olması — arşiv "artık bakmıyorum", tamamlanma "bitti"
+ * demek ve ikisi aynı görünmemeli.
+ *
+ * Soluma çizgiden AYRI iş yapıyor: çizgi tek başına bitmiş bir hedefi
+ * hâlâ açık olanlarla eşit görsel ağırlıkta bırakırdı. .55 eşiği,
+ * metni okunur tutarken gözün önce açık hedeflere gitmesini sağlar.
+ *
+ * `text-decoration-color` kısılmasa çizgi metinden daha koyu kalır ve
+ * üstü çizili satır, solmuş metnin üzerinde yüzen bir şerit gibi
+ * görünürdü.
+ */
+.weekGoalDone {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in oklch, currentColor 55%, transparent);
+  opacity: 0.55;
+  transition:
+    opacity var(--duration-base) var(--ease-out-expo),
+    text-decoration-color var(--duration-base) var(--ease-out-expo);
+}
+
+/* İşaretleme anlık bir karardır; solma/çizgi geçişi hareket
+   hassasiyeti olan kullanıcı için gereksiz bir titreşimdir. */
+@media (prefers-reduced-motion: reduce) {
+  .weekGoalDone {
+    transition: none;
   }
 }
