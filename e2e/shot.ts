@@ -94,4 +94,10 @@ export const REQUIRED_TOKENS = [
   "--color-ink",
   "--color-slot-0",
   "--color-level-0",
+  /*
+   * Zaman ızgarasının TÜM geometrisi bu token'a bağlı ve değer JS'ten
+   * `getComputedStyle` ile okunuyor. Boş kalırsa bloklar tuvalin
+   * tepesine yığılır — derleme hatası vermeden.
+   */
+  "--daygrid-hour-h",
 ] as const;

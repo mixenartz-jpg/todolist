@@ -34,6 +34,9 @@ const ALL: readonly ViewportName[] = ["mobile", "tablet", "desktop"];
 const ROUTES: readonly Route[] = [
   { slug: "01-tablo", path: "/", viewports: ALL },
   { slug: "02-bugun", path: "/bugun", viewports: ALL },
+  /* "02b": Bugün'ün hafta ölçeği — ayrı rota değil, aynı sayfanın
+     parametresi. Numara kaydırmama kuralı için bkz. "07b". */
+  { slug: "02b-bugun-hafta", path: "/bugun?ol=hafta", viewports: ALL },
   { slug: "03-takvim-ay", path: "/takvim/ay", viewports: ALL },
   { slug: "04-takvim-hafta", path: "/takvim/hafta", viewports: ALL },
   { slug: "05-planlama-ay", path: "/planlama/ay", viewports: ALL },

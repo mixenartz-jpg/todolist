@@ -9,6 +9,7 @@ import {
   applySortOrders,
   type SortOrderPatch,
 } from "@/features/planlama/reorder";
+import { pendingTaskId } from "@/features/daygrid/drop";
 import { toTask } from "./queries";
 import type { Task, TaskDraft } from "./types";
 
@@ -57,10 +58,29 @@ export function useToggleTask(onError?: (message: string) => void) {
   });
 }
 
+const CREATE_KEY = ["createTask"] as const;
+
+/**
+ * Yeni görev oluşturur — optimistic.
+ *
+ * ── Neden optimistic? ──
+ * Düz listede beklemek tolere edilebilirdi: satır en sona düşer ve
+ * kullanıcı zaten oraya bakmıyordur. Zaman ızgarasında değil — 14:30'a
+ * tıklayıp başlığı yazan kullanıcı, tam da baktığı yerde bir ağ turu
+ * boyunca HİÇBİR ŞEY görmez. Bu, sürüklemenin akıcılığıyla tezat
+ * oluşturur ve tıklamanın kaydedilmediği izlenimi verir.
+ *
+ * Geçici satır `tmp-` önekli bir kimlik taşır (bkz. daygrid/drop.ts).
+ * O kimliğe yapılacak her yazma var olmayan bir satıra gideceği için
+ * arayüz geçici görevleri etkileşime kapatır; `isPendingTask` bu
+ * sözleşmenin tek kaynağıdır.
+ */
 export function useCreateTask(onError?: (message: string) => void) {
   const qc = useQueryClient();
 
   return useMutation({
+    mutationKey: CREATE_KEY,
+
     mutationFn: async (draft: TaskDraft) => {
       const supabase = createClient();
       const { data, error } = await supabase
@@ -69,6 +89,10 @@ export function useCreateTask(onError?: (message: string) => void) {
           title: draft.title.trim(),
           due_date: draft.dueDate,
           note: draft.note,
+          start_time: draft.startTime ?? null,
+          // `useSetTaskTime` ile aynı kural: saatsiz süreye izin yok.
+          // Kısıtı istemcide zorlamak, sunucudan hata almaya yeğdir.
+          duration_minutes: draft.startTime ? (draft.durationMinutes ?? null) : null,
         })
         .select()
         .single();
@@ -76,8 +100,43 @@ export function useCreateTask(onError?: (message: string) => void) {
       if (error) throw error;
       return toTask(data as TaskRow);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.tasks() }),
-    onError: (error) => onError?.(errorText(error)),
+
+    onMutate: async (draft) => {
+      await qc.cancelQueries({ queryKey: qk.tasks() });
+      const previous = qc.getQueryData<Task[]>(qk.tasks());
+
+      const optimistic: Task = {
+        id: pendingTaskId(),
+        title: draft.title.trim(),
+        dueDate: draft.dueDate,
+        done: false,
+        note: draft.note,
+        // Sunucu `sort_order` varsayılanını kendi verir; burada 0
+        // yeterli, çünkü sıralama zaten saate göre yapılıyor.
+        sortOrder: 0,
+        startTime: draft.startTime ?? null,
+        durationMinutes: draft.startTime ? (draft.durationMinutes ?? null) : null,
+        categoryId: null,
+        goalId: null,
+      };
+
+      qc.setQueryData<Task[]>(qk.tasks(), (tasks) =>
+        tasks ? [...tasks, optimistic] : tasks,
+      );
+
+      return { previous };
+    },
+
+    onError: (error, _draft, context) => {
+      qc.setQueryData(qk.tasks(), context?.previous);
+      onError?.(errorText(error));
+    },
+
+    onSettled: () => {
+      if (qc.isMutating({ mutationKey: CREATE_KEY }) === 1) {
+        qc.invalidateQueries({ queryKey: qk.tasks() });
+      }
+    },
   });
 }
 
@@ -268,6 +327,90 @@ export function useSetTaskTime(onError?: (message: string) => void) {
     },
 
     onSettled: () => qc.invalidateQueries({ queryKey: qk.tasks() }),
+  });
+}
+
+const MOVE_KEY = ["moveTask"] as const;
+
+/**
+ * Görevi tek işlemde başka güne VE saate taşır — optimistic.
+ *
+ * ── Neden `useRescheduleTask` + `useSetTaskTime` DEĞİL? ──
+ * Bir bırakma TEK kullanıcı hareketidir; iki mutasyon iki `onSettled`
+ * ve iki `invalidateQueries` demektir. Biri diğeri uçarken dönerse
+ * önbellek yarı-eski bir satırla ezilir ve blok bir kare eski yerine
+ * zıplar. Daha kötüsü kısmi başarıdır: gün yazılıp saat yazılamazsa
+ * görev doğru güne ama YANLIŞ saate yerleşir ve `onError`'daki geri
+ * alma diğer mutasyonun yamasını da siler. Tek `update` her iki sütunu
+ * atomik yazar.
+ *
+ * `useRescheduleTask` ve `useSetTaskTime` yerinde DURUYOR: "yarına
+ * ertele" saatle ilgilenmez, "saati kaldır" günle. Dar mutasyon
+ * yalnızca dokunduğu alanı riske atar (bkz. useRenameTask gerekçesi).
+ */
+export function useMoveTask(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationKey: MOVE_KEY,
+
+    mutationFn: async ({
+      id,
+      dueDate,
+      startTime,
+      durationMinutes,
+    }: {
+      id: string;
+      dueDate: DateStr;
+      startTime: string | null;
+      durationMinutes: number | null;
+    }) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("tasks")
+        .update({
+          due_date: dueDate,
+          start_time: startTime,
+          duration_minutes: startTime ? durationMinutes : null,
+        })
+        .eq("id", id);
+      if (error) throw error;
+    },
+
+    onMutate: async ({ id, dueDate, startTime, durationMinutes }) => {
+      await qc.cancelQueries({ queryKey: qk.tasks() });
+      const previous = qc.getQueryData<Task[]>(qk.tasks());
+
+      qc.setQueryData<Task[]>(qk.tasks(), (tasks) =>
+        tasks?.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                dueDate,
+                startTime,
+                durationMinutes: startTime ? durationMinutes : null,
+              }
+            : t,
+        ),
+      );
+
+      return { previous };
+    },
+
+    onError: (error, _vars, context) => {
+      qc.setQueryData(qk.tasks(), context?.previous);
+      onError?.(errorText(error));
+    },
+
+    /*
+     * Hızlı ardışık sürüklemelerde her bırakma ayrı bir refetch
+     * tetiklemesin — `useToggleTask`'taki disiplinin aynısı.
+     */
+    onSettled: () => {
+      if (qc.isMutating({ mutationKey: MOVE_KEY }) === 1) {
+        qc.invalidateQueries({ queryKey: qk.tasks() });
+      }
+    },
   });
 }
 

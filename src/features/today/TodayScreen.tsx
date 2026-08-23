@@ -1,9 +1,8 @@
 "use client";
 import { ScreenBody } from "@/components/Screen";
 
-import { useMemo, useState } from "react";
-import { addDays, todayStr } from "@/lib/date/date";
-import type { DateStr } from "@/lib/date/types";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { addDays } from "@/lib/date/date";
 import { cn } from "@/lib/ui/cn";
 import { formatLongDate, formatPercent, WEEKDAYS_LONG } from "@/lib/ui/tr";
 import { isoWeekday } from "@/lib/date/date";
@@ -20,22 +19,36 @@ import { dayScore, periodProgress } from "@/features/stats/score";
 import { DayNoteCard } from "@/features/notes/DayNoteCard";
 import { ReviewQueue } from "@/features/mistakes/ReviewQueue";
 import { SectionHeading } from "@/features/sections/SectionHeading";
-import { DaySchedule } from "@/features/tasks/DaySchedule";
+import {
+  DayGridScreen,
+  type DraftSlot,
+} from "@/features/daygrid/DayGridScreen";
+import {
+  DayGridHeader,
+  gridRangeLabel,
+} from "@/features/daygrid/DayGridHeader";
+import { useDayGridSurface } from "@/features/daygrid/useDayGridSurface";
+import type { DropIntent } from "@/features/daygrid/drop";
 import { TaskItem } from "@/features/tasks/TaskItem";
 import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
+import { formatTime } from "@/features/tasks/schedule";
+import { useCategories, categoryMap } from "@/features/planlama/queries";
+import type { Task } from "@/features/tasks/types";
 import {
   useCreateTask,
   useDeleteTask,
   useRenameTask,
   useRescheduleTask,
+  useMoveTask,
   useSetTaskTime,
   useToggleTask,
 } from "@/features/tasks/mutations";
-import { tasksForDay, undatedTasks, useTasks } from "@/features/tasks/queries";
+import { undatedTasks, useTasks } from "@/features/tasks/queries";
 import { TodayRoutineItem } from "./TodayRoutineItem";
 
 export function TodayScreen() {
-  const today = useMemo(() => todayStr(), []);
+  const surface = useDayGridSurface();
+  const today = surface.today;
   const toast = useToast();
 
   /*
@@ -44,6 +57,15 @@ export function TodayScreen() {
    * (Önceki `<details>` de varsayılan kapalıydı — davranış korunuyor.)
    */
   const [somedayOpen, setSomedayOpen] = useState(false);
+
+  /**
+   * Izgarada tıklanan görev — düzenleme satırı çizelgenin altında açılır.
+   *
+   * Kimliği DEĞİL nesneyi tutmak yanlış olurdu: görev silinince ya da
+   * başka bir sekmede değişince elde bayat bir kopya kalırdı. Kimlik
+   * tutulup nesne her render'da önbellekten okunur.
+   */
+  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
 
   const routinesQuery = useRoutines();
   const entriesQuery = useEntries(today, today);
@@ -57,6 +79,7 @@ export function TodayScreen() {
   const deleteTask = useDeleteTask(toast.show);
   const rescheduleTask = useRescheduleTask(toast.show);
   const setTaskTime = useSetTaskTime(toast.show);
+  const moveTask = useMoveTask(toast.show);
   const renameTask = useRenameTask(toast.show);
 
   /**
@@ -81,14 +104,113 @@ export function TodayScreen() {
     [entries, routinesQuery.data, today],
   );
 
-  const dayTasks = useMemo(
-    () => tasksForDay(tasksQuery.data ?? [], today),
+  /*
+   * Izgaraya YALNIZCA görünen günlere tarihlenen görevler girer.
+   *
+   * `tasksForDay` geçmişten taşan tamamlanmamışları da bugüne çeker ve
+   * listede doğru olan davranış odur — ama çizelgede taşan bir görevin
+   * saati BAŞKA bir günün saatidir; onu bugünün 09:00'ına çizmek yalan
+   * olurdu. Taşanlar aşağıdaki "taşınanlar" bölümünde duruyor.
+   */
+  const gridTasks = useMemo(() => {
+    const visible = new Set(surface.dates);
+    return (tasksQuery.data ?? []).filter(
+      (t) => t.dueDate !== null && visible.has(t.dueDate),
+    );
+  }, [tasksQuery.data, surface.dates]);
+
+  /** Vadesi geçmiş, hâlâ açık işler — ızgaranın altında ayrı bölüm. */
+  const overdue = useMemo(
+    () =>
+      (tasksQuery.data ?? []).filter(
+        (t) => t.dueDate !== null && !t.done && t.dueDate < today,
+      ),
     [tasksQuery.data, today],
   );
 
   const someday = useMemo(
     () => undatedTasks(tasksQuery.data ?? []),
     [tasksQuery.data],
+  );
+
+  const categoriesQuery = useCategories();
+  const categoryById = useMemo(
+    () => categoryMap(categoriesQuery.data ?? []),
+    [categoriesQuery.data],
+  );
+
+  const colorOf = useCallback(
+    (task: Task) =>
+      task.categoryId ? (categoryById.get(task.categoryId)?.colorSlot ?? null) : null,
+    [categoryById],
+  );
+
+  /* Nesne her render'da önbellekten TAZE okunur — bkz. openTaskId. */
+  const openTask = useMemo(
+    () =>
+      openTaskId === null
+        ? null
+        : ((tasksQuery.data ?? []).find((t) => t.id === openTaskId) ?? null),
+    [openTaskId, tasksQuery.data],
+  );
+
+  const setOpenTask = useCallback((task: Task) => {
+    // Aynı bloğa ikinci kez basmak paneli kapatır.
+    setOpenTaskId((current) => (current === task.id ? null : task.id));
+  }, []);
+
+  /**
+   * Sürükleme niyetini mutasyona dağıtır.
+   *
+   * Gün içi taşıma ve boyutlandırma dar `useSetTaskTime`'a, gün
+   * değiştiren taşıma ise tek atomik `useMoveTask`'a gider — iki ayrı
+   * mutasyon zincirlemek önbelleği yarı-eski satırla ezerdi (gerekçe
+   * `useMoveTask` başında).
+   */
+  const handleDrop = useCallback(
+    (intent: DropIntent) => {
+      switch (intent.kind) {
+        case "time":
+          setTaskTime.mutate({
+            id: intent.id,
+            startTime: intent.startTime,
+            durationMinutes: intent.durationMinutes,
+          });
+          return;
+        case "unschedule":
+          setTaskTime.mutate({
+            id: intent.id,
+            startTime: null,
+            durationMinutes: null,
+          });
+          return;
+        case "move":
+        case "schedule":
+          moveTask.mutate({
+            id: intent.id,
+            dueDate: intent.dueDate,
+            startTime: intent.startTime,
+            durationMinutes: intent.durationMinutes,
+          });
+          return;
+        case "none":
+          return;
+      }
+    },
+    [setTaskTime, moveTask],
+  );
+
+  const handleCreateInSlot = useCallback(
+    (title: string, slot: DraftSlot) => {
+      createTask.mutate({
+        title,
+        dueDate: slot.date,
+        note: null,
+        startTime: formatTime(slot.startMinute),
+        durationMinutes: 30,
+      });
+    },
+    [createTask],
   );
 
   const doneCount = routines.filter((r) => isCompleted(entries, r, today)).length;
@@ -111,14 +233,26 @@ export function TodayScreen() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <TodayHeader
-        date={today}
+        label={gridRangeLabel(surface.scale, surface.dates, formatLongDate)}
+        weekday={
+          surface.scale === "day" ? WEEKDAYS_LONG[isoWeekday(surface.anchor)] : null
+        }
         doneCount={doneCount}
         totalCount={routines.length}
         ratio={score.ratio}
         hasWork={score.possible > 0}
+        nav={
+          <DayGridHeader
+            scale={surface.scale}
+            isCurrent={surface.isCurrent}
+            onScale={surface.setScale}
+            onStep={surface.step}
+            onToday={surface.goToday}
+          />
+        }
       />
 
-      <ScreenBody width="2xl">
+      <ScreenBody width={surface.scale === "week" ? "6xl" : "2xl"}>
         {isLoading ? (
           <TodaySkeleton />
         ) : (
@@ -153,29 +287,51 @@ export function TodayScreen() {
             <section>
               <SectionHeading sectionKey="today.tasks" onError={toast.show} />
 
-              {dayTasks.length > 0 && (
-                <div className="mb-2.5">
-                  <DaySchedule
-                    tasks={dayTasks}
+              <div className="mb-2.5">
+                <DayGridScreen
+                  dates={surface.dates}
+                  today={today}
+                  tasks={gridTasks}
+                  colorOf={colorOf}
+                  onOpen={setOpenTask}
+                  onCreate={handleCreateInSlot}
+                  onDrop={handleDrop}
+                />
+              </div>
+
+              {/* Izgarada seçilen görevin düzenleme satırı. `TaskItem`
+                  ızgaraya sığmaz (15 dk = 13px), ama düzenleme yolu tek
+                  olmalı: blok tıklanınca aynı satır burada açılır. */}
+              {openTask && (
+                <ul className="mb-2.5">
+                  <TaskItem
+                    task={openTask}
                     today={today}
-                    onToggle={(task) =>
-                      toggleTask.mutate({ id: task.id, done: !task.done })
+                    onToggle={() =>
+                      toggleTask.mutate({ id: openTask.id, done: !openTask.done })
                     }
-                    onDelete={(task) => deleteTask.mutate(task.id)}
-                    onDefer={(task) =>
+                    onDelete={() => {
+                      deleteTask.mutate(openTask.id);
+                      setOpenTaskId(null);
+                    }}
+                    onDefer={() =>
                       rescheduleTask.mutate({
-                        id: task.id,
-                        dueDate: addDays(today, 1),
+                        id: openTask.id,
+                        dueDate: addDays(openTask.dueDate ?? today, 1),
                       })
                     }
-                    onSetTime={(task, startTime, durationMinutes) =>
-                      setTaskTime.mutate({ id: task.id, startTime, durationMinutes })
+                    onSetTime={(startTime, durationMinutes) =>
+                      setTaskTime.mutate({
+                        id: openTask.id,
+                        startTime,
+                        durationMinutes,
+                      })
                     }
-                    onRename={(task, title) =>
-                      renameTask.mutate({ id: task.id, title })
+                    onRename={(title) =>
+                      renameTask.mutate({ id: openTask.id, title })
                     }
                   />
-                </div>
+                </ul>
               )}
 
               <TaskQuickAdd
@@ -186,6 +342,41 @@ export function TodayScreen() {
                 }
               />
             </section>
+
+            {/* Vadesi geçmiş açık işler.
+                Izgarada DEĞİL, çünkü saatleri başka bir güne ait ve
+                onları bugünün saatlerine çizmek yalan olurdu. Ama
+                sessizce kaybolmaları da olmaz: uygulamanın güvenilir
+                olması, verilen sözün görünür kalmasına bağlı. */}
+            {overdue.length > 0 && (
+              <section>
+                <h2 className="mb-1.5 text-[length:var(--text-sm)] text-[var(--color-warn)]">
+                  Taşınanlar
+                </h2>
+                <ul className="flex flex-col gap-1.5">
+                  {overdue.map((task) => (
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      today={today}
+                      onToggle={() =>
+                        toggleTask.mutate({ id: task.id, done: !task.done })
+                      }
+                      onDelete={() => deleteTask.mutate(task.id)}
+                      onDefer={() =>
+                        rescheduleTask.mutate({ id: task.id, dueDate: today })
+                      }
+                      onSetTime={(startTime, durationMinutes) =>
+                        setTaskTime.mutate({ id: task.id, startTime, durationMinutes })
+                      }
+                      onRename={(title) =>
+                        renameTask.mutate({ id: task.id, title })
+                      }
+                    />
+                  ))}
+                </ul>
+              </section>
+            )}
 
             {/* Vadesi gelmiş yanlış tekrarları. Görevlerden SONRA:
                 rutinler ve görevler günün asıl yükümlülükleri, tekrar
@@ -284,29 +475,45 @@ export function TodayScreen() {
   );
 }
 
+/**
+ * Bugün ekranının başlığı: tarih + ilerleme + ızgara gezinmesi.
+ *
+ * Gezinme kontrolleri AYRI bir şeride konmadı: iki yapışkan başlık
+ * mobilde ekranın üçte birini yer ve `--header-h` yalnızca birini
+ * ölçebilir — altındaki yapışkan elemanlar (saatsiz şerit) yanlış yere
+ * tutunurdu.
+ */
 function TodayHeader({
-  date,
+  label,
+  weekday,
   doneCount,
   totalCount,
   ratio,
   hasWork,
+  nav,
 }: {
-  date: DateStr;
+  label: string;
+  /** Yalnızca gün ölçeğinde; hafta aralığında gün adı anlamsız. */
+  weekday: string | null;
   doneCount: number;
   totalCount: number;
   ratio: number;
   hasWork: boolean;
+  nav: ReactNode;
 }) {
   return (
     <header className="border-b border-[var(--color-line)] px-4 py-4 md:px-6">
-      <div className="mx-auto w-full max-w-2xl">
-        <div className="flex items-baseline gap-2.5">
+      <div className="mx-auto w-full max-w-6xl">
+        <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-2">
           <h1 className="text-[length:var(--text-xl)] font-semibold tracking-[-0.015em]">
-            {formatLongDate(date)}
+            {label}
           </h1>
-          <span className="text-[length:var(--text-sm)] text-[var(--color-ink-3)]">
-            {WEEKDAYS_LONG[isoWeekday(date)]}
-          </span>
+          {weekday && (
+            <span className="text-[length:var(--text-sm)] text-[var(--color-ink-3)]">
+              {weekday}
+            </span>
+          )}
+          <div className="ml-auto">{nav}</div>
         </div>
 
         {hasWork && (
@@ -364,6 +571,33 @@ function TodaySkeleton() {
           style={{ animationDelay: `${i * 70}ms` }}
         />
       ))}
+    </div>
+  );
+}
+
+/**
+ * Sorgu parametreleri çözülene kadar gösterilen iskelet.
+ *
+ * `TodaySkeleton`'dan farkı başlık şeridini de çizmesi: bu, ölçek ve
+ * çapa URL'den okunmadan ÖNCE kullanılıyor (Suspense fallback'i) ve o
+ * an hangi günün gösterileceği bilinmiyor. `PlanBoot` ile aynı ayrım,
+ * aynı gerekçe.
+ */
+export function TodayBoot() {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <header className="border-b border-[var(--color-line)] px-4 py-4 md:px-6">
+        <div className="mx-auto w-full max-w-6xl">
+          <span
+            className="block h-7 w-48 animate-pulse rounded-md bg-[var(--color-surface-2)]"
+            aria-hidden
+          />
+        </div>
+      </header>
+
+      <ScreenBody width="2xl">
+        <TodaySkeleton />
+      </ScreenBody>
     </div>
   );
 }

@@ -192,6 +192,29 @@
    */
   --goal-list-max: 32rem;
 
+  /* ══ Zaman ızgarası — orantılı gün/hafta çizelgesi ════════════════
+   *
+   * Saat satırının yüksekliği ızgaranın TEK ölçü birimidir: blok
+   * konumu, blok yüksekliği ve sürükleme hit-test'i hepsi ondan
+   * türetilir (bkz. daygrid/geometry.ts). Değer JS'te sabit yazılmaz,
+   * buradan OKUNUR — yoksa 768px kırılmasında bloklar CSS'ten kayardı.
+   *
+   * ── 56px neden? ──
+   * En küçük adım 15 dakika, yani 14px'lik bir şerit. O şerit hâlâ
+   * tıklanabilir; 48px satırda 12px'e iner ve parmakla dokunulamaz
+   * hale gelir. Mobilde 52'ye çekilir: dikey alan orada daha pahalı,
+   * ama 13px eşiğin üstünde kalır.
+   *
+   * Bu token'lar `@theme`'e KONMAZ: Tailwind sınıfı üretmiyorlar ve
+   * `@theme` içindeki kullanılmayan değişkenler tree-shake edilerek
+   * sessizce boşalırdı. Kanarya için bkz. e2e/shot.ts REQUIRED_TOKENS.
+   */
+  --daygrid-hour-h: 52px;
+  --daygrid-gutter-w: 3.25rem; /* sol saat oluğu */
+  --daygrid-block-gap: 2px; /* yan yana şeritler arası */
+  --daygrid-min-block-h: 22px; /* 15 dk'lık bloğun okunur tabanı */
+  --daygrid-now-color: var(--color-danger);
+
   /* ══ Cam — YALNIZCA altından içerik akan yüzen kabuk ══════════════
    *
    * İçerik kartları opaktır. Cam kabuk = masaüstü şerit, mobil sekme
@@ -311,6 +334,8 @@
     --screen-px: 1.5rem;
     --header-px: 1.5rem;
     --plan-gutter: 4.5rem;
+    --daygrid-hour-h: 60px;
+    --daygrid-gutter-w: 3.75rem;
   }
 }
 

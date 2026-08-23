@@ -4,6 +4,7 @@ import { memo, useRef, useState, type ReactNode } from "react";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { formatShortDate } from "@/lib/ui/tr";
+import { isPendingTask } from "@/features/daygrid/drop";
 import { isOverdue } from "./queries";
 import { normalizeTitleInput, shouldPersistTitle, TASK_TITLE_MAX } from "./rename";
 import { DURATION_PRESETS, formatDuration } from "./schedule";
@@ -98,17 +99,35 @@ export const TaskItem = memo(function TaskItem({
   const [editingTitle, setEditingTitle] = useState(false);
 
   /*
+   * Henüz yazılmamış görev ETKİLEŞİME KAPALI.
+   *
+   * Optimistic `useCreateTask` önbelleğe `tmp-` kimlikli bir satır koyar
+   * ve o satır bu bileşende de görünür (tarihsiz "bir ara" ve taşınanlar
+   * bölümleri doğrudan önbellekten okuyor). Geçici kimliğe yapılan her
+   * yazma `.eq("id", "tmp-…")` ile SIFIR satır eşler: hata da vermez,
+   * iş de görmez — kullanıcı işaretlediği kutucuğun bir saniye sonra
+   * kendiliğinden geri döndüğünü görürdü.
+   *
+   * Kontrol satırın KENDİSİNDE: çağrı yerlerine bırakılsaydı, sözleşme
+   * her yeni çağrı yerinde yeniden hatırlanmak zorunda kalırdı (bkz.
+   * `isPendingTask`, mutations.ts).
+   */
+  const pending = isPendingTask(task.id);
+
+  /*
    * Tamamlanmış görevin adı düzenlenmez. Üstü çizili bir metne tıklayınca
    * düzenleme kutusu açılması, işaretlemeyi geri almaya çalışan eli
    * yanlış yere götürür; bitmiş bir işin adını değiştirmek de nadir bir
    * ihtiyaçtır — kutucuğu geri alıp düzenlemek hâlâ mümkün.
    */
-  const canRename = Boolean(onRename) && !task.done;
+  const canRename = Boolean(onRename) && !task.done && !pending;
 
   return (
     <li
+      aria-busy={pending || undefined}
       className={cn(
         "rowEnter revealOnHover flex rounded-xl border py-2.5",
+        pending && "opacity-60",
         // Dar sütunda yatay dolgu kısalır: 24px sadece kenar boşluğuna
         // gidiyordu ve başlık o genişliğe muhtaç.
         compact ? "px-2" : "px-3",
@@ -143,6 +162,7 @@ export const TaskItem = memo(function TaskItem({
       <button
         type="button"
         onClick={onToggle}
+        disabled={pending}
         aria-pressed={task.done}
         aria-label={task.done ? `${task.title}: geri al` : `${task.title}: tamamla`}
         className={cn(
@@ -306,7 +326,7 @@ export const TaskItem = memo(function TaskItem({
           compact && "order-3",
         )}
       >
-        {onSetTime && !task.done && (
+        {onSetTime && !task.done && !pending && (
           <IconButton
             label={`${task.title}: saat ayarla`}
             compact={compact}
@@ -325,7 +345,7 @@ export const TaskItem = memo(function TaskItem({
           </IconButton>
         )}
 
-        {(onDefer || dayPicker) && !task.done && (
+        {(onDefer || dayPicker) && !task.done && !pending && (
           <IconButton
             label={
               dayPicker
@@ -350,21 +370,23 @@ export const TaskItem = memo(function TaskItem({
           </IconButton>
         )}
 
-        <IconButton
-          label={`${task.title}: sil`}
-          compact={compact}
-          onClick={onDelete}
-        >
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
-            <path
-              d="M3.5 4.5h9M6.5 4.5V3.2c0-.4.3-.7.7-.7h1.6c.4 0 .7.3.7.7v1.3M5 4.5l.5 8h5l.5-8"
-              stroke="currentColor"
-              strokeWidth="1.3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </IconButton>
+        {!pending && (
+          <IconButton
+            label={`${task.title}: sil`}
+            compact={compact}
+            onClick={onDelete}
+          >
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
+              <path
+                d="M3.5 4.5h9M6.5 4.5V3.2c0-.4.3-.7.7-.7h1.6c.4 0 .7.3.7.7v1.3M5 4.5l.5 8h5l.5-8"
+                stroke="currentColor"
+                strokeWidth="1.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </IconButton>
+        )}
       </div>
     </li>
   );

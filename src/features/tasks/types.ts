@@ -45,4 +45,14 @@ export interface TaskDraft {
   title: string;
   dueDate: DateStr | null;
   note: string | null;
+  /**
+   * Başlangıç saati, 'HH:MM'. Verilmezse saatsiz görev doğar.
+   *
+   * Zaman ızgarasında boş bir yuvaya tıklayarak eklemek görevi doğrudan
+   * o saate koyar; önce saatsiz yaratıp sonra ikinci bir yazmayla saat
+   * vermek gereksiz bir tur ve gözle görülür bir sıçrama olurdu.
+   */
+  startTime?: string | null;
+  /** Süre, dakika. `startTime` yoksa YOK SAYILIR (DB kısıtı 0006). */
+  durationMinutes?: number | null;
 }
