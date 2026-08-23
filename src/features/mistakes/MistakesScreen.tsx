@@ -14,6 +14,7 @@ import {
   useAdvanceReview,
   useCreateMistake,
   useDeleteMistake,
+  useDeleteMistakes,
   useRenameMistakeGroup,
   useUpdateMistake,
 } from "./mutations";
@@ -29,6 +30,14 @@ interface PendingRename {
   from: string;
   to: string;
   plan: RenamePlan;
+}
+
+interface PendingBranch {
+  level: "ders" | "konu";
+  /** Onay metninde gösterilecek ad; konuda "Ders · Konu". */
+  label: string;
+  /** Silinecek kayıtların TAMAMI — ağaçtan geldiği gibi. */
+  mistakes: readonly Mistake[];
 }
 
 /**
@@ -76,12 +85,23 @@ export function MistakesScreen() {
   const createMistake = useCreateMistake(toast.show);
   const updateMistake = useUpdateMistake(toast.show);
   const deleteMistake = useDeleteMistake(toast.show);
+  const deleteMistakes = useDeleteMistakes(toast.show);
   const advanceReview = useAdvanceReview(toast.show);
   const renameGroup = useRenameMistakeGroup(toast.show);
 
   const [composing, setComposing] = useState(false);
   const [editing, setEditing] = useState<Mistake | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Mistake | null>(null);
+
+  /**
+   * Silinmeyi bekleyen DAL (ders ya da konu).
+   *
+   * `pendingDelete` ile ayrı tutuluyor: tek kayıt silme mesajı kaydın
+   * kendisini anlatır, dal silme ise KAÇ kaydın gideceğini söylemek
+   * zorunda. Tek state'e sıkıştırmak, onay penceresinde her seferinde
+   * hangi durumda olduğumuzu ayırt etmeyi gerektirirdi.
+   */
+  const [pendingBranch, setPendingBranch] = useState<PendingBranch | null>(null);
   const [pendingRename, setPendingRename] = useState<PendingRename | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>("most");
 
@@ -173,6 +193,24 @@ export function MistakesScreen() {
               today={today}
               onEdit={startEdit}
               onDelete={setPendingDelete}
+              onDeleteDers={(ders) =>
+                setPendingBranch({
+                  level: "ders",
+                  label: ders.ders,
+                  // Dalın kayıtları AĞAÇTAN okunur, listeden yeniden
+                  // filtrelenmez: gruplama `normalize()` ile burada
+                  // yapılıyor ve "matematik" ile "MATEMATİK" ancak
+                  // ağaçta aynı dalda.
+                  mistakes: ders.konular.flatMap((k) => k.mistakes),
+                })
+              }
+              onDeleteKonu={(ders, konu) =>
+                setPendingBranch({
+                  level: "konu",
+                  label: `${ders.ders} · ${konu.konu}`,
+                  mistakes: konu.mistakes,
+                })
+              }
               onReviewed={(mistake) => advanceReview.mutate({ mistake, today })}
               reviewPending={advanceReview.isPending}
               onRenameDers={(ders, next) =>
@@ -219,6 +257,31 @@ export function MistakesScreen() {
               },
               { onSettled: () => setPendingRename(null) },
             )
+          }
+        />
+      )}
+
+      {pendingBranch && (
+        <ConfirmDialog
+          title={
+            pendingBranch.level === "ders"
+              ? "Dersin tamamı silinsin mi?"
+              : "Konunun tamamı silinsin mi?"
+          }
+          /*
+           * Sayı BAŞTA: yıkıcı bir onayda okunması gereken tek şey kaç
+           * kaydın gideceğidir ve cümlenin sonuna konsaydı hızlı okuyan
+           * göz onu atlardı. Görsellerin de gideceği açıkça söylenir —
+           * tek kayıt silme mesajı da aynı sözü veriyor.
+           */
+          description={`"${pendingBranch.label}" altındaki ${pendingBranch.mistakes.length} kayıt ve varsa ekran görüntüleri kalıcı olarak silinecek. Bu işlem geri alınamaz.`}
+          confirmLabel="Tümünü sil"
+          pending={deleteMistakes.isPending}
+          onCancel={() => setPendingBranch(null)}
+          onConfirm={() =>
+            deleteMistakes.mutate(pendingBranch.mistakes, {
+              onSettled: () => setPendingBranch(null),
+            })
           }
         />
       )}

@@ -5,7 +5,7 @@ import { cn } from "@/lib/ui/cn";
 import { Chevron } from "@/components/Chevron";
 import { MistakeRow } from "./MistakeRow";
 import { RenameButton, RenameRow } from "./RenameRow";
-import { CountPair, DueBadge, HeatBar } from "./tree-parts";
+import { CountPair, DeleteBranchButton, DueBadge, HeatBar } from "./tree-parts";
 import type { KonuNode } from "./tree";
 import type { Mistake } from "./types";
 
@@ -16,6 +16,8 @@ interface KonuRowProps {
   onToggle: (key: string) => void;
   onEdit: (mistake: Mistake) => void;
   onDelete: (mistake: Mistake) => void;
+  /** Konunun TÜM kayıtlarını sil — onay çağıranda. */
+  onDeleteBranch: () => void;
   onReviewed: (mistake: Mistake) => void;
   reviewPending: boolean;
   renaming: boolean;
@@ -32,6 +34,7 @@ export function KonuRow({
   onToggle,
   onEdit,
   onDelete,
+  onDeleteBranch,
   onReviewed,
   reviewPending,
   renaming,
@@ -73,6 +76,11 @@ export function KonuRow({
           </button>
 
           <RenameButton label={konu.konu} onClick={onStartRename} />
+          <DeleteBranchButton
+            label={konu.konu}
+            count={konu.total}
+            onClick={onDeleteBranch}
+          />
         </div>
       )}
 

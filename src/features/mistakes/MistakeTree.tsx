@@ -11,6 +11,10 @@ interface MistakeTreeProps {
   today: DateStr;
   onEdit: (mistake: Mistake) => void;
   onDelete: (mistake: Mistake) => void;
+  /** Dersin tüm kayıtlarını silme isteği — ekran onay kutusunu açar. */
+  onDeleteDers: (ders: DersNode) => void;
+  /** Konunun tüm kayıtlarını silme isteği; ders bağlamıyla birlikte. */
+  onDeleteKonu: (ders: DersNode, konu: KonuNode) => void;
   onReviewed: (mistake: Mistake) => void;
   reviewPending: boolean;
   /** Ders adını değiştirme isteği — ekran onay kutusunu açar. */
@@ -44,6 +48,8 @@ export function MistakeTree({
   today,
   onEdit,
   onDelete,
+  onDeleteDers,
+  onDeleteKonu,
   onReviewed,
   reviewPending,
   onRenameDers,
@@ -83,6 +89,8 @@ export function MistakeTree({
           onToggle={toggle}
           onEdit={onEdit}
           onDelete={onDelete}
+          onDeleteDers={onDeleteDers}
+          onDeleteKonu={onDeleteKonu}
           onReviewed={onReviewed}
           reviewPending={reviewPending}
           renamingKey={renamingKey}

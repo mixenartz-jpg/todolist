@@ -183,6 +183,74 @@ export function useDeleteMistake(onError?: (message: string) => void) {
 }
 
 /**
+ * Bir dalın TÜM yanlışlarını siler — optimistic.
+ *
+ * Ders ya da konu dalını topluca temizler. Tek tek silmek zaten
+ * mümkün (`useDeleteMistake`) ama otuz kayıtlı bir konuyu boşaltmak
+ * otuz onay penceresi demekti; toplu silme aynı işi tek onayla yapar.
+ *
+ * ── Sıra: ÖNCE STORAGE, SONRA SATIRLAR ──
+ * `useDeleteMistake` ile aynı gerekçe. Fark: görseller TEK çağrıda
+ * siliniyor (Storage `remove` bir dizi alır) ve satırlar tek `in()`
+ * sorgusuyla gidiyor — N kayıt için 2N ağ turu atmak, otuz kayıtlı bir
+ * dalda gözle görülür bir bekleme olurdu.
+ *
+ * ── Neden id listesi, ders/konu adı DEĞİL? ──
+ * Sunucuya "Matematik'i sil" demek, gruplamanın `normalize()` ile
+ * istemcide yapıldığı gerçeğini yok sayardı: "matematik" ve
+ * "MATEMATİK" aynı dalda görünür ama SQL'de eşit değildir. Ağacın
+ * hangi kayıtları o dala koyduğunu yalnızca istemci bilir.
+ */
+export function useDeleteMistakes(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (mistakes: readonly Mistake[]) => {
+      if (mistakes.length === 0) return;
+
+      const supabase = createClient();
+
+      const paths = mistakes
+        .map((m) => m.imagePath)
+        .filter((p): p is string => p !== null);
+
+      if (paths.length > 0) {
+        const { error } = await supabase.storage.from(BUCKET).remove(paths);
+        if (error) throw error;
+      }
+
+      const { error } = await supabase
+        .from("mistakes")
+        .delete()
+        .in(
+          "id",
+          mistakes.map((m) => m.id),
+        );
+      if (error) throw error;
+    },
+
+    onMutate: async (mistakes) => {
+      await qc.cancelQueries({ queryKey: qk.mistakes() });
+      const previous = qc.getQueryData<Mistake[]>(qk.mistakes());
+
+      const doomed = new Set(mistakes.map((m) => m.id));
+      qc.setQueryData<Mistake[]>(qk.mistakes(), (list) =>
+        list?.filter((m) => !doomed.has(m.id)),
+      );
+
+      return { previous };
+    },
+
+    onError: (error, _mistakes, context) => {
+      qc.setQueryData(qk.mistakes(), context?.previous);
+      onError?.(errorText(error));
+    },
+
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.mistakes() }),
+  });
+}
+
+/**
  * Tekrarı tamamlandı işaretler — optimistic.
  *
  * Bugün ekranında bir kutucuk dokunuşudur ve ağı beklemez: işaretleyip

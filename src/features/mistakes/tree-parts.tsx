@@ -74,6 +74,52 @@ export function DueBadge({ count }: { count: number }) {
  * Tire yalnızca GÖRSELDİR: ekran okuyucuya sızarsa "bu hafta em dash
  * toplam 3" diye okunurdu. Sesli sürüm sıfırı açıkça söyler.
  */
+/**
+ * Dalı topluca silme düğmesi.
+ *
+ * `RenameButton`'ın kardeşi ve onunla aynı davranışta: satırın
+ * genişleticisinin İÇİNDE değil YANINDA durur (iç içe etkileşimli öğe
+ * geçersiz HTML'dir), üzerine gelince belirir, dokunmada hep görünür.
+ *
+ * Etiket kaç kayıt gideceğini SÖYLER: "Matematik: sil" kullanıcıya
+ * dalın altında ne olduğunu hatırlatmaz, oysa yıkıcı bir eylemde asıl
+ * bilgi sayıdır. Onay penceresi bunu tekrar eder.
+ */
+export function DeleteBranchButton({
+  label,
+  count,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={`${label}: ${count} kaydın tamamını sil`}
+      title="Tümünü sil"
+      onClick={onClick}
+      className={cn(
+        "revealTarget grid size-7 shrink-0 place-items-center rounded-md opacity-0",
+        "text-[var(--color-ink-3)]",
+        "transition-[opacity,color,background-color] duration-[var(--duration-fast)]",
+        "hover:bg-[var(--color-surface-3)] hover:text-[var(--color-danger)]",
+      )}
+    >
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
+        <path
+          d="M3.5 4.5h9M6.5 4.5V3.2c0-.4.3-.7.7-.7h1.6c.4 0 .7.3.7.7v1.3M5 4.5l.5 8h5l.5-8"
+          stroke="currentColor"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
+  );
+}
+
 export function CountPair({ week, total }: { week: number; total: number }) {
   return (
     <span className="tabular shrink-0 text-[length:var(--text-xs)] text-[var(--color-ink-3)]">

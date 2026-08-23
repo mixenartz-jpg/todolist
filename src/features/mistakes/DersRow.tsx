@@ -5,7 +5,7 @@ import { cn } from "@/lib/ui/cn";
 import { Chevron } from "@/components/Chevron";
 import { KonuRow } from "./KonuRow";
 import { RenameButton, RenameRow } from "./RenameRow";
-import { CountPair, DueBadge, HeatBar } from "./tree-parts";
+import { CountPair, DeleteBranchButton, DueBadge, HeatBar } from "./tree-parts";
 import type { DersNode, KonuNode } from "./tree";
 import type { Mistake } from "./types";
 import "@/components/list-motion.css";
@@ -17,6 +17,10 @@ interface DersRowProps {
   onToggle: (key: string) => void;
   onEdit: (mistake: Mistake) => void;
   onDelete: (mistake: Mistake) => void;
+  /** Dersin TÜM kayıtlarını sil. */
+  onDeleteDers: (ders: DersNode) => void;
+  /** Konunun TÜM kayıtlarını sil. */
+  onDeleteKonu: (ders: DersNode, konu: KonuNode) => void;
   onReviewed: (mistake: Mistake) => void;
   reviewPending: boolean;
   /** Şu an yeniden adlandırılan düğümün `nodeKey`'i (yoksa null). */
@@ -36,6 +40,8 @@ export function DersRow({
   onToggle,
   onEdit,
   onDelete,
+  onDeleteDers,
+  onDeleteKonu,
   onReviewed,
   reviewPending,
   renamingKey,
@@ -85,6 +91,11 @@ export function DersRow({
           </button>
 
           <RenameButton label={ders.ders} onClick={() => onStartRename(ders)} />
+          <DeleteBranchButton
+            label={ders.ders}
+            count={ders.total}
+            onClick={() => onDeleteDers(ders)}
+          />
         </div>
       )}
 
@@ -99,6 +110,7 @@ export function DersRow({
               onToggle={onToggle}
               onEdit={onEdit}
               onDelete={onDelete}
+              onDeleteBranch={() => onDeleteKonu(ders, konu)}
               onReviewed={onReviewed}
               reviewPending={reviewPending}
               renaming={renamingKey === konu.nodeKey}
