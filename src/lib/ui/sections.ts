@@ -22,6 +22,27 @@ export const SECTION_DEFAULTS = {
   "today.someday": "Bir ara",
   "today.review": "Tekrar",
   "today.journal": "Günlük",
+  /*
+   * Gün rayının başlıkları — Bugün ekranının sol sütunu.
+   *
+   * `today.plan` ile `planlama.dayPlan` AYRI anahtarlar olduğu hâlde
+   * ikisi de `day_notes.plan` alanını gösterir. Aynı VERİ, ama iki
+   * farklı ekranda iki farklı iş: Planlama'da aya bakarken bir günü
+   * doldurmak, Bugün'de günü açmak. Tek anahtar paylaşsalardı, birini
+   * yeniden adlandıran kullanıcı diğerini de sessizce değiştirmiş
+   * olurdu — ad alanı kuralının var olma sebebi bu.
+   */
+  "today.plan": "Günün planı",
+  "today.weekGoals": "Bu hafta",
+  "today.monthGoals": "Bu ay",
+  "today.close": "Gün özeti",
+  /*
+   * Yanlışlar çetelesi. `today.review` ("Tekrar") ile AYRI anahtar:
+   * biri bugün YAPILACAK işi, öteki bugüne kadar BİTMİŞ işi
+   * adlandırıyor. Aynı anahtarı paylaşsalardı kuyruğu yeniden
+   * adlandıran kullanıcı çeteleyi de değiştirmiş olurdu.
+   */
+  "today.reviewStats": "Yanlış çetelesi",
   "week.overdue": "Gecikenler",
   /*
    * Plan ekranının başlıkları. `week.overdue` ile AYRI anahtarlar:

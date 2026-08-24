@@ -27,9 +27,20 @@ const PLAN_MAX = 4000;
 export function DayPlanEditor({
   date,
   onError,
+  heading = true,
 }: {
   date: DateStr;
   onError?: (message: string) => void;
+  /**
+   * Kendi başlığını çizsin mi? Varsayılan `true` — Planlama'daki
+   * kullanım DEĞİŞMEDİ.
+   *
+   * Bugün ekranının rayı `false` verir: orada bölüm başlığı rayın
+   * kendi anahtarıyla (`today.plan`) çiziliyor. İki ekranın başlığı
+   * AYRI anahtarlar olduğu için (gerekçe `sections.ts`'te) başlığı
+   * burada koşulsuz çizmek, rayda iki başlık üst üste demekti.
+   */
+  heading?: boolean;
 }) {
   const { data: dayNote } = useDayNote(date);
   const save = useSaveDayPlan(onError);
@@ -54,7 +65,9 @@ export function DayPlanEditor({
 
   return (
     <section>
-      <SectionHeading sectionKey="planlama.dayPlan" onError={onError} />
+      {heading && (
+        <SectionHeading sectionKey="planlama.dayPlan" onError={onError} />
+      )}
 
       <textarea
         value={plan}

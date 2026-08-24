@@ -15,7 +15,6 @@ import { isActiveOn, isDueOn } from "@/features/routines/schedule";
 import { useRoutines } from "@/features/routines/queries";
 import type { RoutineWithSchedule } from "@/features/routines/types";
 import { dayScore, periodProgress } from "@/features/stats/score";
-import { DayNoteCard } from "@/features/notes/DayNoteCard";
 import { ReviewQueue } from "@/features/mistakes/ReviewQueue";
 import { SectionHeading } from "@/features/sections/SectionHeading";
 import {
@@ -45,6 +44,7 @@ import {
   useToggleTask,
 } from "@/features/tasks/mutations";
 import { undatedTasks, useTasks } from "@/features/tasks/queries";
+import { DayRail } from "./DayRail";
 import { TodayRoutineItem } from "./TodayRoutineItem";
 
 export function TodayScreen() {
@@ -211,6 +211,15 @@ export function TodayScreen() {
 
   const isLoading = routinesQuery.isPending;
 
+  /*
+   * Ray yalnızca GÜN ölçeğinde. Hafta ölçeğinde ızgara zaten yedi
+   * sütun çiziyor ve yanına bir sütun daha koymak, asıl işi ekranın
+   * üçte birine sıkıştırırdı. Ayrıca "günün planı" ve "gün özeti"
+   * tek bir güne ait; yedi günü kapsayan bir görünümde hangi günün
+   * planını gösterdikleri belirsiz olurdu.
+   */
+  const showRail = surface.scale === "day";
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <TodayHeader
@@ -233,11 +242,24 @@ export function TodayScreen() {
         }
       />
 
-      <ScreenBody width={surface.scale === "week" ? "6xl" : "2xl"}>
+      <ScreenBody width={surface.scale === "week" || showRail ? "6xl" : "2xl"}>
         {isLoading ? (
           <TodaySkeleton />
         ) : (
-          <>
+          <div
+            className={cn(
+              "flex min-w-0 flex-col gap-[var(--stack-gap)]",
+              /*
+               * Ray SOLDA değil sağda duruyor. Günün asıl işi
+               * (rutinler + ızgara) okuma yönünde önce gelmeli;
+               * plan ve özet ona eşlik eden bağlamdır. Mobilde
+               * `flex-col` sırası zaten bunu veriyor — ray altta
+               * kalır ve `order` ile numara yapmaya gerek kalmaz.
+               */
+              showRail && "md:flex-row md:items-start",
+            )}
+          >
+            <div className="flex min-w-0 flex-1 flex-col gap-[var(--stack-gap)]">
             <section>
               {routines.length === 0 ? (
                 <EmptyState
@@ -422,11 +444,24 @@ export function TodayScreen() {
               </section>
             )}
 
-            <section>
-              <SectionHeading sectionKey="today.journal" onError={toast.show} />
-              <DayNoteCard date={today} onError={toast.show} />
-            </section>
-          </>
+            {/* Gün notu ARTIK BURADA DEĞİL — rayın "Gün özeti"
+                bloğuna taşındı. Günü kapatan hareket (ne oldu +
+                nasıl geçti) tek yerde duruyor. */}
+            </div>
+
+            {/* Hafta ölçeğinde ray `compact`: hedefler düşer, plan ve
+                gün notu ızgaranın altında kalır. Rayı tamamen
+                gizlemek, hafta görünümüne geçen kullanıcının o günün
+                notunu yazamaz duruma düşmesi demekti. */}
+            <DayRail
+              today={today}
+              entries={entries}
+              routines={routinesQuery.data ?? []}
+              tasks={tasksQuery.data ?? []}
+              onError={toast.show}
+              compact={!showRail}
+            />
+          </div>
         )}
       </ScreenBody>
 
