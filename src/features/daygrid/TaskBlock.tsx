@@ -7,7 +7,7 @@ import { WEEKDAYS_LONG } from "@/lib/ui/tr";
 import { isoWeekday } from "@/lib/date/date";
 import { formatDuration, formatTime } from "@/features/tasks/schedule";
 import type { Task } from "@/features/tasks/types";
-import { isPendingTask } from "./drop";
+import { isPendingTask, type OpenTaskHandler } from "./drop";
 import { minuteToY, type GridMetrics } from "./geometry";
 import { laneGeometry, type LaneItem } from "./lanes";
 
@@ -16,7 +16,7 @@ interface TaskBlockProps {
   metrics: GridMetrics;
   /** Kategori rengi; yoksa nötr yüzey kullanılır. */
   colorSlot: number | null;
-  onOpen: (task: Task) => void;
+  onOpen: OpenTaskHandler;
   onMoveStart: (task: Task, e: React.PointerEvent<HTMLElement>) => void;
   onResizeStart: (task: Task, e: React.PointerEvent<HTMLElement>) => void;
   /** Sürükleme gerçekleşti mi? Tıklamayı yutmak için sorulur. */
@@ -70,6 +70,9 @@ export const TaskBlock = memo(function TaskBlock({
 
   return (
     <div
+      /* Düzenleme paneli çapasını buradan TAZE okur: blok panel
+         açıkken yer değiştirebilir (bkz. TaskPopover). */
+      data-task-id={task.id}
       style={{
         position: "absolute",
         top: `${top}px`,
@@ -88,11 +91,13 @@ export const TaskBlock = memo(function TaskBlock({
           if (pending) return;
           onMoveStart(task, e);
         }}
-        onClick={() => {
+        onClick={(e) => {
           // Sürükleme bittiğinde tarayıcı ayrıca bir `click` gönderir;
           // onu yutmazsak her bırakma düzenleme panelini de açardı.
           if (didDrag()) return;
-          onOpen(task);
+          // Rect ÇAPADIR: panel bloğun yanında açılıyor (bkz.
+          // OpenTaskHandler).
+          onOpen(task, e.currentTarget.getBoundingClientRect());
         }}
         style={{
           inset: 0,

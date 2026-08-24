@@ -5,7 +5,12 @@ import type { DateStr } from "@/lib/date/types";
 import { formatTime } from "@/features/tasks/schedule";
 import type { Task } from "@/features/tasks/types";
 import { DayGridCanvas, DayGridHeadings } from "./DayGridCanvas";
-import { resolveDrop, type DragResult, type DropIntent } from "./drop";
+import {
+  resolveDrop,
+  type DragResult,
+  type DropIntent,
+  type OpenTaskHandler,
+} from "./drop";
 import { DEFAULT_DURATION } from "./geometry";
 import { UntimedStrip } from "./UntimedStrip";
 
@@ -21,7 +26,7 @@ interface DayGridScreenProps {
   tasks: readonly Task[];
   colorOf: (task: Task) => number | null;
   /** Bloğa tıklandı — düzenleme yüzeyi çağıranda açılır. */
-  onOpen: (task: Task) => void;
+  onOpen: OpenTaskHandler;
   onCreate: (title: string, slot: DraftSlot) => void;
   /** Sürükleme bırakıldı — niyet çağıranda mutasyona dağıtılır. */
   onDrop: (intent: DropIntent) => void;

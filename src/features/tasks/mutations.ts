@@ -118,6 +118,9 @@ export function useCreateTask(onError?: (message: string) => void) {
         durationMinutes: draft.startTime ? (draft.durationMinutes ?? null) : null,
         categoryId: null,
         goalId: null,
+        // Yeni görev rengini KATEGORİDEN devralır ve kategorisi de yok:
+        // nötr çizilir. Renk sonradan verilen ikinci bir harekettir.
+        colorSlot: null,
       };
 
       qc.setQueryData<Task[]>(qk.tasks(), (tasks) =>
@@ -227,6 +230,90 @@ export function useRenameTask(onError?: (message: string) => void) {
       const previous = qc.getQueryData<Task[]>(qk.tasks());
       qc.setQueryData<Task[]>(qk.tasks(), (tasks) =>
         tasks?.map((t) => (t.id === id ? { ...t, title: title.trim() } : t)),
+      );
+      return { previous };
+    },
+
+    onError: (error, _vars, context) => {
+      qc.setQueryData(qk.tasks(), context?.previous);
+      onError?.(errorText(error));
+    },
+
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.tasks() }),
+  });
+}
+
+/**
+ * Görevin YALNIZCA açıklamasını yazar — optimistic.
+ *
+ * `useRenameTask`'ın ikizi ve aynı gerekçe: `useUpdateTask` `title` ve
+ * `due_date`'i de gönderir; not düzenleyen bir popover, önbellekteki
+ * bayat bir başlığı ya da tarihi sessizce geri yazardı.
+ *
+ * `null` bir SİLME emridir ve meşrudur: notu boşaltmak kullanıcının
+ * yapabileceği bir harekettir. Bu yüzden `null` "yok say" anlamına
+ * gelmez — o ayrım çağrı yerinde, `shouldPersistNote`'ta çözülür
+ * (taskpopover/note.ts).
+ */
+export function useSetTaskNote(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, note }: { id: string; note: string | null }) => {
+      const supabase = createClient();
+      const { error } = await supabase.from("tasks").update({ note }).eq("id", id);
+      if (error) throw error;
+    },
+
+    onMutate: async ({ id, note }) => {
+      await qc.cancelQueries({ queryKey: qk.tasks() });
+      const previous = qc.getQueryData<Task[]>(qk.tasks());
+      qc.setQueryData<Task[]>(qk.tasks(), (tasks) =>
+        tasks?.map((t) => (t.id === id ? { ...t, note } : t)),
+      );
+      return { previous };
+    },
+
+    onError: (error, _vars, context) => {
+      qc.setQueryData(qk.tasks(), context?.previous);
+      onError?.(errorText(error));
+    },
+
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.tasks() }),
+  });
+}
+
+/**
+ * Görevin KENDİ rengini ayarlar — optimistic.
+ *
+ * `null` burada da bir silme DEĞİL, bir DEVRALMA emridir: "kendi
+ * rengini bırak, kategorininkini kullan". Çözüm sırası `taskColorSlot`
+ * içinde (color.ts).
+ */
+export function useSetTaskColor(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      colorSlot,
+    }: {
+      id: string;
+      colorSlot: number | null;
+    }) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("tasks")
+        .update({ color_slot: colorSlot })
+        .eq("id", id);
+      if (error) throw error;
+    },
+
+    onMutate: async ({ id, colorSlot }) => {
+      await qc.cancelQueries({ queryKey: qk.tasks() });
+      const previous = qc.getQueryData<Task[]>(qk.tasks());
+      qc.setQueryData<Task[]>(qk.tasks(), (tasks) =>
+        tasks?.map((t) => (t.id === id ? { ...t, colorSlot } : t)),
       );
       return { previous };
     },

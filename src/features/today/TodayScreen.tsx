@@ -2,7 +2,6 @@
 import { ScreenBody } from "@/components/Screen";
 
 import { useCallback, useMemo, useState, type ReactNode } from "react";
-import { addDays } from "@/lib/date/date";
 import { cn } from "@/lib/ui/cn";
 import { formatLongDate, formatPercent, WEEKDAYS_LONG } from "@/lib/ui/tr";
 import { isoWeekday } from "@/lib/date/date";
@@ -28,7 +27,10 @@ import {
   gridRangeLabel,
 } from "@/features/daygrid/DayGridHeader";
 import { useDayGridSurface } from "@/features/daygrid/useDayGridSurface";
-import type { DropIntent } from "@/features/daygrid/drop";
+import { useDropDispatch } from "@/features/daygrid/useDropDispatch";
+import { TaskPopover } from "@/features/taskpopover/TaskPopover";
+import { useTaskPopoverActions } from "@/features/taskpopover/useTaskPopoverActions";
+import { taskColorSlot } from "@/features/tasks/color";
 import { TaskItem } from "@/features/tasks/TaskItem";
 import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
 import { formatTime } from "@/features/tasks/schedule";
@@ -39,7 +41,6 @@ import {
   useDeleteTask,
   useRenameTask,
   useRescheduleTask,
-  useMoveTask,
   useSetTaskTime,
   useToggleTask,
 } from "@/features/tasks/mutations";
@@ -59,13 +60,21 @@ export function TodayScreen() {
   const [somedayOpen, setSomedayOpen] = useState(false);
 
   /**
-   * Izgarada tıklanan görev — düzenleme satırı çizelgenin altında açılır.
+   * Izgarada tıklanan görev — düzenleme paneli bloğun YANINDA açılır.
    *
    * Kimliği DEĞİL nesneyi tutmak yanlış olurdu: görev silinince ya da
    * başka bir sekmede değişince elde bayat bir kopya kalırdı. Kimlik
    * tutulup nesne her render'da önbellekten okunur.
+   *
+   * Rect kimliğin YANINDA duruyor çünkü panelin çapası o: rect'i
+   * bloktan her render'da yeniden okumak, blok kaydırılıp yer
+   * değiştirdiğinde paneli de oynatırdı. Tıklama ANINDAKİ konum
+   * dondurulur.
    */
-  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
+  const [openTask, setOpenTask] = useState<{
+    id: string;
+    rect: DOMRect;
+  } | null>(null);
 
   const routinesQuery = useRoutines();
   const entriesQuery = useEntries(today, today);
@@ -79,7 +88,6 @@ export function TodayScreen() {
   const deleteTask = useDeleteTask(toast.show);
   const rescheduleTask = useRescheduleTask(toast.show);
   const setTaskTime = useSetTaskTime(toast.show);
-  const moveTask = useMoveTask(toast.show);
   const renameTask = useRenameTask(toast.show);
 
   /**
@@ -139,66 +147,39 @@ export function TodayScreen() {
     [categoriesQuery.data],
   );
 
-  const colorOf = useCallback(
-    (task: Task) =>
-      task.categoryId ? (categoryById.get(task.categoryId)?.colorSlot ?? null) : null,
+  /** Kategori kimliğinden renge — `taskColorSlot`'un devralma yolu. */
+  const categoryColorOf = useCallback(
+    (categoryId: string) => categoryById.get(categoryId)?.colorSlot,
     [categoryById],
   );
 
-  /* Nesne her render'da önbellekten TAZE okunur — bkz. openTaskId. */
-  const openTask = useMemo(
-    () =>
-      openTaskId === null
-        ? null
-        : ((tasksQuery.data ?? []).find((t) => t.id === openTaskId) ?? null),
-    [openTaskId, tasksQuery.data],
+  const colorOf = useCallback(
+    (task: Task) => taskColorSlot(task, categoryColorOf),
+    [categoryColorOf],
   );
 
-  const setOpenTask = useCallback((task: Task) => {
+  /* Nesne her render'da önbellekten TAZE okunur — bkz. openTask. */
+  const openedTask = useMemo(
+    () =>
+      openTask === null
+        ? null
+        : ((tasksQuery.data ?? []).find((t) => t.id === openTask.id) ?? null),
+    [openTask, tasksQuery.data],
+  );
+
+  const handleOpen = useCallback((task: Task, anchor: DOMRect) => {
     // Aynı bloğa ikinci kez basmak paneli kapatır.
-    setOpenTaskId((current) => (current === task.id ? null : task.id));
+    setOpenTask((current) =>
+      current?.id === task.id ? null : { id: task.id, rect: anchor },
+    );
   }, []);
 
-  /**
-   * Sürükleme niyetini mutasyona dağıtır.
-   *
-   * Gün içi taşıma ve boyutlandırma dar `useSetTaskTime`'a, gün
-   * değiştiren taşıma ise tek atomik `useMoveTask`'a gider — iki ayrı
-   * mutasyon zincirlemek önbelleği yarı-eski satırla ezerdi (gerekçe
-   * `useMoveTask` başında).
-   */
-  const handleDrop = useCallback(
-    (intent: DropIntent) => {
-      switch (intent.kind) {
-        case "time":
-          setTaskTime.mutate({
-            id: intent.id,
-            startTime: intent.startTime,
-            durationMinutes: intent.durationMinutes,
-          });
-          return;
-        case "unschedule":
-          setTaskTime.mutate({
-            id: intent.id,
-            startTime: null,
-            durationMinutes: null,
-          });
-          return;
-        case "move":
-        case "schedule":
-          moveTask.mutate({
-            id: intent.id,
-            dueDate: intent.dueDate,
-            startTime: intent.startTime,
-            durationMinutes: intent.durationMinutes,
-          });
-          return;
-        case "none":
-          return;
-      }
-    },
-    [setTaskTime, moveTask],
-  );
+  const closePopover = useCallback(() => setOpenTask(null), []);
+
+  const popoverActions = useTaskPopoverActions(today, toast.show);
+
+  /* Dağıtım Planlama ızgarasıyla PAYLAŞILIYOR — bkz. useDropDispatch. */
+  const handleDrop = useDropDispatch(toast.show);
 
   const handleCreateInSlot = useCallback(
     (title: string, slot: DraftSlot) => {
@@ -293,45 +274,29 @@ export function TodayScreen() {
                   today={today}
                   tasks={gridTasks}
                   colorOf={colorOf}
-                  onOpen={setOpenTask}
+                  onOpen={handleOpen}
                   onCreate={handleCreateInSlot}
                   onDrop={handleDrop}
                 />
               </div>
 
-              {/* Izgarada seçilen görevin düzenleme satırı. `TaskItem`
-                  ızgaraya sığmaz (15 dk = 13px), ama düzenleme yolu tek
-                  olmalı: blok tıklanınca aynı satır burada açılır. */}
-              {openTask && (
-                <ul className="mb-2.5">
-                  <TaskItem
-                    task={openTask}
-                    today={today}
-                    onToggle={() =>
-                      toggleTask.mutate({ id: openTask.id, done: !openTask.done })
-                    }
-                    onDelete={() => {
-                      deleteTask.mutate(openTask.id);
-                      setOpenTaskId(null);
-                    }}
-                    onDefer={() =>
-                      rescheduleTask.mutate({
-                        id: openTask.id,
-                        dueDate: addDays(openTask.dueDate ?? today, 1),
-                      })
-                    }
-                    onSetTime={(startTime, durationMinutes) =>
-                      setTaskTime.mutate({
-                        id: openTask.id,
-                        startTime,
-                        durationMinutes,
-                      })
-                    }
-                    onRename={(title) =>
-                      renameTask.mutate({ id: openTask.id, title })
-                    }
-                  />
-                </ul>
+              {/* Izgarada seçilen görevin düzenleme paneli.
+                  Bloğun YANINDA açılır (portal + fixed): eskiden burada,
+                  ızgaranın altında bir `TaskItem` satırı vardı ve
+                  kullanıcı gözünü tıkladığı yerden aşağı indirmek
+                  zorundaydı — hangi bloğu düzenlediği de görünmüyordu. */}
+              {openedTask && openTask && (
+                <TaskPopover
+                  task={openedTask}
+                  anchorRect={openTask.rect}
+                  inheritedColor={
+                    openedTask.categoryId
+                      ? (categoryColorOf(openedTask.categoryId) ?? null)
+                      : null
+                  }
+                  actions={popoverActions}
+                  onClose={closePopover}
+                />
               )}
 
               <TaskQuickAdd

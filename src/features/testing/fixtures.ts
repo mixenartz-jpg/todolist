@@ -169,6 +169,7 @@ interface TaskOptions {
   durationMinutes?: number | null;
   categoryId?: string | null;
   goalId?: string | null;
+  colorSlot?: number | null;
 }
 
 /**
@@ -194,6 +195,7 @@ export function task(options: TaskOptions = {}): Task {
     durationMinutes: options.durationMinutes ?? null,
     categoryId: options.categoryId ?? null,
     goalId: options.goalId ?? null,
+    colorSlot: options.colorSlot ?? null,
   };
 }
 

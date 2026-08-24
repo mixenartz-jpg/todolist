@@ -39,6 +39,18 @@ export interface Task {
   categoryId: string | null;
   /** Bağlı olduğu aylık hedef. En fazla BİR tane; null → bağsız. */
   goalId: string | null;
+  /**
+   * Görevin KENDİ rengi (0..7). null → KATEGORİDEN DEVRAL.
+   *
+   * `categoryId`'nin null'ıyla aynı ruhta birinci sınıf bir durum:
+   * görevlerin çoğu kendi rengini taşımaz ve kategorisinin rengiyle
+   * çizilir. Renk verildiğinde kategoriyi EZER — çözüm sırası tek
+   * yerde, `taskColorSlot`'ta (color.ts).
+   *
+   * Neden kategori rengi yetmedi: ızgarada aynı kategoriden beş blok
+   * yan yana geldiğinde renk hiçbir şeyi ayırmıyor (gerekçe 0013).
+   */
+  colorSlot: number | null;
 }
 
 export interface TaskDraft {

@@ -56,6 +56,11 @@ export interface TaskRow {
   category_id: string | null;
   /** Aylık hedef FK. En fazla BİR tane. */
   goal_id: string | null;
+  /**
+   * Görevin KENDİ renk slotu (0..7). null → kategori renginden
+   * devralınır (0013). `smallint`, supabase-js'e number gelir.
+   */
+  color_slot: number | null;
   created_at: string;
 }
 

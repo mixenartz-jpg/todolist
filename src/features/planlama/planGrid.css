@@ -1,0 +1,34 @@
+/*
+ * Haftalık planlamanın zaman ızgarası kabuğu — yalnızca dar ekran
+ * davranışı.
+ *
+ * ── Neden 7 sütun 3'e DÜŞÜRÜLMÜYOR? ──
+ * `useDayGridSurface` dar ekranda haftayı üç güne indiriyor ve orada
+ * DOĞRU: Bugün ekranının asıl ölçeği GÜNDÜR, hafta ikincil bir
+ * görünüm. Burada tam tersi — haftalık planlamanın bütün anlamı yedi
+ * günü BİR ARADA görmektir. Üç güne indirmek "hafta planı" diye bir
+ * şey bırakmazdı.
+ *
+ * Bedeli yatay kaydırma ve bu kabul edilebilir: kullanıcı zaten planı
+ * kurarken günler arasında geziniyor.
+ *
+ * Sürükleme hit-test'i BOZULMUYOR: `useDragBlock.columnAt()`
+ * `canvas.getBoundingClientRect()` kullanıyor ve rect kaydırılmış
+ * konumu verir, yani hesap kendiliğinden doğru kalır.
+ */
+
+.planGridScroll {
+  overflow-x: auto;
+
+  /* Yatay kaydırma sayfanın kendisine geçmesin — kullanıcı ızgarayı
+     kaydırırken sekme geçmişinde gezinmeye başlamamalı. */
+  overscroll-behavior-x: contain;
+}
+
+/*
+ * Yedi sütunun okunabilir kaldığı en dar genişlik: sütun başına ~5.5rem
+ * + saat oluğu. Bunun altında blok başlıkları tek harfe iner.
+ */
+.planGridScroll > * {
+  min-width: 44rem;
+}

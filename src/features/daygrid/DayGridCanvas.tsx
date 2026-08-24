@@ -8,7 +8,7 @@ import { WEEKDAYS_SHORT } from "@/lib/ui/tr";
 import { endMinutes, formatDuration, formatTime } from "@/features/tasks/schedule";
 import type { Task } from "@/features/tasks/types";
 import { DayColumn } from "./DayColumn";
-import type { DragResult } from "./drop";
+import type { DragResult, OpenTaskHandler } from "./drop";
 import { canvasHeight, DEFAULT_DURATION, minuteToY, type GridMetrics } from "./geometry";
 import { hourMarks, visibleWindow } from "./range";
 import { useDragBlock, type DragState } from "./useDragBlock";
@@ -22,7 +22,7 @@ interface DayGridCanvasProps {
   /** Gün → o güne tarihli görevler. */
   tasksByDate: ReadonlyMap<DateStr, Task[]>;
   colorOf: (task: Task) => number | null;
-  onOpen: (task: Task) => void;
+  onOpen: OpenTaskHandler;
   onEmptyClick: (date: DateStr, startMinute: number) => void;
   /** true → pencere 00:00–24:00. */
   expanded: boolean;

@@ -51,6 +51,7 @@ export function toTask(row: TaskRow): Task {
     durationMinutes: row.duration_minutes,
     categoryId: row.category_id,
     goalId: row.goal_id,
+    colorSlot: row.color_slot,
   };
 }
 

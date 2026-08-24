@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import type { DateStr } from "@/lib/date/types";
 import { formatTime } from "@/features/tasks/schedule";
 import type { Task } from "@/features/tasks/types";
+import type { OpenTaskHandler } from "./drop";
 import { packLanes } from "./lanes";
 import { snapMinutes, type GridMetrics } from "./geometry";
 import { hourMarks } from "./range";
@@ -15,7 +16,7 @@ interface DayColumnProps {
   metrics: GridMetrics;
   /** Görev kimliği → kategori renk slotu. */
   colorOf: (task: Task) => number | null;
-  onOpen: (task: Task) => void;
+  onOpen: OpenTaskHandler;
   /** Boş bir yuvaya tıklandı — o saatte görev eklenecek. */
   onEmptyClick: (date: DateStr, startMinute: number) => void;
   onMoveStart: (task: Task, e: React.PointerEvent<HTMLElement>) => void;

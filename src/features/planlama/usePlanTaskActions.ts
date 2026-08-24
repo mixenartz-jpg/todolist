@@ -27,6 +27,20 @@ import { planReorder } from "./reorder";
 export interface PlanTaskActions {
   addPending: boolean;
   onAdd: (title: string, date: DateStr) => void;
+  /**
+   * Belirli bir SAATE görev ekler — zaman ızgarasının boş yuvası için.
+   *
+   * `onAdd`'den ayrı çünkü o saatsiz yaratıyor. Izgarada boş bir yuvaya
+   * tıklamanın bütün anlamı "şu saate koy"dur; önce saatsiz yaratıp
+   * sonra ikinci bir yazmayla saat vermek gereksiz bir tur ve gözle
+   * görülür bir sıçrama olurdu (aynı gerekçe `TaskDraft.startTime`'da).
+   */
+  onAddAt: (
+    title: string,
+    date: DateStr,
+    startTime: string,
+    durationMinutes: number,
+  ) => void;
   onToggle: (task: Task) => void;
   onDelete: (task: Task) => void;
   onRename: (task: Task, title: string) => void;
@@ -66,6 +80,14 @@ export function usePlanTaskActions(
     addPending: createTask.isPending,
     onAdd: (title, date) =>
       createTask.mutate({ title, dueDate: date, note: null }),
+    onAddAt: (title, date, startTime, durationMinutes) =>
+      createTask.mutate({
+        title,
+        dueDate: date,
+        note: null,
+        startTime,
+        durationMinutes,
+      }),
     onToggle: (task) => toggleTask.mutate({ id: task.id, done: !task.done }),
     onDelete: (task) => deleteTask.mutate(task.id),
     onRename: (task, title) => renameTask.mutate({ id: task.id, title }),

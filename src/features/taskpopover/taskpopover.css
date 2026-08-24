@@ -1,0 +1,60 @@
+/*
+ * Görev düzenleme popover'ı — yalnızca GEOMETRİ.
+ *
+ * `daygrid.css`'in kuralıyla aynı iş bölümü: Tailwind'in ifade
+ * edemediği şeyler (konumlandırma, katman, kaydırma sınırlama)
+ * burada; renk, tipografi ve durum stilleri sınıflarda kalıyor.
+ *
+ * Konum JS'ten geliyor (`placePopover` → inline `left`/`top`) çünkü
+ * çapanın nerede olduğunu CSS bilemez. Burada duran şey, konumun
+ * hangi UZAYDA yorumlanacağı: `fixed`, yani viewport.
+ */
+
+.tpPanel {
+  /*
+   * `fixed`, `absolute` DEĞİL.
+   *
+   * Üç gerekçe: (1) `getBoundingClientRect()` zaten viewport
+   * koordinatı veriyor, `fixed` ile ek offset matematiği gerekmiyor;
+   * (2) `.dgBlock` `overflow: hidden` ve `.dgColumn`/`.dgCanvas`
+   * `position: relative` — panel ızgaranın içinde kalırsa kırpılır;
+   * (3) sayfa yapışkan bir başlığa sahip (`ScreenHeader`), `absolute`
+   * bir panel kaydırmada onun ALTINA girerdi.
+   */
+  position: fixed;
+
+  /* `globals.css`'te tanımlıydı ve bugüne kadar kullanılmamıştı —
+     tam olarak bu katman için ayrılmış. */
+  z-index: var(--z-dropdown);
+
+  width: 20rem;
+  max-width: calc(100vw - 1rem);
+
+  /*
+   * Panel viewport'tan uzun olabilir (uzun bir açıklama + renk satırı
+   * + eylemler). `placePopover` onu ekranın içine çeker ama kesemez;
+   * kesme işi buradaki kaydırma.
+   */
+  max-height: min(30rem, 82dvh);
+  overflow-y: auto;
+
+  /* Panelin sonuna gelince kaydırma ARKADAKİ ızgaraya geçmesin:
+     kullanıcı paneli kaydırırken sayfanın altından kayması bağlamı
+     kaybettirir. */
+  overscroll-behavior: contain;
+
+  animation: tpAppear var(--duration-fast) var(--ease-out-quart);
+}
+
+@keyframes tpAppear {
+  from {
+    transform: scale(0.97);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tpPanel {
+    animation: none;
+  }
+}

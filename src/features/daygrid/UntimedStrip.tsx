@@ -5,7 +5,7 @@ import { cn } from "@/lib/ui/cn";
 import { slotVar } from "@/lib/ui/colors";
 import type { DateStr } from "@/lib/date/types";
 import type { Task } from "@/features/tasks/types";
-import { isPendingTask } from "./drop";
+import { isPendingTask, type OpenTaskHandler } from "./drop";
 
 interface UntimedStripProps {
   ref?: RefObject<HTMLDivElement | null>;
@@ -13,7 +13,7 @@ interface UntimedStripProps {
   /** Gün → o güne tarihli ama SAATSİZ görevler. */
   untimedByDate: ReadonlyMap<DateStr, Task[]>;
   colorOf: (task: Task) => number | null;
-  onOpen: (task: Task) => void;
+  onOpen: OpenTaskHandler;
   /** Şeritten ızgaraya sürükleme — çipler de blok gibi tutulabilir. */
   onMoveStart: (task: Task, e: React.PointerEvent<HTMLElement>) => void;
   didDrag: () => boolean;
@@ -88,6 +88,8 @@ export function UntimedStrip({
                 <button
                   key={task.id}
                   type="button"
+                  /* Panel çapasını buradan taze okur — bkz. TaskBlock. */
+                  data-task-id={task.id}
                   disabled={pending}
                   aria-busy={pending || undefined}
                   aria-label={`${task.title}, saatsiz`}
@@ -95,9 +97,9 @@ export function UntimedStrip({
                     if (pending) return;
                     onMoveStart(task, e);
                   }}
-                  onClick={() => {
+                  onClick={(e) => {
                     if (didDrag()) return;
-                    onOpen(task);
+                    onOpen(task, e.currentTarget.getBoundingClientRect());
                   }}
                   style={{
                     boxShadow: `inset 3px 0 0 0 ${

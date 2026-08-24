@@ -132,3 +132,16 @@ export function resolveDrop(result: DragResult): DropIntent {
     durationMinutes: targetDuration,
   };
 }
+
+/**
+ * Bir bloğa tıklandığında çağrılan geri çağrı.
+ *
+ * Görevle birlikte bloğun VIEWPORT rect'ini taşır: düzenleme paneli
+ * bloğun yanında açılıyor ve çapasının nerede olduğunu ancak tıklanan
+ * eleman bilebilir.
+ *
+ * Çapa BLOK, fare konumu DEĞİL: panel blokla hizalı durmalı ki hangi
+ * işe ait olduğu görülsün. Fare konumu, aynı bloğa iki kez
+ * tıklandığında paneli oynatırdı.
+ */
+export type OpenTaskHandler = (task: Task, anchor: DOMRect) => void;
