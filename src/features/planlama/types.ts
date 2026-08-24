@@ -86,6 +86,14 @@ export interface WeekGoal {
   sortOrder: number;
   /** null → sürüyor. Dolu → tamamlandı; listede kalır, üstü çizilir. */
   completedAt: string | null;
+  /**
+   * Hizmet ettiği aylık hedef; null → bağımsız hafta hedefi.
+   *
+   * Yalnızca GRUPLAR: aylık hedefin ilerlemesi bundan türemez
+   * (`goalProgress` yine kendi sayacına ya da bağlı görevlere bakar).
+   * Görevin haftalık hedefe bağlanmamasının gerekçesi 0014'te.
+   */
+  planGoalId: string | null;
 }
 
 export interface WeekGoalDraft {
@@ -96,6 +104,8 @@ export interface WeekGoalDraft {
   colorSlot: number;
   /** Sona eklemek için: o haftadaki mevcut hedef sayısı. */
   sortOrder: number;
+  /** Hizmet ettiği aylık hedef; null → bağımsız. */
+  planGoalId: string | null;
 }
 
 /**

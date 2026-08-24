@@ -163,6 +163,7 @@ export function toWeekGoal(row: WeekGoalRow): WeekGoal {
     colorSlot: row.color_slot,
     sortOrder: row.sort_order,
     completedAt: row.completed_at,
+    planGoalId: row.plan_goal_id,
   };
 }
 

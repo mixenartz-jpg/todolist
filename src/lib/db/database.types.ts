@@ -132,6 +132,14 @@ export interface WeekGoalRow {
   color_slot: number;
   sort_order: number;
   completed_at: string | null;
+  /**
+   * Hizmet ettiği AYLIK hedef (0014). null → bağımsız hafta hedefi.
+   *
+   * Bir GRUPLAMADIR, ikinci bir sayaç değil: `tasks.goal_id` yalnızca
+   * `plan_goals`'a bakmaya devam eder ve çift sayım imkânsız kalır.
+   * Gerekçe migration 0014'te.
+   */
+  plan_goal_id: string | null;
   created_at: string;
   updated_at: string;
 }

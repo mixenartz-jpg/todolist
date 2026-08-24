@@ -8,10 +8,18 @@ import { slotVar } from "@/lib/ui/colors";
 import { formatPercent } from "@/lib/ui/tr";
 import { stepDoneCount } from "./goal";
 import { WeekGoalForm } from "./WeekGoalForm";
-import type { WeekGoal, WeekGoalDraft } from "./types";
+import type { PlanGoal, WeekGoal, WeekGoalDraft } from "./types";
 
 interface WeekGoalCardProps {
   goal: WeekGoal;
+  /**
+   * Hizmet ettiği AYLIK hedef — çözülmüş hâliyle (0014).
+   *
+   * Kimlik DEĞİL nesne geçiliyor: kartın adı ve rengi göstermesi
+   * gerekiyor ve kimliği burada çözmek, her kartın ayrı bir sorgu
+   * açması demekti. Bağ yoksa ya da hedef silinmişse null.
+   */
+  parent: PlanGoal | null;
   pending: boolean;
   onUpdate: (draft: WeekGoalDraft) => void;
   onStep: (doneCount: number) => void;
@@ -39,6 +47,7 @@ interface WeekGoalCardProps {
  */
 export function WeekGoalCard({
   goal,
+  parent,
   pending,
   onUpdate,
   onStep,
@@ -126,6 +135,21 @@ export function WeekGoalCard({
           >
             {goal.title}
           </button>
+
+          {/* Hangi aylık hedefin dilimi (0014). Başlığın hemen altında:
+              "bu hafta 3 bölüm" ile "bu ay kitabı bitir" tek bir
+              cümlenin iki yarısı ve arada başka bir şey okumak
+              bağlantıyı koparırdı. */}
+          {parent && (
+            <p className="mt-1 flex items-center gap-1.5 text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
+              <span
+                aria-hidden
+                className="size-1.5 shrink-0 rounded-full"
+                style={{ background: slotVar(parent.colorSlot) }}
+              />
+              <span className="truncate">{parent.title}</span>
+            </p>
+          )}
 
           {goal.note && (
             <p

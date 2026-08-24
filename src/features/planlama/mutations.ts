@@ -452,6 +452,19 @@ export function useDeleteGoal(onError?: (message: string) => void) {
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: qk.planGoalsMonth(vars.month) });
       qc.invalidateQueries({ queryKey: qk.tasks() });
+      /*
+       * Haftalık hedefler de tazelenir: 0014'ten beri `week_goals`
+       * bu hedefe `on delete set null` ile bakıyor, yani silme
+       * SUNUCUDA o satırların `plan_goal_id`'sini boşaltıyor.
+       * Tazelenmezse ekranda silinmiş bir hedefin adı, altında
+       * durduğu haftalık hedefin künyesinde asılı kalırdı —
+       * `qk.tasks()` için buradaki gerekçenin aynısı.
+       *
+       * Hangi haftaların etkilendiği bilinmiyor (hedef ayın herhangi
+       * bir haftasına bağlı olabilir), bu yüzden hafta anahtarının
+       * TAMAMI geçersizleştirilir.
+       */
+      qc.invalidateQueries({ queryKey: qk.weekGoals() });
     },
     onError: (error) => onError?.(errorText(error)),
   });
@@ -529,6 +542,7 @@ export function useCreateWeekGoal(onError?: (message: string) => void) {
           target_count: draft.targetCount,
           color_slot: draft.colorSlot,
           sort_order: draft.sortOrder,
+          plan_goal_id: draft.planGoalId,
         })
         .select()
         .single();
@@ -553,6 +567,8 @@ interface UpdateWeekGoalVars {
   /** Formda YAZILAN yeni sayısal hedef. */
   targetCount: number | null;
   colorSlot: number;
+  /** Hizmet ettiği aylık hedef; null → bağımsız (0014). */
+  planGoalId: string | null;
   /*
    * Hedefin DÜZENLEMEDEN ÖNCEKİ durumu.
    *
@@ -589,6 +605,7 @@ export function useUpdateWeekGoal(onError?: (message: string) => void) {
           note: input.note,
           target_count: input.targetCount,
           color_slot: input.colorSlot,
+          plan_goal_id: input.planGoalId,
           done_count: recount.doneCount,
           completed_at: recount.completedAt,
         })
@@ -610,6 +627,7 @@ export function useUpdateWeekGoal(onError?: (message: string) => void) {
                 note: vars.note,
                 targetCount: vars.targetCount,
                 colorSlot: vars.colorSlot,
+                planGoalId: vars.planGoalId,
                 // `g` DEĞİL `vars.previous`: sunucuya giden değerin
                 // aynısı yamalanmalı, yoksa iyimser görüntü ile
                 // kaydedilen durum ayrışır.

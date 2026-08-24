@@ -2,8 +2,12 @@
 
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/Button";
+import { startOfMonth } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { ColorSlotPicker } from "./ColorSlotPicker";
+import { GoalPicker } from "./GoalPicker";
+import { goalPickerOptions } from "./goaloptions";
+import { usePlanGoals } from "./queries";
 import {
   GOAL_NOTE_MAX,
   GOAL_TITLE_MAX,
@@ -48,6 +52,32 @@ export function WeekGoalForm({
       : String(initial.targetCount),
   );
   const [colorSlot, setColorSlot] = useState(initial?.colorSlot ?? 0);
+  const [planGoalId, setPlanGoalId] = useState(initial?.planGoalId ?? null);
+
+  /*
+   * Bağlanabilecek aylık hedefler, HAFTANIN ayından.
+   *
+   * Hafta iki ayı birden kesebilir (ör. 29 Eylül – 5 Ekim); o zaman
+   * pazartesinin ayı seçilir. Alternatif ikisini birden listelemekti
+   * ama o, kullanıcıya "bu hedef hangi ayda ölçülüyor" sorusunu her
+   * seferinde sordurur; hafta bir aya AİT sayılır ve o ay
+   * pazartesininkidir (`week_start` zaten pazartesiye sabitli).
+   */
+  const monthGoals = usePlanGoals(startOfMonth(weekStart));
+
+  /*
+   * Seçici çizilsin mi? Karar `goalPickerOptions`'a BIRAKILIR, ham
+   * listenin boş olup olmamasına DEĞİL.
+   *
+   * Fark hafta iki ayı kestiğinde ortaya çıkar: bağ öteki ayın
+   * hedefine bakıyorsa ve pazartesinin ayında hiç hedef yoksa, ham
+   * listeye bakan bir koşul seçiciyi tamamen gizler — kullanıcı var
+   * olan bağı ne görebilir ne kaldırabilirdi. `GoalPicker` o durumu
+   * zaten "Başka ayın hedefi" diye gösteriyor (bkz. goaloptions.ts).
+   */
+  const pickerState = goalPickerOptions(monthGoals.data ?? [], planGoalId);
+  const showGoalPicker =
+    pickerState.options.length > 0 || pickerState.orphan;
 
   const normalizedTitle = normalizeGoalTitle(title);
   const parsedTarget = parseTargetCount(target);
@@ -65,8 +95,23 @@ export function WeekGoalForm({
       targetCount: parsedTarget,
       colorSlot,
       sortOrder,
+      planGoalId,
     });
 
+    /*
+     * Yeni hedef modunda alanlar temizlenir.
+     *
+     * Bugün her iki çağıran da gönderimden sonra formu KAPATIYOR
+     * (`setAdding(false)` / `setEditing(false)`), yani bu temizlik
+     * pratikte görülmez — form zaten sökülüyor. Yine de duruyor:
+     * çağıranın formu açık bırakması tamamen makul bir seçim ve o
+     * gün geldiğinde bir önceki hedefin başlığı kutuda kalsaydı,
+     * kullanıcı farkında olmadan aynı metni ikinci kez kaydederdi.
+     *
+     * `planGoalId` bilerek KORUNUR: art arda dilim yazılan senaryoda
+     * ay hedefi değişmez ve her seferinde yeniden seçtirmek gereksiz
+     * iş olurdu.
+     */
     if (!initial) {
       setTitle("");
       setNote("");
@@ -124,6 +169,20 @@ export function WeekGoalForm({
           </p>
         )}
       </div>
+
+      {/* Aylık hedefe bağlama: bu haftalık hedef hangi ay hedefinin
+          dilimi? İsteğe bağlı — görünürlük gerekçesi yukarıda. */}
+      {showGoalPicker && (
+        <label className="flex items-center gap-2 text-[length:var(--text-xs)] text-[var(--color-ink-2)]">
+          Aylık hedef
+          <GoalPicker
+            goals={monthGoals.data ?? []}
+            value={planGoalId}
+            onChange={setPlanGoalId}
+            taskTitle={normalizedTitle ?? "Hedef"}
+          />
+        </label>
+      )}
 
       <ColorSlotPicker
         value={colorSlot}

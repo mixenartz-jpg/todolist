@@ -2,6 +2,7 @@
 import { ScreenBody } from "@/components/Screen";
 
 import { useMemo, useState } from "react";
+import { startOfMonth } from "@/lib/date/date";
 import { Button } from "@/components/Button";
 import { Toast, useToast } from "@/components/Toast";
 import { SectionHeading } from "@/features/sections/SectionHeading";
@@ -15,7 +16,7 @@ import {
   useUpdateWeekGoal,
 } from "./mutations";
 import { PlanlamaHeader } from "./PlanlamaHeader";
-import { useWeekGoals } from "./queries";
+import { usePlanGoals, useWeekGoals } from "./queries";
 import { usePlanlamaSurface } from "./usePlanlamaSurface";
 import "./planlama.css";
 
@@ -41,6 +42,19 @@ export function WeekGoalsScreen() {
   const { today, anchor, setAnchor } = usePlanlamaSurface("week");
 
   const goalsQuery = useWeekGoals(anchor);
+
+  /*
+   * Haftanın ayına ait aylık hedefler — her haftalık hedefin hangi ay
+   * hedefine hizmet ettiğini YAZABİLMEK için (0014). `WeekGoalForm` da
+   * aynı sorguyu kullanıyor; anahtar paylaşıldığı için ikinci bir ağ
+   * isteği açılmaz.
+   */
+  const monthGoalsQuery = usePlanGoals(startOfMonth(anchor));
+
+  const monthGoalById = useMemo(
+    () => new Map((monthGoalsQuery.data ?? []).map((g) => [g.id, g])),
+    [monthGoalsQuery.data],
+  );
 
   const createGoal = useCreateWeekGoal(toast.show);
   const updateGoal = useUpdateWeekGoal(toast.show);
@@ -108,6 +122,11 @@ export function WeekGoalsScreen() {
                   <WeekGoalCard
                     key={goal.id}
                     goal={goal}
+                    parent={
+                      goal.planGoalId === null
+                        ? null
+                        : (monthGoalById.get(goal.planGoalId) ?? null)
+                    }
                     pending={updateGoal.isPending}
                     onUpdate={(draft) =>
                       updateGoal.mutate({
@@ -117,6 +136,7 @@ export function WeekGoalsScreen() {
                         note: draft.note,
                         targetCount: draft.targetCount,
                         colorSlot: draft.colorSlot,
+                        planGoalId: draft.planGoalId,
                         // Formda düzenlenmiyor; hedef sayısının
                         // GERÇEKTEN değişip değişmediğini anlamak ve
                         // sayacı kırpmak için gerekli (bkz.
