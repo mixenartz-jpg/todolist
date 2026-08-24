@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/ui/cn";
 import { slotVar } from "@/lib/ui/colors";
+import { goalPickerOptions } from "./goaloptions";
 import type { PlanGoal } from "./types";
 
 interface GoalPickerProps {
@@ -29,13 +30,15 @@ export function GoalPicker({
   onChange,
   taskTitle,
 }: GoalPickerProps) {
-  const active = goals.filter((g) => g.archivedAt === null);
-  const current = value === null ? null : goals.find((g) => g.id === value);
+  /*
+   * Seçenek listesi ve "yetim bağ" kararı SAF fonksiyonda — üç durumun
+   * gerekçesi ve testleri `goaloptions.ts` / `goaloptions.test.ts`'te.
+   */
+  const { options, current, orphan } = goalPickerOptions(goals, value);
 
-  const options =
-    current && current.archivedAt !== null ? [...active, current] : active;
-
-  if (options.length === 0) return null;
+  // Yalnızca yetim bağ varsa liste boş olsa bile seçici çizilmeli:
+  // aksi halde bağı görmenin ve kaldırmanın hiçbir yolu kalmaz.
+  if (options.length === 0 && !orphan) return null;
 
   return (
     <label className="flex items-center gap-1.5">
@@ -64,6 +67,13 @@ export function GoalPicker({
         )}
       >
         <option value="">Hedefsiz</option>
+
+        {/* Başka aya ait bağ. Adı elimizde yok (o ayın hedefleri
+            çekilmedi) ama bağın VARLIĞI gösterilmeli — seçili kalır,
+            kullanıcı isterse "Hedefsiz"e alarak kaldırır. */}
+        {orphan && value !== null && (
+          <option value={value}>Başka ayın hedefi</option>
+        )}
 
         {options.map((g) => (
           <option key={g.id} value={g.id}>

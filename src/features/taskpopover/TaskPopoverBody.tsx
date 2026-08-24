@@ -7,6 +7,7 @@ import { normalizeTitleInput, shouldPersistTitle, TASK_TITLE_MAX } from "@/featu
 import type { Task } from "@/features/tasks/types";
 import { normalizeNoteInput, shouldPersistNote, TASK_NOTE_MAX } from "./note";
 import { TaskColorRow } from "./TaskColorRow";
+import { TaskGoalRow } from "./TaskGoalRow";
 import type { TaskPopoverActions } from "./useTaskPopoverActions";
 
 interface TaskPopoverBodyProps {
@@ -53,6 +54,14 @@ export function TaskPopoverBody({
         value={task.colorSlot}
         inherited={inheritedColor}
         onChange={(slot) => actions.onSetColor(task, slot)}
+      />
+
+      {/* Aylık hedef bağı. Renkten SONRA, eylemlerden ÖNCE: renk gibi
+          bir "seçim" satırı (anında yazılır) ama eylemler kadar sık
+          kullanılmaz. O ayda hedef yoksa hiç çizilmez. */}
+      <TaskGoalRow
+        task={task}
+        onChange={(goalId) => actions.onSetGoal(task, goalId)}
       />
 
       <ActionRow task={task} actions={actions} onClose={onClose} />

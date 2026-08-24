@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { CrossIcon } from "@/components/icons";
 import { Toast, useToast } from "@/components/Toast";
 import { todayStr } from "@/lib/date/date";
+import { ReviewStatsCard } from "./ReviewStatsCard";
 import { MistakeForm } from "./MistakeForm";
 import { MistakeTree } from "./MistakeTree";
 import {
@@ -149,6 +150,12 @@ export function MistakesScreen() {
             Yanlışlar yüklenemedi: {error.message}
           </p>
         )}
+
+        {/* Çetele en üstte: defteri açan kişi önce nerede olduğunu
+            görmeli. Form açıkken de durur — kaç yanlışın mezun olduğu,
+            yeni bir yanlış eklerken de doğru bilgidir.
+            Kendi başlığını çizmez: sayfanın başlığı zaten "Yanlışlar". */}
+        <ReviewStatsCard today={today} onError={toast.show} heading={false} />
 
         {formOpen && (
           <MistakeForm

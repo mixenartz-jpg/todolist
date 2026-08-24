@@ -12,6 +12,7 @@ import {
   useSetTaskTime,
   useToggleTask,
 } from "@/features/tasks/mutations";
+import { useSetTaskGoal } from "@/features/planlama/mutations";
 import type { Task } from "@/features/tasks/types";
 
 /**
@@ -35,6 +36,13 @@ export interface TaskPopoverActions {
     durationMinutes: number | null,
   ) => void;
   onSetColor: (task: Task, colorSlot: number | null) => void;
+  /**
+   * Görevi aylık hedefe bağlar (`tasks.goal_id`).
+   *
+   * Haftalık hedef KARŞILIĞI YOK: `tasks.goal_id` yalnızca
+   * `plan_goals`'a bakar — gerekçe `planlama/mutations.ts`'te.
+   */
+  onSetGoal: (task: Task, goalId: string | null) => void;
   onToggle: (task: Task) => void;
   /** Bir gün ileri atar. Tarihsiz görev bugünden itibaren sayılır. */
   onDefer: (task: Task) => void;
@@ -49,6 +57,7 @@ export function useTaskPopoverActions(
   const setTaskNote = useSetTaskNote(onError);
   const setTaskTime = useSetTaskTime(onError);
   const setTaskColor = useSetTaskColor(onError);
+  const setTaskGoal = useSetTaskGoal(onError);
   const toggleTask = useToggleTask(onError);
   const rescheduleTask = useRescheduleTask(onError);
   const deleteTask = useDeleteTask(onError);
@@ -76,6 +85,9 @@ export function useTaskPopoverActions(
       onSetColor: (task: Task, colorSlot: number | null) =>
         setTaskColor.mutate({ id: task.id, colorSlot }),
 
+      onSetGoal: (task: Task, goalId: string | null) =>
+        setTaskGoal.mutate({ id: task.id, goalId }),
+
       onToggle: (task: Task) =>
         toggleTask.mutate({ id: task.id, done: !task.done }),
 
@@ -97,6 +109,7 @@ export function useTaskPopoverActions(
       setTaskNote,
       setTaskTime,
       setTaskColor,
+      setTaskGoal,
       toggleTask,
       rescheduleTask,
       deleteTask,
