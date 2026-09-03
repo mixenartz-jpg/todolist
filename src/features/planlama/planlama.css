@@ -635,14 +635,79 @@
    * kutunun kendi içeriğine uygulanır ve kaydırdıkça onunla akar.
    * Üst kenarda da 0.75rem'lik bir pay var, yoksa yukarı kaydırınca
    * ilk kart kutunun tepesinden keskin biçimde kesilirdi.
+   *
+   * ── Neden `animation-timeline: scroll()` üzerinden? ──
+   * Maske KOŞULSUZ uygulandığında, kaydırma HİÇ olmayan kısa listede
+   * de çalışıyordu: tek hedefi olan kullanıcı kartın üst ve alt
+   * kenarının eridiğini, kenarlığın kaybolduğunu ve kartın yerinde
+   * gradyanlı bir leke durduğunu görüyordu. Kutu "kutu" gibi
+   * görünmüyordu — bildirilen hata tam olarak buydu.
+   *
+   * Maskenin var olma sebebi KESİLMİŞ içeriği haber vermek; kesilme
+   * yoksa maskenin de işi yoktur. `scroll()` zaman çizelgesi bu ayrımı
+   * CSS içinde yapar: kaydırılamayan bir kutuda ilerleme çizelgesi
+   * BOŞTUR, animasyon hiç uygulanmaz ve kart maskesiz — yani tam
+   * kenarlıklı — kalır. Liste eşiği aşıp kayabilir hâle geldiği anda
+   * çizelge canlanır ve soluma geri gelir.
+   *
+   * Ek kazanç: soluma artık uca göre AÇILIP KAPANIR. Listenin en
+   * üstündeyken üst kenar keskindir (yukarıda gizlenmiş bir şey yok),
+   * aşağı kaydırınca belirir; en altta alt kenar keskinleşir. Sabit
+   * maskede alt soluma liste bittiğinde bile duruyor ve son kartı
+   * kırpıyordu.
    */
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    #000 0.75rem,
-    #000 calc(100% - 1.5rem),
-    transparent 100%
-  );
+  animation: goalListFade linear both;
+  animation-timeline: scroll(self block);
+}
+
+@keyframes goalListFade {
+  /* Tepede: yalnızca ALT kenar solar. */
+  from {
+    mask-image: linear-gradient(
+      to bottom,
+      #000 0,
+      #000 calc(100% - 1.5rem),
+      transparent 100%
+    );
+  }
+
+  /* Ortada: iki uç da solar — her iki yönde de gizlenmiş içerik var. */
+  50% {
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 0.75rem,
+      #000 calc(100% - 1.5rem),
+      transparent 100%
+    );
+  }
+
+  /* Dipte: yalnızca ÜST kenar solar; son kart tam görünür. */
+  to {
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 0.75rem,
+      #000 100%
+    );
+  }
+}
+
+/*
+ * `scroll()` zaman çizelgesini desteklemeyen tarayıcı (bu yazının
+ * yazıldığı sırada Safari ve Firefox) maskeyi HİÇ almaz ve liste
+ * kayarken kesilme işaretsiz kalırdı.
+ *
+ * Yedek: aynı işi taşıyan ama koşulu KAYDIRILABİLİRLİK olan bir
+ * gölge. `scroll-timeline` desteği yoksa devreye girer ve yalnızca
+ * içerik taştığında görünür — kısa listede kutu yine tertemiz kalır,
+ * yani düzeltilen hata bu yolda da geri gelmez.
+ */
+@supports not (animation-timeline: scroll(self block)) {
+  .goalList {
+    animation: none;
+    mask-image: none;
+  }
 }
 
 /*
