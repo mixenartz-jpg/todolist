@@ -118,4 +118,21 @@ export const qk = {
    */
   weekGoals: () => ["week-goals"] as const,
   weekGoalsWeek: (weekStart: DateStr) => ["week-goals", weekStart] as const,
+
+  /*
+   * Alınacaklar (0015).
+   *
+   * Anahtar "shopping-items": TİRELİ TEK PARÇA, `plan-goals` ve
+   * `week-goals` ile aynı gerekçe — ileride eklenecek bir
+   * `qk.shopping(...)` anahtarının önek eşleşmesiyle bunu da geçersiz
+   * kılması yapısal olarak imkânsız kalsın.
+   *
+   * `planGoalsMonth`/`weekGoalsWeek`'in aksine ALT ANAHTARI YOK ve
+   * olamaz: bu kalemlerin tarihi yoktur, bölünecek bir ölçek de
+   * yoktur. Tek sorgu oluşu `categories()` ve `sectionLabels()` ile
+   * aynı gerekçeye dayanır — kullanıcı başına bir avuç satır ve ekran
+   * hepsini birden ister; kalem başına anahtar, tek listede onlarca ağ
+   * turu demek olurdu.
+   */
+  shoppingItems: () => ["shopping-items"] as const,
 } as const;

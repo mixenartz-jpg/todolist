@@ -217,3 +217,27 @@ export interface MistakeRow {
   created_at: string;
   updated_at: string;
 }
+
+/**
+ * Tarihsiz alınacak kalemi (0015).
+ *
+ * `TaskRow` ile aynı şey DEĞİLDİR ve ayrı tablo oluşu bilerek: bu
+ * satırın saati, süresi, kategorisi, hedefi ve TARİHİ yoktur. Görev
+ * tablosuna bir `kind` sütunuyla sığdırılsaydı, tasks'a dokunan her
+ * sorgu (gün ızgarası, hafta planı, havuz, gecikenler, istatistik) bir
+ * filtre borcu üstlenirdi ve unutulan filtre sessizce yanlış liste
+ * gösterirdi. Gerekçenin tamamı migration 0015'te.
+ *
+ * `completed_at`, `WeekGoalRow`'daki ile aynı anlamı taşır: arşiv
+ * değil bitirme. İşaretlenen kalem listede KALIR, yalnızca üstü
+ * çizilir.
+ */
+export interface ShoppingItemRow {
+  id: string;
+  user_id: string;
+  title: string;
+  completed_at: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}

@@ -10,6 +10,7 @@ import { SectionHeading } from "@/features/sections/SectionHeading";
 import { DayPlanEditor } from "@/features/planlama/DayPlanEditor";
 import { useMistakes } from "@/features/mistakes/queries";
 import { ReviewStatsCard } from "@/features/mistakes/ReviewStatsCard";
+import { ShoppingCard } from "@/features/shopping/ShoppingCard";
 import { buildDayClose } from "./daysummary";
 import { DayCloseCard } from "./DayCloseCard";
 import { RailMonthGoals } from "./RailMonthGoals";
@@ -129,6 +130,19 @@ export function DayRail({
               çizmiyor ve başlığı burada tutmak, altı boş bir
               "Yanlış çetelesi" başlığı bırakırdı. */}
           <ReviewStatsCard today={today} onError={onError} />
+
+          {/* Alınacaklar. Rayın SONUNDA çünkü üstündeki her şey —
+              plan, hedefler, çetele — çalışma disiplinidir; bu ise
+              ondan ayrı bir kova ve araya girseydi o zinciri bölerdi.
+
+              `!compact` içinde: hafta ölçeğinde ray yalnızca GÜNE ait
+              blokları çiziyor (bkz. `compact` prop'unun gerekçesi) ve
+              alınacakların günü yok. Yedi günü kapsayan bir görünümde
+              tarihsiz bir liste hangi güne ait belirsiz kalırdı. */}
+          <section>
+            <SectionHeading sectionKey="today.shopping" onError={onError} />
+            <ShoppingCard onError={onError} />
+          </section>
         </>
       )}
 

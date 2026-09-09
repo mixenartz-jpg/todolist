@@ -43,6 +43,16 @@ export const SECTION_DEFAULTS = {
    * adlandıran kullanıcı çeteleyi de değiştirmiş olurdu.
    */
   "today.reviewStats": "Yanlış çetelesi",
+  /*
+   * Alınacaklar — rayın tek ÇALIŞMA DIŞI bloğu (0015).
+   *
+   * `today.someday` ("Bir ara") ile AYRI anahtar, üstelik ayrı tabloyu
+   * gösteriyorlar: "Bir ara" tarihsiz GÖREVLERİ, bu ise alınacak
+   * kalemleri adlandırır. Aynı anahtarı paylaşsalardı ray başlığını
+   * "Market" yapan kullanıcı, ana sütundaki tarihsiz görev bölümünü de
+   * sessizce yeniden adlandırmış olurdu.
+   */
+  "today.shopping": "Alınacaklar",
   "week.overdue": "Gecikenler",
   /*
    * Plan ekranının başlıkları. `week.overdue` ile AYRI anahtarlar:

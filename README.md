@@ -8,11 +8,10 @@ rutinler satır, ayın günleri sütun, hücrelere tıklayarak işaretlenir.
 ### 1. Supabase projesi oluştur
 
 1. [supabase.com](https://supabase.com) → **New project** (ücretsiz katman yeterli)
-2. Proje açılınca **SQL Editor**'e git ve şu üç dosyayı **sırayla** çalıştır:
-   - `supabase/migrations/0001_schema.sql`
-   - `supabase/migrations/0002_rls.sql`
-   - `supabase/migrations/0003_triggers.sql`
-   - `supabase/migrations/0004_notes.sql`
+2. Proje açılınca **SQL Editor**'e git ve `supabase/migrations/`
+   altındaki dosyaları **numara sırasıyla** çalıştır (`0001`'den
+   sonuncuya). Sıra önemlidir: sonraki dosyalar öncekilerin tablo ve
+   trigger'larına dayanır.
 3. **Project Settings → API** bölümünden şu iki değeri kopyala:
    - Project URL
    - `anon` / `publishable` key
