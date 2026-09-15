@@ -5,6 +5,7 @@ import { cn } from "@/lib/ui/cn";
 import { formatWeekRange } from "@/lib/ui/tr";
 import type { DateStr } from "@/lib/date/types";
 import type { GridScale } from "./useDayGridSurface";
+import type { GridViewMode } from "./useGridViewMode";
 
 interface DayGridHeaderProps {
   scale: GridScale;
@@ -12,6 +13,8 @@ interface DayGridHeaderProps {
   onScale: (next: GridScale) => void;
   onStep: (delta: -1 | 1) => void;
   onToday: () => void;
+  viewMode: GridViewMode;
+  onViewMode: (next: GridViewMode) => void;
 }
 
 /**
@@ -29,6 +32,8 @@ export function DayGridHeader({
   onScale,
   onStep,
   onToday,
+  viewMode,
+  onViewMode,
 }: DayGridHeaderProps) {
   return (
     <div className="flex items-center gap-1">
@@ -60,6 +65,46 @@ export function DayGridHeader({
       </Button>
 
       <ScaleSwitch scale={scale} onScale={onScale} />
+      <ViewSwitch mode={viewMode} onMode={onViewMode} />
+    </div>
+  );
+}
+
+/**
+ * Izgara / Liste anahtarı.
+ *
+ * `ScaleSwitch`in YANINDA ve onunla aynı dilde, çünkü ikisi de aynı
+ * soruyu cevaplıyor: "bu günü nasıl göstereyim". Ölçek KAÇ günü, mod
+ * ise HANGİ biçimde gösterdiğini söyler; iki ayrı kutu olmaları bu
+ * ayrımı görünür kılıyor — tek bir "Gün / Hafta / Liste" kutusu,
+ * birbirini dışlamayan iki ayarı dışlarmış gibi gösterirdi.
+ *
+ * `Planlama`daki `PlanViewToggle` ile aynı sözcükler ("Izgara",
+ * "Liste") bilinçli: aynı şey iki ekranda aynı adı taşımalı.
+ */
+function ViewSwitch({
+  mode,
+  onMode,
+}: {
+  mode: GridViewMode;
+  onMode: (next: GridViewMode) => void;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Görünüm"
+      className="ml-1 flex rounded-lg bg-[var(--color-surface-2)] p-0.5"
+    >
+      <ScaleButton
+        label="Izgara"
+        active={mode === "grid"}
+        onClick={() => onMode("grid")}
+      />
+      <ScaleButton
+        label="Liste"
+        active={mode === "list"}
+        onClick={() => onMode("list")}
+      />
     </div>
   );
 }

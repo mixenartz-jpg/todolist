@@ -25,7 +25,12 @@ import {
   DayGridHeader,
   gridRangeLabel,
 } from "@/features/daygrid/DayGridHeader";
+import {
+  DayListScreen,
+  type DayListActions,
+} from "@/features/daygrid/DayListScreen";
 import { useDayGridSurface } from "@/features/daygrid/useDayGridSurface";
+import { useGridViewMode } from "@/features/daygrid/useGridViewMode";
 import { useDropDispatch } from "@/features/daygrid/useDropDispatch";
 import { TaskPopover } from "@/features/taskpopover/TaskPopover";
 import { useTaskPopoverActions } from "@/features/taskpopover/useTaskPopoverActions";
@@ -49,6 +54,7 @@ import { TodayRoutineItem } from "./TodayRoutineItem";
 
 export function TodayScreen() {
   const surface = useDayGridSurface();
+  const view = useGridViewMode();
   const today = surface.today;
   const toast = useToast();
 
@@ -181,6 +187,26 @@ export function TodayScreen() {
   /* Dağıtım Planlama ızgarasıyla PAYLAŞILIYOR — bkz. useDropDispatch. */
   const handleDrop = useDropDispatch(toast.show);
 
+  /*
+   * Liste satırlarının yazma eylemleri.
+   *
+   * `useTaskPopoverActions` DEĞİL: o panelin kümesi (renk, hedef, not)
+   * ve `TaskItem` bunların hiçbirini göstermiyor. Buradaki beş eylem,
+   * aşağıdaki "Taşınanlar" bölümünün satırlarıyla BİREBİR aynı —
+   * ekranın iki yerinde aynı satır aynı şeyi yapmalı.
+   */
+  const listActions = useMemo<DayListActions>(
+    () => ({
+      onToggle: (task) => toggleTask.mutate({ id: task.id, done: !task.done }),
+      onDelete: (task) => deleteTask.mutate(task.id),
+      onDefer: (task) => rescheduleTask.mutate({ id: task.id, dueDate: today }),
+      onRename: (task, title) => renameTask.mutate({ id: task.id, title }),
+      onSetTime: (task, startTime, durationMinutes) =>
+        setTaskTime.mutate({ id: task.id, startTime, durationMinutes }),
+    }),
+    [toggleTask, deleteTask, rescheduleTask, renameTask, setTaskTime, today],
+  );
+
   const handleCreateInSlot = useCallback(
     (title: string, slot: DraftSlot) => {
       createTask.mutate({
@@ -238,6 +264,8 @@ export function TodayScreen() {
             onScale={surface.setScale}
             onStep={surface.step}
             onToday={surface.goToday}
+            viewMode={view.mode}
+            onViewMode={view.setMode}
           />
         }
       />
@@ -291,23 +319,39 @@ export function TodayScreen() {
               <SectionHeading sectionKey="today.tasks" onError={toast.show} />
 
               <div className="mb-2.5">
-                <DayGridScreen
-                  dates={surface.dates}
-                  today={today}
-                  tasks={gridTasks}
-                  colorOf={colorOf}
-                  onOpen={handleOpen}
-                  onCreate={handleCreateInSlot}
-                  onDrop={handleDrop}
-                />
+                {view.mode === "grid" ? (
+                  <DayGridScreen
+                    dates={surface.dates}
+                    today={today}
+                    tasks={gridTasks}
+                    colorOf={colorOf}
+                    onOpen={handleOpen}
+                    onCreate={handleCreateInSlot}
+                    onDrop={handleDrop}
+                  />
+                ) : (
+                  <DayListScreen
+                    dates={surface.dates}
+                    today={today}
+                    tasks={gridTasks}
+                    colorOf={colorOf}
+                    actions={listActions}
+                  />
+                )}
               </div>
 
               {/* Izgarada seçilen görevin düzenleme paneli.
                   Bloğun YANINDA açılır (portal + fixed): eskiden burada,
                   ızgaranın altında bir `TaskItem` satırı vardı ve
                   kullanıcı gözünü tıkladığı yerden aşağı indirmek
-                  zorundaydı — hangi bloğu düzenlediği de görünmüyordu. */}
-              {openedTask && openTask && (
+                  zorundaydı — hangi bloğu düzenlediği de görünmüyordu.
+
+                  Liste modunda HİÇ çizilmez. İki gerekçe: satırın kendi
+                  kontrolleri panelin işini zaten görüyor (bkz.
+                  DayListScreen) ve panel açıkken moda geçilirse çapa
+                  aldığı blok DOM'dan silinmiş olur — panel boş bir
+                  noktada asılı kalırdı. */}
+              {view.mode === "grid" && openedTask && openTask && (
                 <TaskPopover
                   task={openedTask}
                   anchorRect={openTask.rect}
