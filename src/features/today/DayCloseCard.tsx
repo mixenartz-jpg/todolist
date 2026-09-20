@@ -72,13 +72,6 @@ function DaySummaryLines({ close }: { close: DayClose }) {
     });
   }
 
-  if (close.reviews.due > 0) {
-    lines.push({
-      label: "Bekleyen tekrar",
-      value: String(close.reviews.due),
-    });
-  }
-
   if (lines.length === 0) return null;
 
   return (

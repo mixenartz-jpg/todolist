@@ -20,8 +20,6 @@
 export const SECTION_DEFAULTS = {
   "today.tasks": "Görevler",
   "today.someday": "Bir ara",
-  "today.review": "Tekrar",
-  "today.journal": "Günlük",
   /*
    * Gün rayının başlıkları — Bugün ekranının sol sütunu.
    *
@@ -36,13 +34,6 @@ export const SECTION_DEFAULTS = {
   "today.weekGoals": "Bu hafta",
   "today.monthGoals": "Bu ay",
   "today.close": "Gün özeti",
-  /*
-   * Yanlışlar çetelesi. `today.review` ("Tekrar") ile AYRI anahtar:
-   * biri bugün YAPILACAK işi, öteki bugüne kadar BİTMİŞ işi
-   * adlandırıyor. Aynı anahtarı paylaşsalardı kuyruğu yeniden
-   * adlandıran kullanıcı çeteleyi de değiştirmiş olurdu.
-   */
-  "today.reviewStats": "Yanlış çetelesi",
   /*
    * Alınacaklar — rayın tek ÇALIŞMA DIŞI bloğu (0015).
    *

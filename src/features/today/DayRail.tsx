@@ -8,8 +8,6 @@ import type { RoutineWithSchedule } from "@/features/routines/types";
 import type { Task } from "@/features/tasks/types";
 import { SectionHeading } from "@/features/sections/SectionHeading";
 import { DayPlanEditor } from "@/features/planlama/DayPlanEditor";
-import { useMistakes } from "@/features/mistakes/queries";
-import { ReviewStatsCard } from "@/features/mistakes/ReviewStatsCard";
 import { ShoppingCard } from "@/features/shopping/ShoppingCard";
 import { buildDayClose } from "./daysummary";
 import { DayCloseCard } from "./DayCloseCard";
@@ -72,23 +70,9 @@ export function DayRail({
    */
   compact?: boolean;
 }) {
-  /*
-   * Yanlışlar zaten `ReviewQueue` tarafından çekiliyor; aynı anahtar
-   * paylaşıldığı için bu ikinci `useMistakes()` yeni bir ağ isteği
-   * açmaz, önbellekten okur.
-   */
-  const mistakesQuery = useMistakes();
-
   const close = useMemo(
-    () =>
-      buildDayClose({
-        entries,
-        routines,
-        tasks,
-        mistakes: mistakesQuery.data ?? [],
-        today,
-      }),
-    [entries, routines, tasks, mistakesQuery.data, today],
+    () => buildDayClose({ entries, routines, tasks, today }),
+    [entries, routines, tasks, today],
   );
 
   return (
@@ -122,18 +106,9 @@ export function DayRail({
           <RailWeekGoals today={today} onError={onError} />
           <RailMonthGoals today={today} onError={onError} />
 
-          {/* Yanlış çetelesi. Hedeflerden SONRA çünkü hedefler bu ayın
-              işi, çetele ise tüm zamanların birikimi — dar olandan
-              geniş olana.
-
-              Başlık kartın İÇİNDE: hiç yanlış yokken kart kendini
-              çizmiyor ve başlığı burada tutmak, altı boş bir
-              "Yanlış çetelesi" başlığı bırakırdı. */}
-          <ReviewStatsCard today={today} onError={onError} />
-
           {/* Alınacaklar. Rayın SONUNDA çünkü üstündeki her şey —
-              plan, hedefler, çetele — çalışma disiplinidir; bu ise
-              ondan ayrı bir kova ve araya girseydi o zinciri bölerdi.
+              plan ve hedefler — çalışma disiplinidir; bu ise ondan
+              ayrı bir kova ve araya girseydi o zinciri bölerdi.
 
               `!compact` içinde: hafta ölçeğinde ray yalnızca GÜNE ait
               blokları çiziyor (bkz. `compact` prop'unun gerekçesi) ve

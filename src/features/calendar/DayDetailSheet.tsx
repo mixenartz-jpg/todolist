@@ -187,7 +187,7 @@ export function DayDetailSheet({
           </section>
 
           <section>
-            <SectionHeading sectionKey="today.journal" as="h3" onError={onError} />
+            <SectionHeading sectionKey="today.close" as="h3" onError={onError} />
             <DayNoteCard date={date} onError={onError} />
           </section>
         </div>

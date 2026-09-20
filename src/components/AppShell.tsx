@@ -11,7 +11,6 @@ import {
   CheckIcon,
   GridIcon,
   ListIcon,
-  NoteIcon,
   TargetIcon,
 } from "@/components/icons";
 import "./nav-bar.css";
@@ -57,14 +56,6 @@ const NAV: NavItem[] = [
     icon: <ChartIcon />,
   },
   { href: "/rutinler", label: "Rutinler", icon: <ListIcon /> },
-  /*
-   * Notlar ve Yanlışlar tek sekmede birleşir; ikisi de "yazdığım
-   * şeyler" ve ayrımı kendi alt sekmeleri yapar. Ayrı birer sekme
-   * olsalardı çubuk sekize çıkardı — kaydırma sekme genişliğini
-   * koruyor ama her yeni sekme "ilk bakışta görünmeyen" alanı
-   * büyütür; birleştirme hâlâ doğru karar.
-   */
-  { href: "/defter", label: "Defter", icon: <NoteIcon /> },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {

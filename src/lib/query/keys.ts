@@ -28,9 +28,9 @@ export const qk = {
    *
    * `qk.notes()` önekinin ALTINDA — ve bu bilerek böyle: bir günün
    * planı kaydedilince `qk.note(date)` ile birlikte bunun da tazelenmesi
-   * GEREKİR, yoksa hücredeki nokta gerçekle ayrışır. `mistakeImage`'ın
+   * GEREKİR, yoksa hücredeki nokta gerçekle ayrışır. `planGoals`'ın
    * önekten kaçınma gerekçesinin TERSİ yön: orada önek eşleşmesi
-   * gereksiz iş üretiyordu, burada tam olarak istenen işi ücretsiz
+   * gereksiz iş üretirdi, burada tam olarak istenen işi ücretsiz
    * yapıyor.
    *
    * Üçüncü eleman "month" sabiti: `qk.note(date)` ikinci elemanda bir
@@ -38,32 +38,6 @@ export const qk = {
    * anahtar bir gün anahtarıyla karışabilirdi.
    */
   notePlansMonth: (month: DateStr) => ["notes", "month", month] as const,
-
-  /*
-   * Serbest defter. Anahtar "notes" DEĞİL "journal" — `qk.notes()`
-   * zaten `qk.note(date)`'in önekidir ve TanStack Query önek eşleşmesi
-   * yapar. Defteri de "notes" altına koysaydık, bir defter notunu
-   * kaydetmek TÜM günlük notların önbelleğini geçersiz kılardı.
-   */
-  journal: () => ["journal"] as const,
-
-  /*
-   * Yanlışlar. Liste TEK sorgudur; çetele tablosu ve Bugün ekranının
-   * tekrar kuyruğu istemcide bu listeden türetilir. Ayrı bir "tally"
-   * ya da "due" anahtarı YOKTUR — olsaydı her yeni yanlış birden çok
-   * anahtarı kilit adımda geçersiz kılmak zorunda kalır ve ikinci bir
-   * doğruluk kaynağı doğardı.
-   */
-  mistakes: () => ["mistakes"] as const,
-
-  /*
-   * İmzalı görsel URL'i. "mistakes" ÖNEKİNİN ALTINDA DEĞİL: yeni bir
-   * yanlış eklenince `qk.mistakes()` geçersiz kılınır ve önek eşleşmesi
-   * yüzünden tüm imzalı URL'ler de çöpe giderdi — her satır için
-   * gereksiz yeniden imzalama demek olurdu. İmza yalnızca süresi
-   * dolunca yenilenmelidir.
-   */
-  mistakeImage: (path: string) => ["mistake-image", path] as const,
 
   /*
    * Bölüm başlıkları. TEK sorgudur ve tüm anahtarları kapsar: kullanıcı
@@ -95,8 +69,8 @@ export const qk = {
    * Anahtar "plan-goals", düz "plan" DEĞİL. `["plan", "goals", month]`
    * yazılsaydı, ileride eklenecek herhangi bir `qk.plan(...)` anahtarı
    * önek eşleşmesiyle hedefleri de geçersiz kılardı. Tireli tek parça,
-   * o çakışmayı yapısal olarak imkânsız kılar (`mistakeImage`'ın
-   * "mistakes" önekinden kaçınmasıyla aynı gerekçe).
+   * o çakışmayı yapısal olarak imkânsız kılar: önek eşleşmesi ancak
+   * İSTENDİĞİ yerde kurulur (bkz. `notePlansMonth`, ters yön).
    */
   planGoals: () => ["plan-goals"] as const,
   planGoalsMonth: (month: DateStr) => ["plan-goals", month] as const,

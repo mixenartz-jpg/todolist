@@ -90,56 +90,9 @@ export function ChartIcon({ size = 16 }: IconProps) {
 }
 
 /**
- * Notlar / defter.
- *
- * `ListIcon`'dan ayrışması gerekir: o madde imli bir liste, bu ise
- * satırları olan bir sayfa. İkisi gezinmede yan yana durur.
- */
-export function NoteIcon({ size = 16 }: IconProps) {
-  return (
-    <svg {...svgProps(size)}>
-      <path
-        d="M3.5 2.5h9v11h-9z"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M5.75 5.5h4.5M5.75 8h4.5M5.75 10.5h2.5"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-/**
- * Yanlış.
- *
- * Çember içinde çarpı — `CheckIcon`'ın karşıtı olarak okunur ve aynı
- * aileden görünür. Çıplak bir çarpı "kapat" eylemiyle karışırdı.
- */
-export function CrossIcon({ size = 16 }: IconProps) {
-  return (
-    <svg {...svgProps(size)}>
-      <circle cx="8" cy="8" r="5.75" stroke="currentColor" strokeWidth="1.3" />
-      <path
-        d="M6.1 6.1l3.8 3.8M9.9 6.1l-3.8 3.8"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-/**
  * Planlama / hedef.
  *
- * İç içe iki çember ve merkez nokta — "nişan alınan şey". `CrossIcon`
- * da çember tabanlıdır ama onun içi çarpıdır ve ikisi hiçbir zaman yan
- * yana durmaz (biri gezinmede, öteki yanlış satırlarında). Takvimden
+ * İç içe iki çember ve merkez nokta — "nişan alınan şey". Takvimden
  * ayrışması kritik: ikisi alt çubukta komşudur ve Takvim bir ızgara,
  * bu ise bir hedeftir.
  */

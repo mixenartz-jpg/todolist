@@ -56,20 +56,11 @@ describe("qk önek hiyerarşisi", () => {
       qk.entries()[0],
       qk.tasks()[0],
       qk.notes()[0],
-      qk.journal()[0],
-      qk.mistakes()[0],
-      qk.mistakeImage("a.png")[0],
       qk.sectionLabels()[0],
       qk.categories()[0],
       qk.planGoals()[0],
     ];
 
     expect(new Set(roots).size).toBe(roots.length);
-  });
-
-  it("yanlış görseli 'mistakes' önekinin altında DEĞİLDİR", () => {
-    // Mevcut davranışı sabitler: yeni bir yanlış eklenince imzalı
-    // URL'lerin hepsi çöpe gitmemeli.
-    expect(qk.mistakeImage("a/b.png")[0]).not.toBe(qk.mistakes()[0]);
   });
 });

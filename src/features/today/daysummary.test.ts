@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { asDateStr } from "@/lib/date/date";
 import {
   entriesOn,
-  mistake,
   noEntries,
   routine,
   task,
@@ -21,7 +20,6 @@ describe("buildDayClose — rutinler", () => {
       entries: entriesOn(r1, { [TODAY]: 1 }),
       routines: [r1, r2],
       tasks: [],
-      mistakes: [],
       today: TODAY,
     });
 
@@ -33,7 +31,6 @@ describe("buildDayClose — rutinler", () => {
       entries: noEntries,
       routines: [],
       tasks: [],
-      mistakes: [],
       today: TODAY,
     });
 
@@ -50,7 +47,6 @@ describe("buildDayClose — görevler", () => {
         task({ id: "t1", dueDate: TODAY, done: true }),
         task({ id: "t2", dueDate: TODAY, done: false }),
       ],
-      mistakes: [],
       today: TODAY,
     });
 
@@ -64,7 +60,6 @@ describe("buildDayClose — görevler", () => {
       entries: noEntries,
       routines: [],
       tasks: [task({ id: "t1", dueDate: null })],
-      mistakes: [],
       today: TODAY,
     });
 
@@ -78,7 +73,6 @@ describe("buildDayClose — görevler", () => {
       entries: noEntries,
       routines: [],
       tasks: [task({ id: "t1", dueDate: YESTERDAY, done: false })],
-      mistakes: [],
       today: TODAY,
     });
 
@@ -90,7 +84,6 @@ describe("buildDayClose — görevler", () => {
       entries: noEntries,
       routines: [],
       tasks: [task({ id: "t1", dueDate: YESTERDAY, done: true })],
-      mistakes: [],
       today: TODAY,
     });
 
@@ -122,7 +115,6 @@ describe("buildDayClose — dakika", () => {
         // Saatsiz: süresi yok.
         task({ id: "t3", dueDate: TODAY, done: true }),
       ],
-      mistakes: [],
       today: TODAY,
     });
 
@@ -134,49 +126,10 @@ describe("buildDayClose — dakika", () => {
       entries: noEntries,
       routines: [],
       tasks: [task({ id: "t1", dueDate: TODAY, done: true })],
-      mistakes: [],
       today: TODAY,
     });
 
     expect(close.minutes).toBe(0);
-  });
-});
-
-describe("buildDayClose — tekrar", () => {
-  it("vadesi gelmiş yanlışları sayar", () => {
-    const close = buildDayClose({
-      entries: noEntries,
-      routines: [],
-      tasks: [],
-      mistakes: [
-        mistake({ id: "m1", reviewStage: 0, nextReviewDate: TODAY }),
-        // Geçmiş vade de bekliyor sayılır (bkz. review.ts isDue).
-        mistake({ id: "m2", reviewStage: 1, nextReviewDate: YESTERDAY }),
-        // Mezun: bir daha kuyrukta görünmez.
-        mistake({ id: "m3", reviewStage: 4, nextReviewDate: null }),
-      ],
-      today: TODAY,
-    });
-
-    expect(close.reviews.due).toBe(2);
-  });
-
-  it("vadesi gelmemiş yanlışı saymaz", () => {
-    const close = buildDayClose({
-      entries: noEntries,
-      routines: [],
-      tasks: [],
-      mistakes: [
-        mistake({
-          id: "m1",
-          reviewStage: 0,
-          nextReviewDate: asDateStr("2026-08-30"),
-        }),
-      ],
-      today: TODAY,
-    });
-
-    expect(close.reviews.due).toBe(0);
   });
 });
 
@@ -186,7 +139,6 @@ describe("buildDayClose — hiç iş yokken", () => {
       entries: noEntries,
       routines: [],
       tasks: [],
-      mistakes: [],
       today: TODAY,
     });
 
@@ -194,7 +146,6 @@ describe("buildDayClose — hiç iş yokken", () => {
       routines: { done: 0, total: 0 },
       tasks: { done: 0, total: 0 },
       minutes: 0,
-      reviews: { due: 0 },
     });
   });
 });

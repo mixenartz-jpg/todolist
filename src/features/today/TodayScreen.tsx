@@ -15,7 +15,6 @@ import { isActiveOn, isDueOn } from "@/features/routines/schedule";
 import { useRoutines } from "@/features/routines/queries";
 import type { RoutineWithSchedule } from "@/features/routines/types";
 import { dayScore, periodProgress } from "@/features/stats/score";
-import { ReviewQueue } from "@/features/mistakes/ReviewQueue";
 import { SectionHeading } from "@/features/sections/SectionHeading";
 import {
   DayGridScreen,
@@ -408,12 +407,6 @@ export function TodayScreen() {
                 </ul>
               </section>
             )}
-
-            {/* Vadesi gelmiş yanlış tekrarları. Görevlerden SONRA:
-                rutinler ve görevler günün asıl yükümlülükleri, tekrar
-                ikincildir. Vadesi gelen yoksa bölüm hiçbir şey
-                render etmez — bkz. ReviewQueue. */}
-            <ReviewQueue today={today} onError={toast.show} />
 
             {/* Tarihsiz görevler ("bir ara yapılacak"). Katlanabilir:
                 günlük akışın parçası değil, ama girildikleri yerde

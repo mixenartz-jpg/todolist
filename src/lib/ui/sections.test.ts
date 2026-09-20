@@ -20,7 +20,7 @@ describe("resolveLabel", () => {
 
   it("bir anahtarın özelleştirilmesi diğerlerini etkilemez", () => {
     const overrides = new Map([["today.tasks", "Sorular"]]);
-    expect(resolveLabel(overrides, "today.journal")).toBe("Günlük");
+    expect(resolveLabel(overrides, "today.plan")).toBe("Günün planı");
   });
 
   it("her varsayılan boş olmayan bir metindir", () => {
@@ -37,7 +37,7 @@ describe("isCustomized", () => {
   it("yalnızca yazılmış anahtarlar için doğrudur", () => {
     const overrides = new Map([["today.tasks", "Sorular"]]);
     expect(isCustomized(overrides, "today.tasks")).toBe(true);
-    expect(isCustomized(overrides, "today.review")).toBe(false);
+    expect(isCustomized(overrides, "today.close")).toBe(false);
   });
 });
 

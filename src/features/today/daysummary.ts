@@ -3,18 +3,17 @@
  *
  * Gün rayının en altındaki blok buradan beslenir. Sunucuya YENİ SORGU
  * AÇMAZ: her girdi Bugün ekranının zaten çektiği önbellekten gelir
- * (rutinler, girdiler, görevler, yanlışlar). Saf fonksiyon olması,
- * bileşene gömülü olsaydı bu depoda hiçbir testin ona ulaşamayacak
- * olmasındandır — yalnızca `.test.ts` çalışıyor, React test kütüphanesi
- * kurulu değil (aynı gerekçe `sections.ts`'in altında yazılı).
+ * (rutinler, girdiler, görevler). Saf fonksiyon olması, bileşene gömülü
+ * olsaydı bu depoda hiçbir testin ona ulaşamayacak olmasındandır —
+ * yalnızca `.test.ts` çalışıyor, React test kütüphanesi kurulu değil
+ * (aynı gerekçe `sections.ts`'in altında yazılı).
  *
- * ── `reviews.done` neden YOK? ──
- * "Bugün kaç tekrar yaptım" sorusu bu şemayla dürüstçe cevaplanamaz.
- * `mistakes` tablosunda tekrarın NE ZAMAN yapıldığını tutan bir sütun
- * yok; `updated_at` var ama not düzenlemede ve toplu yeniden
- * adlandırmada da oynuyor, dolayısıyla "tekrar edildi" anlamına
- * gelmiyor. Yaklaşık bir sayı üretip kesinmiş gibi göstermek, hiç
- * göstermemekten kötüdür. Yalnızca BEKLEYEN sayılır.
+ * ── `reviews` alanı neden GİTTİ? ──
+ * Yanlış çetelesi (Defter sekmesi) sitenin sadeleştirilmesiyle
+ * kaldırıldı; `mistakes` tablosu da düşürüldü. Bekleyen tekrar sayısı
+ * artık var olmayan bir veriye bakıyordu. Alanı "hep 0 döndür" diye
+ * bırakmak özeti yalancı yapardı: ekranda "0 bekleyen tekrar" yazan bir
+ * satır, tekrar sisteminin çalıştığını ve boş olduğunu iddia eder.
  *
  * ── `minutes` ne ölçüyor? ──
  * Tamamlanmış ve SAATİ OLAN görevlerin planlanan süresi. "Gerçekten
@@ -27,8 +26,6 @@ import { isCompleted } from "@/features/entries/completion";
 import type { EntryMap } from "@/features/entries/entry-map";
 import { isActiveOn, isDueOn } from "@/features/routines/schedule";
 import type { RoutineWithSchedule } from "@/features/routines/types";
-import { dueMistakes } from "@/features/mistakes/review";
-import type { Mistake } from "@/features/mistakes/types";
 import { tasksForDay } from "@/features/tasks/queries";
 import type { Task } from "@/features/tasks/types";
 
@@ -39,8 +36,6 @@ export interface DayClose {
   tasks: { done: number; total: number };
   /** Tamamlanmış saatli görevlerin PLANLANAN toplam süresi, dakika. */
   minutes: number;
-  /** Vadesi gelmiş tekrar sayısı. `done` için bkz. dosya başı. */
-  reviews: { due: number };
 }
 
 /*
@@ -57,7 +52,6 @@ export interface DayCloseInput {
   entries: EntryMap;
   routines: readonly RoutineWithSchedule[];
   tasks: readonly Task[];
-  mistakes: readonly Mistake[];
   today: DateStr;
 }
 
@@ -65,7 +59,6 @@ export function buildDayClose({
   entries,
   routines,
   tasks,
-  mistakes,
   today,
 }: DayCloseInput): DayClose {
   /*
@@ -107,6 +100,5 @@ export function buildDayClose({
     routines: { done: routinesDone, total: routinesTotal },
     tasks: { done: tasksDone, total: dayTasks.length },
     minutes,
-    reviews: { due: dueMistakes(mistakes, today).length },
   };
 }
