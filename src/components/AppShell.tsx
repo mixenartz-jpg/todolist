@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/ui/cn";
+import { BrandMark } from "@/components/BrandMark";
 import { createClient } from "@/lib/supabase/client";
 import { QuickPanel } from "@/features/quickpanel/QuickPanel";
 import { ZenProvider } from "@/features/zen/ZenProvider";
@@ -112,10 +113,11 @@ function NavRail() {
        */
       className="glassChrome glassChrome--side sticky top-0 hidden h-dvh w-52 shrink-0 flex-col px-3 py-5 md:flex"
     >
+      {/* Marka imzası ana sayfaya döner: kabuk logosunun her yerde
+          kabul gören davranışı budur ve "Panel" sekmesiyle aynı hedef
+          olması bir tekrar değil — biri gezinme, biri kimliktir. */}
       <div className="mb-6 px-2">
-        <span className="text-[length:var(--text-lg)] font-semibold tracking-[-0.02em]">
-          Rutin
-        </span>
+        <BrandMark href="/" className="inline-flex items-center" />
       </div>
 
       <ul className="flex flex-col gap-0.5">

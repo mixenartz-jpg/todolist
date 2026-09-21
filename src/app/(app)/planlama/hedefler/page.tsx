@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { GoalsScreen } from "@/features/planlama/GoalsScreen";
 
-export const metadata: Metadata = { title: "Hedefler · Rutin" };
+export const metadata: Metadata = { title: "Hedefler · Kero YKS" };
 
 /* `<Suspense>` gerekçesi için bkz. ../ay/page.tsx. */
 export default function Page() {

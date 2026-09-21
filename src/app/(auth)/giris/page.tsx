@@ -3,7 +3,7 @@ import { Card } from "@/components/Card";
 import { LoginForm } from "./LoginForm";
 import "./login.css";
 
-export const metadata: Metadata = { title: "Giriş · Rutin" };
+export const metadata: Metadata = { title: "Giriş · Kero YKS" };
 
 /*
  * Dolu hücreler: ızgaranın üzerine serpilmiş birkaç işaret.
@@ -57,11 +57,24 @@ export default function LoginPage() {
         {/* Marka ve form tek bir kompozisyon: ikisi de ortalanır.
             Sola yaslı başlık ortalanmış kartla hizasız duruyordu. */}
         <div className="mb-7 text-center">
-          <h1 className="text-[length:var(--text-4xl)] font-semibold leading-none tracking-[-0.025em]">
-            Rutin
+          {/*
+            Giriş ekranı markanın EN GÜÇLÜ anı: kabuktaki imza küçük ve
+            işlevsel, burası ise ürünün kendini tanıttığı yer. El yazısı
+            tam burada hak ediyor — `font-hand`'in dar kapsamının
+            (logo komşuluğu, deneme adı, koç cümlesi) ilk üyesi.
+
+            `<h1>` ölçüsü `--text-4xl` DEĞİL doğrudan clamp: el yazısı
+            aynı punto değerinde Inter'den optik olarak küçük okunur
+            ve başlık ölçeğini paylaşmak onu cılız gösterirdi.
+          */}
+          <h1
+            className="font-hand font-bold leading-[0.95] text-[var(--color-accent)]"
+            style={{ fontSize: "clamp(3rem, 2rem + 6vw, 4.25rem)" }}
+          >
+            Kero YKS
           </h1>
-          <p className="mt-2.5 text-[length:var(--text-base)] text-[var(--color-ink-2)]">
-            Günlük takip ve istatistik
+          <p className="mt-3 text-[length:var(--text-base)] text-[var(--color-ink-2)]">
+            Kendi koçun ol
           </p>
         </div>
 

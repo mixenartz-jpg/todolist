@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ArchiveScreen } from "@/features/archive/ArchiveScreen";
 
-export const metadata: Metadata = { title: "Arşiv · Rutin" };
+export const metadata: Metadata = { title: "Arşiv · Kero YKS" };
 
 /**
  * Arşiv — sekme DEĞİL, bağlantıyla ulaşılan ekran.

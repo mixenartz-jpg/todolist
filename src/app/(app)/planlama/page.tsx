@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { PlanlamaScreen } from "@/features/planlama/PlanlamaScreen";
 import { PlanBoot } from "@/features/planlama/PlanBoot";
 
-export const metadata: Metadata = { title: "Plan · Rutin" };
+export const metadata: Metadata = { title: "Plan · Kero YKS" };
 
 /*
  * Planlamanın takvim yüzeyi. Ay ve Hafta ARTIK AYRI ROTA DEĞİL —

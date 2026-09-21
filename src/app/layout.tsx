@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Caveat, Inter } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -10,13 +10,49 @@ const inter = Inter({
   display: "swap",
 });
 
+/*
+ * Marka aksanı — Kero YKS'nin el yazısı sesi.
+ *
+ * ── Neden logodan AYRI bir font? ──
+ * Logo sabit bir görseldir; deneme adı, karşılama satırı ve koç
+ * cümlesi ise dinamik metindir ve görselle yazılamaz. Aynı el yazısını
+ * hem SVG hem font olarak taşımak ikinci bir ağ isteği ve ikisinin
+ * birbirini tutmama riski demekti; logo kendi çizimini korur, font
+ * onun akrabası olur — ikizi değil.
+ *
+ * ── Neden her yerde DEĞİL? ──
+ * El yazısı okunabilirliği düşürür ve sayı hizalaması yoktur. Gövde,
+ * başlık ve TÜM sayılar Inter kalır (bkz. globals.css `--font-sans`).
+ * Caveat yalnızca marka anlarında görünür: logo komşuluğu, deneme adı,
+ * koç cümlesi. Beşinci bir yere eklemek onu dekorasyona çevirir —
+ * ışıma (glow) token'ıyla aynı disiplin.
+ *
+ * ── latin-ext ŞART ──
+ * Türkçe glifler (ı İ ş Ş ğ Ğ) latin altkümesinde YOK. Caveat'ın
+ * cmap tablosu onikisinin de mevcut olduğu doğrulandı; altküme
+ * verilmezse "Şubat" → "ubat" gibi sessiz kırpılmalar olurdu.
+ */
+const caveat = Caveat({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-caveat",
+  display: "swap",
+  /*
+   * Yalnız 700: bugün her kullanım yeri (`BrandMark`, giriş başlığı)
+   * `font-bold` uyguluyor. 500 ve 600 indirilseydi iki statik ağırlık
+   * boşuna ağ trafiği olurdu — el yazısı ağırlıkları ince farklarla
+   * ayrışır ve "ileride lazım olur" diye taşımak ölçülebilir bir
+   * bedel. Daha hafif bir kullanım doğduğunda BURAYA eklenir.
+   */
+  weight: ["700"],
+});
+
 export const metadata: Metadata = {
-  title: "Rutin",
-  description: "Günlük rutin ve görev takibi",
+  title: "Kero YKS",
+  description: "Sınav hazırlığı için kişisel koçluk paneli — plan, hedef, deneme ve yanlış takibi",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "Rutin",
+    title: "Kero YKS",
     statusBarStyle: "black-translucent",
   },
 };
@@ -35,7 +71,10 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="tr" className={`${inter.variable} h-full antialiased`}>
+    <html
+      lang="tr"
+      className={`${inter.variable} ${caveat.variable} h-full antialiased`}
+    >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
       </body>

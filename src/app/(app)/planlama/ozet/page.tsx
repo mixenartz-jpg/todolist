@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { SummaryScreen } from "@/features/planlama/SummaryScreen";
 
-export const metadata: Metadata = { title: "Ay özeti · Rutin" };
+export const metadata: Metadata = { title: "Ay özeti · Kero YKS" };
 
 /* `<Suspense>` gerekçesi için bkz. ../ay/page.tsx. */
 export default function Page() {

@@ -49,6 +49,17 @@
     "Segoe UI", sans-serif;
 
   /*
+   * Marka aksanı — el yazısı. `font-hand` yardımcı sınıfı olarak
+   * kullanılır, bu yüzden `@theme`'de olmak ZORUNDA: Tailwind v4
+   * yalnızca bir sınıf adında geçen değişkeni çıktıya yazar.
+   *
+   * Kapsam DAR: logo komşuluğu, deneme adı, koç cümlesi. Gövde,
+   * başlıklar ve tüm SAYILAR `--font-sans` kalır — el yazısında
+   * tabular hizalama yoktur ve net/sayaç sütunları kayardı.
+   */
+  --font-hand: var(--font-caveat), var(--font-inter), cursive;
+
+  /*
    * Yarıçap ölçeği Tailwind'in varsayılanını EZER.
    *
    * `rounded-md` (40×), `rounded-lg` (41×), `rounded-xl` (37×)
