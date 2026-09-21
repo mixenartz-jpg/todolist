@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BrandMark } from "@/components/BrandMark";
 import { Card } from "@/components/Card";
 import { LoginForm } from "./LoginForm";
 import "./login.css";
@@ -56,24 +57,28 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Marka ve form tek bir kompozisyon: ikisi de ortalanır.
             Sola yaslı başlık ortalanmış kartla hizasız duruyordu. */}
-        <div className="mb-7 text-center">
+        <div className="mb-7 flex flex-col items-center text-center">
           {/*
             Giriş ekranı markanın EN GÜÇLÜ anı: kabuktaki imza küçük ve
-            işlevsel, burası ise ürünün kendini tanıttığı yer. El yazısı
-            tam burada hak ediyor — `font-hand`'in dar kapsamının
-            (logo komşuluğu, deneme adı, koç cümlesi) ilk üyesi.
+            işlevsel, burası ise ürünün kendini tanıttığı yer. Logo
+            burada kabuktakinin yaklaşık dört katı yükseklikte çizilir:
+            el yazısı çizgileri ince ve küçük ölçüde cılız okunuyor.
 
-            `<h1>` ölçüsü `--text-4xl` DEĞİL doğrudan clamp: el yazısı
-            aynı punto değerinde Inter'den optik olarak küçük okunur
-            ve başlık ölçeğini paylaşmak onu cılız gösterirdi.
+            ── Neden `<h1>` görselin YANINDA değil, İÇİNDE? ──
+            Logo ürün adını zaten okunur biçimde taşıyor; yanına bir de
+            "Kero YKS" yazmak görende çift okuma, ekran okuyucuda ise
+            aynı adın iki kez duyulması olurdu. Sayfanın tek `<h1>`'i
+            şart (belge ana hattı) — bu yüzden başlık duruyor ama
+            içeriği GÖRSELİN KENDİSİ; `alt` metni onun sesi.
+
+            `BrandMark` href ALMAZ: giriş ekranında gidilecek bir yer
+            yok ve kendine dönen bir bağlantı klavye kullanıcısına
+            anlamsız bir durak olurdu.
           */}
-          <h1
-            className="font-hand font-bold leading-[0.95] text-[var(--color-accent)]"
-            style={{ fontSize: "clamp(3rem, 2rem + 6vw, 4.25rem)" }}
-          >
-            Kero YKS
+          <h1 className="leading-none">
+            <BrandMark height={132} />
           </h1>
-          <p className="mt-3 text-[length:var(--text-base)] text-[var(--color-ink-2)]">
+          <p className="mt-4 text-[length:var(--text-base)] text-[var(--color-ink-2)]">
             Kendi koçun ol
           </p>
         </div>
