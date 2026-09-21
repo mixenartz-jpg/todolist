@@ -47,20 +47,31 @@ drop table if exists public.notes cascade;
 drop table if exists public.mistakes cascade;
 
 -- ── 3. Yanlış görselleri (storage) ─────────────────────────────────
--- SIRA ÖNEMLİ: önce nesneler, sonra politikalar, en sonra bucket.
--- Bucket'ı dolu iken silmek FK hatası verir.
 --
--- Bucket kimliği 'mistakes' — 'mistake-images' DEĞİL (bkz. 0005:
--- `insert into storage.buckets ... values ('mistakes', ...)`).
--- Politika ADLARI `mistake_images_*` ama bucket'ın kendisi değil.
-delete from storage.objects where bucket_id = 'mistakes';
-
+-- ── SQL'den nesne SİLİNMİYOR — silinemiyor ──
+-- Supabase `storage.objects` ve `storage.buckets` üzerinde
+-- `storage.protect_delete()` adlı bir trigger tutuyor ve doğrudan
+-- `delete` çalıştırmayı reddediyor:
+--
+--   ERROR 42501: Direct deletion from storage tables is not allowed.
+--   Use the Storage API instead.
+--
+-- Gerekçesi makul: satırı silmek DOSYAYI silmiyor, yalnızca kaydını
+-- düşürüyor ve geriye erişilemeyen ("orphaned") nesneler kalıyor.
+-- Bu migration'ın ilk hâli bu satırları içeriyordu ve tam burada
+-- patladı — dosya o yüzden bölündü.
+--
+-- POLİTİKALAR düşürülebiliyor (koruma yalnızca veri satırlarında).
+-- Onları burada düşürüyoruz ki `mistakes` bucket'ı erişimi kalmasın.
 drop policy if exists mistake_images_select on storage.objects;
 drop policy if exists mistake_images_insert on storage.objects;
 drop policy if exists mistake_images_update on storage.objects;
 drop policy if exists mistake_images_delete on storage.objects;
 
-delete from storage.buckets where id = 'mistakes';
+-- Bucket'ın KENDİSİ ve içindeki dosyalar Supabase panelinden
+-- silinir: Storage → `mistakes` → dosyaları seç → Delete → sonra
+-- bucket'ı Delete. Kalması zararsız (politikası düştüğü için kimse
+-- okuyamaz) ama depolama alanı tutar.
 
 -- ── 4. Ölü bölüm başlıkları ────────────────────────────────────────
 -- Bu üç anahtar artık hiçbir ekranda çizilmiyor (Defter ile birlikte
