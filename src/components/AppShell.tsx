@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/ui/cn";
 import { createClient } from "@/lib/supabase/client";
 import { QuickPanel } from "@/features/quickpanel/QuickPanel";
+import { ZenProvider } from "@/features/zen/ZenProvider";
 import {
   ChartIcon,
   CheckIcon,
@@ -71,6 +72,9 @@ const NAV: NavItem[] = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
+    /* Zen sağlayıcısı EN DIŞTA: katman tüm kabuğun üstüne biniyor ve
+       ona iki farklı yerden giriliyor (odak kartı, hızlı panel). */
+    <ZenProvider>
     <div className="flex min-h-dvh flex-col md:flex-row">
       <NavRail />
       {/* overflow-x-hidden değil min-w-0: geniş içerik kendi kaydırma
@@ -86,6 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <MobileTabBar />
     </div>
+    </ZenProvider>
   );
 }
 

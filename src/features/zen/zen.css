@@ -1,0 +1,63 @@
+/*
+ * Zen odak katmanı.
+ *
+ * Tüm site kaybolur; geriye görev, sayaç ve iki düğme kalır.
+ */
+
+/*
+ * Giriş: kısa bir sönümlenme.
+ *
+ * Kaydırmalı ya da ölçeklenen bir giriş, "bir yere gidiyorsun"
+ * hissi verirdi — oysa Zen bir yer değil, bir DURUM. Sitenin
+ * üzerine sessizce inen bir katman olarak belirmesi doğru.
+ */
+@keyframes zenEnter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.zenScreen {
+  animation: zenEnter var(--duration-base) var(--ease-out-quart);
+}
+
+/*
+ * Sayacın ışıması nefes alır.
+ *
+ * Ekrandaki TEK hareket bu ve amacı dekorasyon değil: tamamen durgun
+ * bir ekranda zamanın geçtiğine dair tek işaret rakamlar olur ve
+ * onlar da yalnızca saniyede bir değişir. Yavaş bir nabız, sayacın
+ * çalıştığını rakamlara bakmadan bildiriyor.
+ *
+ * 4 saniye BİLEREK yavaş: hızlı bir nabız dikkat çeker ve dikkat
+ * çekmek odak modunun tam tersi.
+ */
+@keyframes zenPulse {
+  0%,
+  100% {
+    text-shadow: var(--glow-accent-sm);
+  }
+  50% {
+    text-shadow: var(--glow-accent-md);
+  }
+}
+
+.zenTimer {
+  animation: zenPulse 4s ease-in-out infinite;
+}
+
+/*
+ * Hareket azaltılmışsa HİÇBİR animasyon yok — sayı yine de güncellenir.
+ *
+ * Nabız burada bilgi taşımıyor (sayı zaten değişiyor), yalnızca
+ * eşlik ediyor; kaldırılması hiçbir şey kaybettirmez.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .zenScreen,
+  .zenTimer {
+    animation: none;
+  }
+}

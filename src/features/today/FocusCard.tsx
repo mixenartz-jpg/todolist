@@ -8,6 +8,7 @@ import type { DateStr } from "@/lib/date/types";
 import { isOverdue } from "@/features/tasks/queries";
 import type { Task } from "@/features/tasks/types";
 import type { PlanGoal } from "@/features/planlama/types";
+import { useZen } from "@/features/zen/ZenProvider";
 
 /**
  * "Şimdi bu" — günün tek işini büyük gösteren kart.
@@ -44,6 +45,13 @@ export function FocusCard({
   openCount: number;
   onDone: () => void;
 }) {
+  /*
+   * Hook erken dönüşten ÖNCE: `task === null` dalı hook'u atlarsa
+   * React sıra tutarlılığı bozulur ("rendered fewer hooks than
+   * expected").
+   */
+  const zen = useZen();
+
   if (task === null) {
     return (
       <section className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] p-5 md:p-6">
@@ -141,6 +149,25 @@ export function FocusCard({
         >
           Bitti
         </button>
+
+        {/* Zen İKİNCİL: "bitir" birincil eylem, "odaklan" ona giden
+            yol. Tersi olsaydı kart her açılışta bir mod değişimi
+            teklif ederdi. */}
+        {zen && (
+          <button
+            type="button"
+            onClick={() => zen.enter(task)}
+            className={cn(
+              "inline-flex h-10 items-center rounded-lg px-4",
+              "border border-[var(--color-line-2)]",
+              "text-[length:var(--text-sm)] text-[var(--color-ink-2)]",
+              "transition-colors duration-[var(--duration-fast)]",
+              "hover:border-[var(--color-accent)] hover:text-[var(--color-ink)]",
+            )}
+          >
+            Odaklan
+          </button>
+        )}
       </div>
     </section>
   );

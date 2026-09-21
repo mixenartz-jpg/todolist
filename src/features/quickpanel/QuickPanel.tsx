@@ -6,6 +6,8 @@ import { todayStr } from "@/lib/date/date";
 import { useTasks } from "@/features/tasks/queries";
 import { useToggleTask } from "@/features/tasks/mutations";
 import { isPendingTask } from "@/features/tasks/pending";
+import { useZen } from "@/features/zen/ZenProvider";
+import { nextTask } from "@/features/today/focus";
 import { openTaskCount, quickPanelTasks, shouldShowPanel } from "./panel";
 import "./quickpanel.css";
 
@@ -35,12 +37,16 @@ export function QuickPanel() {
 
   const tasksQuery = useTasks();
   const toggleTask = useToggleTask();
+  const zen = useZen();
 
   const tasks = useMemo(() => tasksQuery.data ?? [], [tasksQuery.data]);
 
   const list = useMemo(() => quickPanelTasks(tasks, today), [tasks, today]);
   const openCount = useMemo(() => openTaskCount(tasks, today), [tasks, today]);
   const visible = useMemo(() => shouldShowPanel(tasks, today), [tasks, today]);
+
+  /* Zen'e girilecek iş — odak kartıyla AYNI seçim kuralı. */
+  const next = useMemo(() => nextTask(list, today), [list, today]);
 
   /*
    * Açıklık TÜRETİLMİŞ, ham durum değil.
@@ -80,6 +86,28 @@ export function QuickPanel() {
             "shadow-[0_8px_32px_-8px_rgb(0_0_0/0.4)]",
           )}
         >
+          {/* Zen köprüsü: panel "ne kaldı"yı gösteriyor, Zen o
+              işlerden birine gömülmeyi sağlıyor. Sıradaki iş
+              listenin ilki — odak kartıyla AYNI kural (focus.ts). */}
+          {next && zen && (
+            <button
+              type="button"
+              onClick={() => zen.enter(next)}
+              className={cn(
+                "mb-1 flex w-full items-center gap-2 rounded-lg px-2 py-2",
+                "text-[length:var(--text-sm)] text-[var(--color-accent)]",
+                "transition-colors duration-[var(--duration-fast)]",
+                "hover:bg-[var(--color-surface-2)]",
+              )}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
+                <circle cx="8" cy="8" r="5.75" stroke="currentColor" strokeWidth="1.3" />
+                <circle cx="8" cy="8" r="2.25" stroke="currentColor" strokeWidth="1.3" />
+              </svg>
+              <span className="min-w-0 truncate">Odaklan: {next.title}</span>
+            </button>
+          )}
+
           <ul className="flex flex-col">
             {list.map((task) => {
               const pending = isPendingTask(task.id);
