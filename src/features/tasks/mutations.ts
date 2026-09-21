@@ -432,6 +432,66 @@ export function useReorderTasks(onError?: (message: string) => void) {
   });
 }
 
+/**
+ * Birden çok görevin tarihini TEK hareketle değiştirir — optimistic.
+ *
+ * ── Neden `useRescheduleTask`'ı döngüde çağırmıyoruz? ──
+ * Akşam rutininde kullanıcı beş işi birden "yarına" atıyor. Beş ayrı
+ * mutation beş ayrı iyimser yazma, beş ayrı geri alma bağlamı ve beş
+ * ayrı `invalidate` demek: liste her cevapta bir kez daha zıplardı.
+ * Ayrıca biri başarısız olursa hangisinin geri alınacağı belirsiz
+ * kalırdı — burada TEK bir `previous` anlık görüntüsü var ve hata
+ * hepsini birden geri alıyor.
+ *
+ * `useReorderTasks` ile aynı kalıp ve aynı gerekçe (bkz. onun
+ * doc-block'u): paralel `update`'ler, ilk hata fırlatılır, gerçeği
+ * `onSettled` geri getirir.
+ */
+export function useCarryTasks(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (
+      moves: readonly { id: string; dueDate: DateStr | null }[],
+    ) => {
+      if (moves.length === 0) return;
+
+      const supabase = createClient();
+
+      const results = await Promise.all(
+        moves.map(({ id, dueDate }) =>
+          supabase.from("tasks").update({ due_date: dueDate }).eq("id", id),
+        ),
+      );
+
+      const failed = results.find((r) => r.error);
+      if (failed?.error) throw failed.error;
+    },
+
+    onMutate: async (moves) => {
+      await qc.cancelQueries({ queryKey: qk.tasks() });
+      const previous = qc.getQueryData<Task[]>(qk.tasks());
+
+      const byId = new Map(moves.map((m) => [m.id, m.dueDate]));
+
+      qc.setQueryData<Task[]>(qk.tasks(), (tasks) =>
+        tasks?.map((t) =>
+          byId.has(t.id) ? { ...t, dueDate: byId.get(t.id)! } : t,
+        ),
+      );
+
+      return { previous };
+    },
+
+    onError: (error, _vars, context) => {
+      qc.setQueryData(qk.tasks(), context?.previous);
+      onError?.(errorText(error));
+    },
+
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.tasks() }),
+  });
+}
+
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : "Kaydedilemedi, tekrar deneyin";
 }

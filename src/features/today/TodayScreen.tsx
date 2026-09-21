@@ -36,7 +36,10 @@ import {
 import { tasksForDay, undatedTasks, useTasks } from "@/features/tasks/queries";
 import type { Task } from "@/features/tasks/types";
 import { DayRail } from "./DayRail";
+import { EveningSheet } from "./EveningSheet";
 import { FocusCard } from "./FocusCard";
+import { isEvening } from "./evening";
+import { buildDayClose } from "./daysummary";
 import { nextTask, openCount } from "./focus";
 import { TodayRoutineItem } from "./TodayRoutineItem";
 
@@ -197,6 +200,29 @@ export function TodayScreen() {
   const toggleOpen = useCallback((id: string) => {
     setOpenTaskId((current) => (current === id ? null : id));
   }, []);
+
+  /*
+   * Akşam daveti: saat eşiği `evening.ts`'te ve test edilebilir.
+   * Saat BİR KEZ okunuyor (ilk render) — her render'da okumak, gece
+   * 20:00'de sayfanın kendiliğinden değişmesini sağlardı ama
+   * kullanıcının yazdığı bir notun ortasında da sheet açabilirdi.
+   */
+  const [hour] = useState(() => new Date().getHours());
+
+  const [eveningOpen, setEveningOpen] = useState(false);
+
+  const close = useMemo(
+    () =>
+      buildDayClose({
+        entries,
+        routines: routinesQuery.data ?? [],
+        tasks: tasksQuery.data ?? [],
+        today,
+      }),
+    [entries, routinesQuery.data, tasksQuery.data, today],
+  );
+
+  const unfinished = useMemo(() => dayTasks.filter((t) => !t.done), [dayTasks]);
 
   const isLoading = routinesQuery.isPending;
 
@@ -430,6 +456,54 @@ export function TodayScreen() {
                 </section>
               )}
 
+              {/*
+                Akşam daveti listenin ALTINDA: günü kapatma teklifi,
+                gün hâlâ önündeyken yukarıda durursa erken bir
+                teslimiyet önerisi gibi okunur.
+              */}
+              {isEvening(hour) && (
+                <section>
+                  <button
+                    type="button"
+                    onClick={() => setEveningOpen(true)}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3",
+                      "border border-[var(--color-line)] bg-[var(--color-surface)]",
+                      "text-left transition-colors duration-[var(--duration-fast)]",
+                      "hover:border-[var(--color-accent)]",
+                    )}
+                  >
+                    <span>
+                      <span className="block text-[length:var(--text-sm)] font-medium">
+                        Günü kapat
+                      </span>
+                      <span className="mt-0.5 block text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
+                        {unfinished.length > 0
+                          ? `${unfinished.length} iş için karar ver: yarına, havuza ya da kalsın`
+                          : "Bitmemiş iş kalmadı — günü olduğu gibi kapatabilirsin"}
+                      </span>
+                    </span>
+
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 12 12"
+                      fill="none"
+                      aria-hidden
+                      className="shrink-0 text-[var(--color-ink-3)]"
+                    >
+                      <path
+                        d="M4.5 2.5L8 6l-3.5 3.5"
+                        stroke="currentColor"
+                        strokeWidth="1.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                </section>
+              )}
+
               {/* Gün notu ARTIK BURADA DEĞİL — rayın "Gün özeti" bloğuna
                   taşındı. Günü kapatan hareket (ne oldu + nasıl geçti)
                   tek yerde duruyor. */}
@@ -445,6 +519,16 @@ export function TodayScreen() {
           </div>
         )}
       </ScreenBody>
+
+      {eveningOpen && (
+        <EveningSheet
+          tasks={unfinished}
+          close={close}
+          today={today}
+          onClose={() => setEveningOpen(false)}
+          onError={toast.show}
+        />
+      )}
 
       <Toast
         message={toast.message}
