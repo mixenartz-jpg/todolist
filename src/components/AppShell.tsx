@@ -6,7 +6,6 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { cn } from "@/lib/ui/cn";
 import { createClient } from "@/lib/supabase/client";
 import {
-  CalendarIcon,
   ChartIcon,
   CheckIcon,
   GridIcon,
@@ -31,7 +30,6 @@ interface NavItem {
 const NAV: NavItem[] = [
   { href: "/", label: "Tablo", icon: <GridIcon /> },
   { href: "/bugun", label: "Bugün", icon: <CheckIcon /> },
-  { href: "/takvim", label: "Takvim", icon: <CalendarIcon /> },
   /*
    * Planlama, Takvim'in HEMEN yanında: ikisi de zamansal yüzeydir ve
    * komşu durmaları haritayı okunur kılar. Takvim BAKMAK içindir

@@ -1,11 +1,16 @@
 import { redirect } from "next/navigation";
 
 /**
- * Takvimin kendisi bir ekran değildir; ilk görünüme yönlendirir.
+ * Takvim sekmesi KALDIRILDI — ileriye bakmanın tek yeri Planlama.
  *
- * Ay varsayılandır çünkü mevcut davranıştır: `/takvim`'i yer imine
- * eklemiş ya da alışkanlıkla açan kullanıcı aynı ekranı bulmalı.
+ * Takvim BAKMAK içindi (ay/hafta yoğunluğu), Planlama KURMAK için.
+ * İkisi yan yana durunca hangisinde ne yapılacağı belirsizleşti ve
+ * ikisi de aynı günleri farklı çiziyordu. Tek yüzey kaldı.
+ *
+ * Dosya SİLİNMEDİ, yönlendirmeye çevrildi — `takvim/plan`'ın kendi
+ * gerekçesiyle aynı: `standalone` PWA'da 404, çıkış yolu olmayan bir
+ * çıkmaz sokaktır ve tarayıcı geçmişi bu adresi hatırlıyor olabilir.
  */
 export default function TakvimPage() {
-  redirect("/takvim/ay");
+  redirect("/planlama");
 }

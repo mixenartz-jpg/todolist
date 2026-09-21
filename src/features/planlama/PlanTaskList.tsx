@@ -85,9 +85,9 @@ export function PlanTaskList({
              * kalktı. Görev alanı en dar hâlinde bile ~280px ve
              * simgeler başlığın yanında kalabiliyor.
              *
-             * Prop `TaskItem`'dan KALDIRILMADI — `WeekDayColumn`
-             * (features/week) hâlâ dar sütunlar çiziyor ve ona
-             * ihtiyacı var. */
+             * Prop'un son kullanıcısı Takvim/Hafta'nın `WeekDayColumn`
+             * bileşeniydi; o sekme kaldırıldı. `TaskItem`'dan da
+             * düşürülmeli (bkz. F6 temizliği). */
             onToggle={() => onToggle(task)}
             onDelete={() => onDelete(task)}
             onRename={(title) => onRename(task, title)}

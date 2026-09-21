@@ -53,28 +53,6 @@ export function CheckIcon({ size = 16 }: IconProps) {
   );
 }
 
-export function CalendarIcon({ size = 16 }: IconProps) {
-  return (
-    <svg {...svgProps(size)}>
-      <rect
-        x="2"
-        y="3"
-        width="12"
-        height="11"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth="1.3"
-      />
-      <path
-        d="M2 6.5h12M5.5 2v2M10.5 2v2"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 /** İstatistik. */
 export function ChartIcon({ size = 16 }: IconProps) {
   return (
@@ -92,8 +70,8 @@ export function ChartIcon({ size = 16 }: IconProps) {
 /**
  * Planlama / hedef.
  *
- * İç içe iki çember ve merkez nokta — "nişan alınan şey". Takvimden
- * ayrışması kritik: ikisi alt çubukta komşudur ve Takvim bir ızgara,
+ * İç içe iki çember ve merkez nokta — "nişan alınan şey". Tablodan
+ * ayrışması kritik: ikisi alt çubukta komşudur ve Tablo bir ızgara,
  * bu ise bir hedeftir.
  */
 export function TargetIcon({ size = 16 }: IconProps) {

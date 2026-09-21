@@ -22,10 +22,10 @@ import "./planlama.css";
  * İki ölçek arasındaki tek fark ARALIK: ay 4-6 hafta bölümü, hafta tek
  * bölüm. Yerleşim, ölçüler ve davranış birebir aynı.
  *
- * `WeekGrid`'den (features/week) hâlâ AYRI: buradaki satırlar
- * yerleştirme modunu, sıra düğmelerini ve "havuza geri at" eylemini
- * biliyor. Ortak bir bileşene zorlamak, Hafta ekranının hiç
- * kullanmadığı beş prop'u oradan da geçirmek demekti.
+ * Takvim sekmesinin `WeekGrid`'inden ayrı tutulmuştu: buradaki
+ * satırlar yerleştirme modunu, sıra düğmelerini ve "havuza geri at"
+ * eylemini biliyor, o ise hiçbirini kullanmıyordu. Takvim kaldırılınca
+ * ayrım kendiliğinden ortadan kalktı.
  */
 
 interface PlanWeekGridProps {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { asDateStr, eachDay, startOfIsoWeek } from "@/lib/date/date";
-import { monthGrid } from "@/features/calendar/grid";
+import { monthGrid } from "./monthgrid";
 import { task } from "@/features/testing/fixtures";
 import { anchorForScale, buildPlanRange, chunkWeeks } from "./range";
 import type { PlanBucket } from "./range";

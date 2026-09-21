@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isoWeekday } from "@/lib/date/date";
-import { monthGrid, toWeeks } from "./grid";
+import { monthGrid, toWeeks } from "./monthgrid";
 
 describe("monthGrid", () => {
   it("Pazartesi başlar, Pazar biter", () => {

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { endOfMonth, startOfMonth, toParts } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { Toast, useToast } from "@/components/Toast";
-import { monthGrid } from "@/features/calendar/grid";
+import { monthGrid } from "./monthgrid";
 import { useTasks } from "@/features/tasks/queries";
 import { buildPlanRange, chunkWeeks } from "./range";
 import { CategoryFilterBar } from "./CategoryFilterBar";

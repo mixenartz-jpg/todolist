@@ -1,19 +1,18 @@
 /**
  * Plan ekranının veri modeli — saf mantık.
  *
- * ── `buildWeekPlan` neden YENİDEN KULLANILMIYOR? ──
- * O fonksiyon yedi sabit sütun ve tek bir ölçek varsayar. Plan ekranı
- * hem hafta hem ay ızgarasını beslemeli ve ay ızgarasında komşu aydan
- * taşan hücreler var — "bu gün görüntülenen aya ait mi?" sorusu
- * haftalık planda hiç yok. Ayrıca burada tarihsiz görevler DÖNDÜRÜLÜR;
- * `buildWeekPlan` onları bilerek atıyor.
+ * ── Neden kendi kovalama mantığı var? ──
+ * Takvim sekmesinin `buildWeekPlan`'i (features/tasks/week.ts) yedi
+ * sabit sütun ve tek ölçek varsayıyordu; burası hem hafta hem ay
+ * ızgarasını besliyor ve ayda komşu aydan taşan hücreler var — "bu gün
+ * görüntülenen aya ait mi?" sorusu haftalık planda hiç yoktu. Ayrıca
+ * burası tarihsiz görevleri DÖNDÜRÜR, o atıyordu.
  *
- * `buildWeekPlan` bilerek DEĞİŞTİRİLMEDİ: Hafta ekranı mevcut
- * davranışını korur. İki fonksiyon aynı kovalama desenini paylaşır ama
- * farklı sorulara cevap verir.
+ * Takvim sekmesi kaldırılınca `buildWeekPlan` da silindi; bu dosya
+ * onun yerini almadı, zaten baştan ayrı bir soruya cevap veriyordu.
  *
  * ── `tasksForDay` neden KULLANILMIYOR? ──
- * `week.ts`'teki gerekçenin aynısı: `tasksForDay` geçmişteki
+ * `tasksForDay` geçmişteki
  * tamamlanmamışları da o güne taşır. Bugün ekranında bu doğrudur, ama
  * bir ızgarada Pazartesi'ye tarihli yapılmamış bir görev Pzt'den Paz'a
  * her sütunda görünür ve sayaçlar birbirini yerdi. Izgarada her hücre
