@@ -10,10 +10,15 @@ import { Screen, ScreenHeader, ScreenBody } from "@/components/Screen";
 import { EmptyState } from "@/components/EmptyState";
 import { ChartIcon } from "@/components/icons";
 import { EMPTY_ENTRIES, useEntries } from "@/features/entries/queries";
+import { useTasks } from "@/features/tasks/queries";
+import { buildWeekLookback } from "./lookback";
+import { trendDelta } from "./trend";
+import { WeekLookback } from "./WeekLookback";
 import { useRoutines } from "@/features/routines/queries";
 import {
   heatmapData,
   overallStats,
+  weekdayBreakdown,
   relevantRoutines,
   routineSummaries,
   weeklyTrend,
@@ -50,6 +55,7 @@ export function StatsScreen() {
   const queryFrom = minDate(from, heatFrom);
 
   const entriesQuery = useEntries(queryFrom, today);
+  const tasksQuery = useTasks();
   const entries = entriesQuery.data ?? EMPTY_ENTRIES;
 
   const routines = useMemo(
@@ -69,6 +75,25 @@ export function StatsScreen() {
 
   const trend = useMemo(
     () => weeklyTrend(entries, routines, from, today),
+    [entries, routines, from, today],
+  );
+
+  /*
+   * Geri bakış: GEÇEN hafta. Bitmemiş bir haftayı değerlendirmek
+   * yanıltıcı olurdu — Salı günü "bu hafta %28" demek, haftanın
+   * beşte üçü daha önündeyken bir başarısızlık bildirimi gibi okunur.
+   *
+   * Üçü de MEVCUT `entries`ten türetiliyor; yeni sorgu açılmıyor.
+   */
+  const lookback = useMemo(
+    () => buildWeekLookback(entries, routines, tasksQuery.data ?? [], today),
+    [entries, routines, tasksQuery.data, today],
+  );
+
+  const delta = useMemo(() => trendDelta(trend), [trend]);
+
+  const breakdown = useMemo(
+    () => weekdayBreakdown(entries, routines, from, today),
     [entries, routines, from, today],
   );
 
@@ -156,6 +181,15 @@ export function StatsScreen() {
                 </div>
               </section>
             )}
+
+            {/* Geri bakış grafiğin ÜSTÜNDE: yorum önce, detay sonra.
+                Kullanıcı grafiğe bakmadan da haftasını öğrenebilmeli. */}
+            <WeekLookback
+              data={lookback}
+              delta={delta}
+              breakdown={breakdown}
+              stats={overall}
+            />
 
             <TrendChart points={trend} />
             <YearHeatmap from={heatFrom} to={today} data={heat} />
