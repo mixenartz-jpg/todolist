@@ -2,7 +2,6 @@
 
 import type { DateStr } from "@/lib/date/types";
 import { DayNoteCard } from "@/features/notes/DayNoteCard";
-import { formatDuration } from "@/features/tasks/schedule";
 import type { DayClose } from "./daysummary";
 
 /**
@@ -56,19 +55,6 @@ function DaySummaryLines({ close }: { close: DayClose }) {
     lines.push({
       label: "Görev",
       value: `${close.tasks.done}/${close.tasks.total}`,
-    });
-  }
-
-  /*
-   * "Planlanan" sözcüğü ŞART: bu sayı tamamlanmış saatli görevlerin
-   * planlanan süresidir, kronometreyle ölçülmüş çalışma değil. Sadece
-   * "Çalışma" yazmak, uygulamanın bilmediği bir şeyi biliyormuş gibi
-   * göstermek olurdu (bkz. daysummary.ts).
-   */
-  if (close.minutes > 0) {
-    lines.push({
-      label: "Planlanan",
-      value: formatDuration(close.minutes),
     });
   }
 

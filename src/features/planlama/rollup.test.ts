@@ -133,21 +133,6 @@ describe("buildMonthRollup", () => {
     expect(rollup.goals[0].ratio).toBe(1);
   });
 
-  it("süreyi yalnızca saati OLAN işlerden toplar", () => {
-    const rollup = buildMonthRollup(
-      [
-        task({ dueDate: "2026-08-05", startTime: "09:00", durationMinutes: 60 }),
-        task({ dueDate: "2026-08-06", startTime: null, durationMinutes: 45 }),
-      ],
-      [],
-      [],
-      AUG,
-      AFTER_AUG,
-    );
-
-    expect(rollup.totalMinutes).toBe(60);
-  });
-
   describe("boş gün sayımı", () => {
     it("ay ortasındayken YALNIZCA bugüne kadar sayar", () => {
       /*
@@ -298,27 +283,6 @@ describe("buildMonthRollup", () => {
 
       expect(rollup.categories).toHaveLength(1);
       expect(rollup.categories[0].category).toBeNull();
-      expect(rollup.categories[0].taskTotal).toBe(2);
-    });
-
-    it("dilim süresini yalnızca saatli işlerden toplar", () => {
-      const rollup = buildMonthRollup(
-        [
-          task({
-            dueDate: "2026-08-05",
-            categoryId: "mat",
-            startTime: "09:00",
-            durationMinutes: 90,
-          }),
-          task({ dueDate: "2026-08-06", categoryId: "mat" }),
-        ],
-        [],
-        [mat],
-        AUG,
-        AFTER_AUG,
-      );
-
-      expect(rollup.categories[0].minutes).toBe(90);
       expect(rollup.categories[0].taskTotal).toBe(2);
     });
   });

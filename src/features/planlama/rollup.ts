@@ -44,8 +44,6 @@ export interface CategorySlice {
   category: Category | null;
   taskTotal: number;
   taskDone: number;
-  /** Saati OLAN görevlerin toplam süresi, dakika. */
-  minutes: number;
   /** Ay içindeki tüm görevlere oranı, 0..1. */
   share: number;
 }
@@ -70,8 +68,6 @@ export interface MonthRollup {
   activeDays: number;
   /** Ayın sayılan gün sayısı: `min(ay sonu, bugün)`'e kadar. */
   countedDays: number;
-  /** Saati olan görevlerin toplam süresi, dakika. */
-  totalMinutes: number;
   goals: GoalProgress[];
   /** Paya göre azalan; kategorisiz kovası HER ZAMAN sonda. */
   categories: CategorySlice[];
@@ -165,13 +161,9 @@ export function buildMonthRollup(
 
   let taskTotal = 0;
   let taskDone = 0;
-  let totalMinutes = 0;
 
   /** Kategori kimliği → pay; `""` kategorisizler kovası. */
-  const slices = new Map<
-    string,
-    { taskTotal: number; taskDone: number; minutes: number }
-  >();
+  const slices = new Map<string, { taskTotal: number; taskDone: number }>();
   const activeDates = new Set<DateStr>();
 
   for (const task of tasks) {
@@ -184,25 +176,13 @@ export function buildMonthRollup(
     if (task.done) taskDone += 1;
     activeDates.add(task.dueDate);
 
-    // Süre yalnızca saati olanlardan (DB kısıtıyla tutarlı).
-    const minutes =
-      task.startTime !== null && task.durationMinutes !== null
-        ? task.durationMinutes
-        : 0;
-    totalMinutes += minutes;
-
     const key = task.categoryId ?? "";
     const slice = slices.get(key);
     if (slice) {
       slice.taskTotal += 1;
       if (task.done) slice.taskDone += 1;
-      slice.minutes += minutes;
     } else {
-      slices.set(key, {
-        taskTotal: 1,
-        taskDone: task.done ? 1 : 0,
-        minutes,
-      });
+      slices.set(key, { taskTotal: 1, taskDone: task.done ? 1 : 0 });
     }
   }
 
@@ -228,17 +208,13 @@ export function buildMonthRollup(
     emptyDays: Math.max(countedDays - activeDays, 0),
     activeDays,
     countedDays,
-    totalMinutes,
     goals: goals.map((goal) => goalProgress(goal, tasks)),
     categories: buildSlices(slices, categoryById, taskTotal),
   };
 }
 
 function buildSlices(
-  slices: ReadonlyMap<
-    string,
-    { taskTotal: number; taskDone: number; minutes: number }
-  >,
+  slices: ReadonlyMap<string, { taskTotal: number; taskDone: number }>,
   categoryById: ReadonlyMap<string, Category>,
   taskTotal: number,
 ): CategorySlice[] {
@@ -253,7 +229,6 @@ function buildSlices(
       category: key === "" ? null : (categoryById.get(key) ?? null),
       taskTotal: value.taskTotal,
       taskDone: value.taskDone,
-      minutes: value.minutes,
       share: taskTotal === 0 ? 0 : value.taskTotal / taskTotal,
     };
 
@@ -266,7 +241,6 @@ function buildSlices(
               category: null,
               taskTotal: uncategorized.taskTotal + slice.taskTotal,
               taskDone: uncategorized.taskDone + slice.taskDone,
-              minutes: uncategorized.minutes + slice.minutes,
               share: uncategorized.share + slice.share,
             };
     } else {

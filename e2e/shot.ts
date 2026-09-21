@@ -101,9 +101,21 @@ export const REQUIRED_TOKENS = [
   "--color-slot-0",
   "--color-level-0",
   /*
-   * Zaman ızgarasının TÜM geometrisi bu token'a bağlı ve değer JS'ten
-   * `getComputedStyle` ile okunuyor. Boş kalırsa bloklar tuvalin
-   * tepesine yığılır — derleme hatası vermeden.
+   * Yerleşim ölçüleri: ekranların dikey ritmi bunlara bağlı ve hepsi
+   * `@theme` DIŞINDA tanımlı (Tailwind sınıfı üretmedikleri için orada
+   * tree-shake edilip sessizce boşalırlardı). Boş kalırlarsa sayfa
+   * dolgusuz ve aralıksız çizilir — derleme hatası vermeden.
+   *
+   * `--daygrid-hour-h` buradaydı; zaman ızgarasıyla birlikte düştü.
    */
-  "--daygrid-hour-h",
+  "--stack-gap",
+  "--card-p",
+  "--screen-py",
+  /*
+   * Işıma paletin taşıyıcı öğesi: aktif sekme, odak halkası ve
+   * ilerleme şeridi hep bundan okuyor. Boşalırsa arayüz hatasız ama
+   * sönük çizilir — gözle yakalanması en zor gerileme.
+   */
+  "--glow-accent-sm",
+  "--glow-accent-md",
 ] as const;

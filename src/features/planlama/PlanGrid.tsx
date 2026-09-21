@@ -58,11 +58,6 @@ interface PlanGridProps {
   onToggle: (task: Task) => void;
   onDelete: (task: Task) => void;
   onRename: (task: Task, title: string) => void;
-  onSetTime: (
-    task: Task,
-    startTime: string | null,
-    durationMinutes: number | null,
-  ) => void;
   onUnschedule: (task: Task) => void;
   onReorder: (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => void;
 }
@@ -86,7 +81,6 @@ export function PlanGrid({
   onToggle,
   onDelete,
   onRename,
-  onSetTime,
   onUnschedule,
   onReorder,
 }: PlanGridProps) {
@@ -109,7 +103,6 @@ export function PlanGrid({
         onToggle={onToggle}
         onDelete={onDelete}
         onRename={onRename}
-        onSetTime={onSetTime}
         onUnschedule={onUnschedule}
         onReorder={onReorder}
       />

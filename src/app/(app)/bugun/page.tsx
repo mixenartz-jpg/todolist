@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
-import { TodayScreen, TodayBoot } from "@/features/today/TodayScreen";
+import { TodayScreen } from "@/features/today/TodayScreen";
 
 export const metadata: Metadata = { title: "Bugün · Rutin" };
 
 /*
- * `<Suspense>` ZORUNLU: ekran ölçeği ve çapayı URL'den okuyor
- * (useDayGridSurface → useSearchParams) ve sarmalanmadan bırakılırsa
- * Next derlemeyi durdurur. Planlama sayfalarındaki kuralın aynısı.
+ * `<Suspense>` ARTIK YOK.
  *
- * Fallback boş kutu değil iskelet: parametreler çözülene kadar geçen
- * kare boyunca sayfa yüksekliği korunur ve içerik zıplamaz.
+ * Gerekçesi ekranın ölçeği ve çapayı URL'den okumasıydı
+ * (`useDayGridSurface` → `useSearchParams`); sarmalanmadan bırakılırsa
+ * Next derlemeyi durduruyordu. Saat ızgarası kalkınca ekran tek bir
+ * günü — bugünü — gösteriyor ve hiçbir arama parametresi okumuyor.
+ *
+ * Sınır boşuna durmuyordu ama artık boşuna dururdu ve `TodayBoot`
+ * iskeleti hiçbir zaman çizilmeyecek bir kareyi bekliyor olurdu — o da
+ * bu yüzden silindi. Veri beklemesi zaten ekranın KENDİ içinde
+ * karşılanıyor (`routinesQuery.isPending` → `TodaySkeleton`).
  */
 export default function Page() {
-  return (
-    <Suspense fallback={<TodayBoot />}>
-      <TodayScreen />
-    </Suspense>
-  );
+  return <TodayScreen />;
 }

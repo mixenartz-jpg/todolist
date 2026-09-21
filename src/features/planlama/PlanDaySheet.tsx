@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { isoWeekday } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { formatLongDate, WEEKDAYS_LONG } from "@/lib/ui/tr";
-import { splitDaySchedule } from "@/features/tasks/schedule";
+import { orderForDay } from "@/features/tasks/dayorder";
 import { TaskItem } from "@/features/tasks/TaskItem";
 import type { Task } from "@/features/tasks/types";
 import { CategoryDot } from "./CategoryDot";
@@ -29,11 +29,6 @@ interface PlanDaySheetProps {
   onToggle: (task: Task) => void;
   onDelete: (task: Task) => void;
   onRename: (task: Task, title: string) => void;
-  onSetTime: (
-    task: Task,
-    startTime: string | null,
-    durationMinutes: number | null,
-  ) => void;
   onUnschedule: (task: Task) => void;
   onReorder: (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => void;
 }
@@ -62,7 +57,6 @@ export function PlanDaySheet({
   onToggle,
   onDelete,
   onRename,
-  onSetTime,
   onUnschedule,
   onReorder,
 }: PlanDaySheetProps) {
@@ -73,8 +67,7 @@ export function PlanDaySheet({
     if (dialog && !dialog.open) dialog.showModal();
   }, []);
 
-  const { timed, untimed } = splitDaySchedule(tasks);
-  const ordered = [...timed, ...untimed];
+  const ordered = orderForDay(tasks);
 
   const categoryById = new Map(categories.map((c) => [c.id, c]));
 
@@ -145,7 +138,6 @@ export function PlanDaySheet({
                   onToggle={() => onToggle(task)}
                   onDelete={() => onDelete(task)}
                   onRename={(title) => onRename(task, title)}
-                  onSetTime={(start, duration) => onSetTime(task, start, duration)}
                   onDefer={() => onUnschedule(task)}
                   /*
                    * Kategori seçici ve sıra düğmeleri aynı yuvayı

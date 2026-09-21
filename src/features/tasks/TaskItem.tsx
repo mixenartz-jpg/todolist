@@ -7,7 +7,6 @@ import { formatShortDate } from "@/lib/ui/tr";
 import { isPendingTask } from "./pending";
 import { isOverdue } from "./queries";
 import { normalizeTitleInput, shouldPersistTitle, TASK_TITLE_MAX } from "./rename";
-import { DURATION_PRESETS, formatDuration } from "./schedule";
 import type { Task } from "./types";
 import "@/components/list-motion.css";
 
@@ -19,16 +18,6 @@ interface TaskItemProps {
   /** Yarına ertele. Tarihsiz görevlerde gösterilmez. */
   onDefer?: () => void;
   /**
-   * Saat/süre ayarlama. Verilmezse kontrol hiç gösterilmez —
-   * tarihsiz görevlerin ("bir ara") saati olmaz.
-   */
-  onSetTime?: (startTime: string | null, durationMinutes: number | null) => void;
-  /**
-   * Saat çipini gizle. Gün planında saat zaten sol olukta yazıyor;
-   * satırda tekrarlamak aynı bilgiyi iki kez göstermek olur.
-   */
-  hideTime?: boolean;
-  /**
    * Ad düzenleme. Verilmezse başlık düz metin kalır.
    *
    * Çağrılmadan ÖNCE girdi doğrulanır (bkz. `rename.ts`): boş ya da
@@ -36,24 +25,32 @@ interface TaskItemProps {
    */
   onRename?: (title: string) => void;
   /**
-   * Gün seçici paneli. Verilirse "ertele" simgesi bir sonraki güne
-   * itmek yerine bu paneli açar.
+   * Başlığın altında HER ZAMAN duran ek kontrol (ör. sıra düğmeleri,
+   * kategori seçici).
    *
-   * Aynı simgenin iki anlam taşıması bilinçli: "yarına it" ve "bir
-   * güne taşı" aynı hareketin iki hassasiyetidir. İkinci bir simge
-   * eklemek, satırdaki eylem kümesini dörde çıkarır ve haftalık
-   * ızgaranın dar sütununda yer kalmazdı.
-   */
-  dayPicker?: ReactNode;
-  /**
-   * Başlığın altında her zaman duran ek kontrol (ör. sıra düğmeleri).
-   *
-   * `dayPicker`'dan AYRI bir yuva: o bir simgenin arkasında açılıp
-   * kapanan bir panel, bu ise kalıcı. `dayPicker`'a verilseydi sıra
-   * düğmeleri "ertele" simgesine basılmadan görünmez olurdu ve o
-   * simgenin anlamı üçüncü kez değişirdi.
+   * `panel`'den AYRI bir yuva: bu kalıcı, o bir düğmenin arkasında
+   * açılıp kapanan bölme. İkisi birleştirilseydi sıra düğmeleri
+   * panel açılmadan görünmez olurdu.
    */
   extra?: ReactNode;
+  /**
+   * Açılır bölme — yalnızca `expanded` iken çizilir (ör. hedef
+   * seçici).
+   *
+   * Bölme satırın ALTINDA duruyor, yüzen bir panelde değil. Eskiden
+   * bu iş `TaskPopover`'ındı: ızgara bloğunun yanına çapalanan,
+   * dört kenarı deneyen kendi konumlandırma matematiği olan bir
+   * panel. Bloklar gidince çapa da gitti; satırın altı hem daha
+   * basit hem de kaydırmada yerinden oynamıyor.
+   */
+  panel?: ReactNode;
+  /** Bölme açık mı? Durum ÇAĞIRANDA: aynı anda tek satır açılmalı. */
+  expanded?: boolean;
+  /**
+   * Bölmeyi aç/kapat. Verilmezse açma düğmesi hiç çizilmez —
+   * `panel` olmayan satırda basılacak bir şey olmamalı.
+   */
+  onExpand?: () => void;
   /**
    * Başlığın SOLUNDA duran küçük işaret (ör. kategori renk noktası).
    *
@@ -67,16 +64,6 @@ interface TaskItemProps {
    * okunur (bkz. CategoryDot).
    */
   marker?: ReactNode;
-  /**
-   * Dar sütun düzeni: eylem simgeleri başlığın YANINDA değil ALTINDA.
-   *
-   * Haftalık/plan ızgarasında sütun ~140px'e iner. Simgeler satırda
-   * kalırsa (kutucuk 40px + üç simge 96px + boşluklar) başlığa sıfır
-   * genişlik kalır ve görev ADSIZ görünür — `min-w-0` ile `truncate`
-   * metni sessizce tamamen kırpar. Simgeleri alta almak başlığa tüm
-   * satırı bırakır.
-   */
-  compact?: boolean;
 }
 
 export const TaskItem = memo(function TaskItem({
@@ -85,17 +72,14 @@ export const TaskItem = memo(function TaskItem({
   onToggle,
   onDelete,
   onDefer,
-  onSetTime,
   onRename,
-  hideTime = false,
-  dayPicker,
   extra,
+  panel,
+  expanded = false,
+  onExpand,
   marker,
-  compact = false,
 }: TaskItemProps) {
   const overdue = isOverdue(task, today);
-  const [editingTime, setEditingTime] = useState(false);
-  const [movingDay, setMovingDay] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
 
   /*
@@ -126,33 +110,13 @@ export const TaskItem = memo(function TaskItem({
     <li
       aria-busy={pending || undefined}
       className={cn(
-        "rowEnter revealOnHover flex rounded-xl border py-2.5",
+        "rowEnter revealOnHover flex rounded-xl border px-3 py-2.5",
         pending && "opacity-60",
-        // Dar sütunda yatay dolgu kısalır: 24px sadece kenar boşluğuna
-        // gidiyordu ve başlık o genişliğe muhtaç.
-        compact ? "px-2" : "px-3",
-        /*
-         * Dar sütunda satır SARAR ve sıra değişir: başlık en üstte tek
-         * başına, kutucuk ile simgeler altındaki satırda yan yana.
-         *
-         * Yan yana dizilimde (kutucuk 40px + üç simge 96px) başlığa
-         * sıfır genişlik kalıyor, `truncate` de metni tamamen kırpıyordu
-         * — görev ADSIZ görünürdü. Kutucuğu da alta almak, başlığa
-         * sütunun tamamını bırakır; 64px'lik bir şeride sıkışan metin
-         * "Matemat / ik" diye kelime ortasından bölünüyordu.
-         */
-        /*
-         * `gap-x-0`: kutucuk ile simge grubunu `justify-between` zaten
-         * iki uca yaslıyor. Ek bir sütun boşluğu 112px'lik iç alanda
-         * gereken 118px'i aşırıp simgeleri üçüncü satıra itiyordu.
-         */
-        compact
-          ? "flex-wrap items-center justify-between gap-x-0 gap-y-1.5"
-          : // `items-start`, `items-center` DEĞİL: başlık artık iki
-            // satıra sarabiliyor ve ortalama, kutucuğu ile simgeleri
-            // metnin ortasında asılı bırakırdı. Tepeden hizalanınca
-            // kutucuk her zaman ilk satırın hizasında durur.
-            "items-start gap-3",
+        // `items-start`, `items-center` DEĞİL: başlık iki satıra
+        // sarabiliyor ve ortalama, kutucuğu ile simgeleri metnin
+        // ortasında asılı bırakırdı. Tepeden hizalanınca kutucuk her
+        // zaman ilk satırın hizasında durur.
+        "items-start gap-3",
         "transition-colors duration-[var(--duration-base)] ease-[var(--ease-out-quart)]",
         task.done
           ? "border-transparent bg-[var(--color-surface-2)]"
@@ -166,19 +130,12 @@ export const TaskItem = memo(function TaskItem({
         aria-pressed={task.done}
         aria-label={task.done ? `${task.title}: geri al` : `${task.title}: tamamla`}
         className={cn(
-          "grid shrink-0 place-items-center rounded-lg",
+          "grid size-10 shrink-0 place-items-center rounded-lg",
           "transition-transform duration-[var(--duration-fast)] ease-[var(--ease-out-expo)] active:scale-[0.97]",
-          /*
-           * Dar sütunda kutucuk küçülür ama dokunma hedefi küçülmez:
-           * `before` sözde elemanı görünmez alanı 44px'e tamamlar.
-           * 40px'lik kutu 140px'lik sütunda başlığa yer bırakmıyordu.
-           */
-          compact
-            ? "relative order-2 size-7 before:absolute before:-inset-2 before:content-['']"
-            : // `-mt-0.5`: satır artık tepeden hizalı (başlık sarabiliyor)
-              // ve 40px'lik kutucuk ilk metin satırından bir tık yüksek
-              // duruyordu.
-              "size-10 -mt-0.5",
+          // `-mt-0.5`: satır tepeden hizalı (başlık sarabiliyor) ve
+          // 40px'lik kutucuk ilk metin satırından bir tık yüksek
+          // duruyordu.
+          "-mt-0.5",
         )}
       >
         <span
@@ -207,8 +164,7 @@ export const TaskItem = memo(function TaskItem({
         </span>
       </button>
 
-      {/* compact: başlık tek başına üst satırda, sütunun tam genişliği. */}
-      <div className={cn("min-w-0 flex-1", compact && "order-1 w-full flex-none")}>
+      <div className="min-w-0 flex-1">
         <div
           className={cn(
             "flex gap-2 text-[length:var(--text-base)]",
@@ -234,11 +190,6 @@ export const TaskItem = memo(function TaskItem({
             </span>
           )}
 
-          {!hideTime && task.startTime && (
-            <span className="tabular shrink-0 text-[var(--color-ink-3)]">
-              {task.startTime}
-            </span>
-          )}
           {editingTitle && onRename ? (
             <TitleEditor
               task={task}
@@ -261,11 +212,12 @@ export const TaskItem = memo(function TaskItem({
                  * söylemez; kullanıcı adı okuyamadığı bir işi
                  * planlayamaz. İki satır, yarım kelimeden iyidir.
                  *
-                 * Eskiden bu davranış `compact`'a bağlıydı ve yalnızca
-                 * dar sütunlarda açılıyordu — ama kırpma GENİŞ satırda
-                 * da yanlış: uzun bir ad orada da sığmıyor, sadece
-                 * daha geç kırpılıyor. Bayrak, doğru davranışı
-                 * isteğe bağlı kılıyordu.
+                 * Bir zamanlar bu davranış `compact` bayrağına bağlıydı
+                 * ve yalnızca dar sütunlarda açılıyordu — ama kırpma
+                 * GENİŞ satırda da yanlış: uzun bir ad orada da
+                 * sığmıyor, sadece daha geç kırpılıyor. Bayrak doğru
+                 * davranışı isteğe bağlı kılıyordu; kendisi de artık
+                 * yok (son çağıranı Takvim'in hafta sütunuydu).
                  *
                  * `wrap-anywhere` DEĞİL `break-words`: ilki kelimeyi
                  * ortadan böler ("Matemat / ik testi"), ikincisi önce
@@ -281,24 +233,14 @@ export const TaskItem = memo(function TaskItem({
             // Yeniden adlandırılamayan başlık — sarma kuralı aynı.
             <span className="min-w-0 flex-1 break-words">{task.title}</span>
           )}
-          {!hideTime && task.durationMinutes && (
-            <span className="shrink-0 text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
-              {formatDuration(task.durationMinutes)}
-            </span>
-          )}
         </div>
 
-        {editingTime && onSetTime && (
-          <TimeEditor
-            task={task}
-            onClose={() => setEditingTime(false)}
-            onSet={onSetTime}
-          />
-        )}
-
-        {movingDay && dayPicker}
-
         {extra}
+
+        {/* Açılır bölme satırın altında, İÇERİDE: `<li>`nin dışına
+            taşsaydı kenarlığın dışında asılı kalır ve hangi göreve
+            ait olduğu kaybolurdu. */}
+        {expanded && panel && <div className="mt-2">{panel}</div>}
 
         {overdue && task.dueDate && (
           <div className="mt-0.5 text-[length:var(--text-xs)] text-[var(--color-warn)]">
@@ -315,47 +257,33 @@ export const TaskItem = memo(function TaskItem({
 
       <div
         className={cn(
-          "revealTarget flex shrink-0 gap-0.5 opacity-0 transition-opacity duration-[var(--duration-fast)]",
-          /*
-           * Kutucukla AYNI satırda, onun sağında.
-           *
-           * `ml-auto` DEĞİL: otomatik kenar boşluğu sarma hesabında
-           * kalan alanı doldurur ve simgeleri üçüncü bir satıra iterdi.
-           * Boşluğu kutucuğun `flex-1`'i üstlenir.
-           */
-          compact && "order-3",
+          "revealTarget flex shrink-0 gap-0.5 transition-opacity duration-[var(--duration-fast)]",
+          /* Bölme açıkken simgeler GÖRÜNÜR kalır: kullanıcı fareyi
+             panele indirdiğinde satırdan çıkmış sayılır ve kapatma
+             düğmesi altından kaybolurdu. */
+          expanded ? "opacity-100" : "opacity-0",
         )}
       >
-        {onSetTime && !task.done && !pending && (
+        {panel && onExpand && !pending && (
           <IconButton
-            label={`${task.title}: saat ayarla`}
-            compact={compact}
-            onClick={() => setEditingTime((open) => !open)}
+            label={`${task.title}: hedef ve ayarlar`}
+            pressed={expanded}
+            onClick={onExpand}
           >
+            {/* Nişan tahtası: "bu iş neye hizmet ediyor" sorusunun
+                simgesi. Saat simgesinin yerini aldı — satırdaki eylem
+                sayısı değişmedi, anlamı değişti. */}
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
               <circle cx="8" cy="8" r="5.75" stroke="currentColor" strokeWidth="1.3" />
-              <path
-                d="M8 4.75V8l2.25 1.5"
-                stroke="currentColor"
-                strokeWidth="1.3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+              <circle cx="8" cy="8" r="2.25" stroke="currentColor" strokeWidth="1.3" />
             </svg>
           </IconButton>
         )}
 
-        {(onDefer || dayPicker) && !task.done && !pending && (
+        {onDefer && !task.done && !pending && (
           <IconButton
-            label={
-              dayPicker
-                ? `${task.title}: başka güne taşı`
-                : `${task.title}: yarına ertele`
-            }
-            compact={compact}
-            onClick={
-              dayPicker ? () => setMovingDay((open) => !open) : () => onDefer?.()
-            }
+            label={`${task.title}: yarına ertele`}
+            onClick={onDefer}
           >
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
               <path
@@ -373,7 +301,6 @@ export const TaskItem = memo(function TaskItem({
         {!pending && (
           <IconButton
             label={`${task.title}: sil`}
-            compact={compact}
             onClick={onDelete}
           >
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -472,105 +399,35 @@ function TitleEditor({
   );
 }
 
-/**
- * Saat ve süre ayarlama paneli.
- *
- * Görev eklerken DEĞİL, sonradan açılır: tek satırlık hızlı ekleme
- * "görev eklemek tek cümle yazmaktır" ilkesini korumalı. Saat, planı
- * kuran ikinci bir hareket olarak verilir.
- *
- * Süre ön ayarlardan seçilir; serbest dakika girişi bu ekranda
- * kimsenin ihtiyaç duymadığı bir hassasiyet olurdu.
- */
-function TimeEditor({
-  task,
-  onClose,
-  onSet,
-}: {
-  task: Task;
-  onClose: () => void;
-  onSet: (startTime: string | null, durationMinutes: number | null) => void;
-}) {
-  return (
-    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-      <input
-        type="time"
-        value={task.startTime ?? ""}
-        aria-label="Başlangıç saati"
-        onChange={(e) => onSet(e.target.value || null, task.durationMinutes)}
-        className="tabular h-8 rounded-md border border-[var(--color-line-2)] bg-[var(--color-surface-2)] px-2 text-[length:var(--text-sm)] outline-none focus:border-[var(--color-line-3)]"
-      />
-
-      {task.startTime &&
-        DURATION_PRESETS.map((minutes) => (
-          <button
-            key={minutes}
-            type="button"
-            aria-pressed={task.durationMinutes === minutes}
-            onClick={() =>
-              onSet(
-                task.startTime,
-                task.durationMinutes === minutes ? null : minutes,
-              )
-            }
-            className={cn(
-              "h-8 rounded-md px-2 text-[length:var(--text-xs)]",
-              "transition-colors duration-[var(--duration-fast)]",
-              task.durationMinutes === minutes
-                ? "bg-[color-mix(in_oklch,var(--color-accent)_18%,transparent)] text-[var(--color-ink)]"
-                : "bg-[var(--color-surface-2)] text-[var(--color-ink-3)] hover:text-[var(--color-ink-2)]",
-            )}
-          >
-            {formatDuration(minutes)}
-          </button>
-        ))}
-
-      {task.startTime && (
-        <button
-          type="button"
-          onClick={() => {
-            onSet(null, null);
-            onClose();
-          }}
-          className="h-8 rounded-md px-2 text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-danger)]"
-        >
-          Saati kaldır
-        </button>
-      )}
-    </div>
-  );
-}
-
 function IconButton({
   label,
   onClick,
-  compact = false,
+  pressed,
   children,
 }: {
   label: string;
   onClick: () => void;
-  /** Dar sütun: simge kutusu küçülür, dokunma hedefi korunur. */
-  compact?: boolean;
+  /**
+   * Aç/kapa düğmesi için basılı durum. Verilmezse `aria-pressed` hiç
+   * yazılmaz — tek seferlik eylemlerde (sil, ertele) o nitelik ekran
+   * okuyucuya olmayan bir durumu duyururdu.
+   */
+  pressed?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
       aria-label={label}
+      aria-pressed={pressed}
       onClick={onClick}
       className={cn(
-        "grid place-items-center rounded-md text-[var(--color-ink-3)]",
+        "grid size-8 place-items-center rounded-md",
         "transition-colors duration-[var(--duration-fast)]",
         "hover:bg-[var(--color-surface-3)] hover:text-[var(--color-ink-2)]",
-        /*
-         * 136px'lik iç alana kutucuk (28) + üç simge (3×32) + boşluklar
-         * sığmıyordu ve simgeler üçüncü bir satıra sarıyordu. 26px'e
-         * inince toplam ~110px olur; `before` görünmez alanı 44px'lik
-         * dokunma hedefine tamamlar.
-         */
-        compact
-          ? "relative size-[26px] before:absolute before:-inset-2 before:content-['']"
-          : "size-8",
+        pressed
+          ? "bg-[var(--color-surface-3)] text-[var(--color-ink-2)]"
+          : "text-[var(--color-ink-3)]",
       )}
     >
       {children}

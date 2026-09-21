@@ -7,7 +7,6 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/Button";
 import { Toast, useToast } from "@/components/Toast";
 import { formatPercent } from "@/lib/ui/tr";
-import { formatDuration } from "@/features/tasks/schedule";
 import { useTasks } from "@/features/tasks/queries";
 import { SectionHeading } from "@/features/sections/SectionHeading";
 import { CategoryBreakdown } from "./CategoryBreakdown";
@@ -108,15 +107,6 @@ export function SummaryScreen() {
                 <StatTile
                   label="Boş gün"
                   value={String(rollup.emptyDays)}
-                />
-                <StatTile
-                  label="Planlanan süre"
-                  value={
-                    rollup.totalMinutes > 0
-                      ? formatDuration(rollup.totalMinutes)
-                      : "—"
-                  }
-                  hint={rollup.totalMinutes > 0 ? "saatli işler" : undefined}
                 />
               </div>
             </section>

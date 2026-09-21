@@ -64,13 +64,12 @@ const CREATE_KEY = ["createTask"] as const;
  * Yeni görev oluşturur — optimistic.
  *
  * ── Neden optimistic? ──
- * Düz listede beklemek tolere edilebilirdi: satır en sona düşer ve
- * kullanıcı zaten oraya bakmıyordur. Zaman ızgarasında değil — 14:30'a
- * tıklayıp başlığı yazan kullanıcı, tam da baktığı yerde bir ağ turu
- * boyunca HİÇBİR ŞEY görmez. Bu, sürüklemenin akıcılığıyla tezat
- * oluşturur ve tıklamanın kaydedilmediği izlenimi verir.
+ * Hızlı ekleme kutusu ART ARDA yazmak için var: kullanıcı bir cümle
+ * yazıp Enter'a basar ve hemen ikinciyi yazmaya başlar. Satır bir ağ
+ * turu boyunca görünmezse, yazdığının kaydedilip kaydedilmediği
+ * belirsiz kalır ve aynı görev iki kez girilir.
  *
- * Geçici satır `tmp-` önekli bir kimlik taşır (bkz. daygrid/drop.ts).
+ * Geçici satır `tmp-` önekli bir kimlik taşır (bkz. `pending.ts`).
  * O kimliğe yapılacak her yazma var olmayan bir satıra gideceği için
  * arayüz geçici görevleri etkileşime kapatır; `isPendingTask` bu
  * sözleşmenin tek kaynağıdır.
@@ -89,10 +88,6 @@ export function useCreateTask(onError?: (message: string) => void) {
           title: draft.title.trim(),
           due_date: draft.dueDate,
           note: draft.note,
-          start_time: draft.startTime ?? null,
-          // `useSetTaskTime` ile aynı kural: saatsiz süreye izin yok.
-          // Kısıtı istemcide zorlamak, sunucudan hata almaya yeğdir.
-          duration_minutes: draft.startTime ? (draft.durationMinutes ?? null) : null,
         })
         .select()
         .single();
@@ -111,11 +106,17 @@ export function useCreateTask(onError?: (message: string) => void) {
         dueDate: draft.dueDate,
         done: false,
         note: draft.note,
-        // Sunucu `sort_order` varsayılanını kendi verir; burada 0
-        // yeterli, çünkü sıralama zaten saate göre yapılıyor.
+        /*
+         * Sunucu `sort_order` varsayılanını kendi verir; burada 0
+         * yeterli. `orderForDay` eşitlikte `id`'ye düşüyor ve geçici
+         * satırın `tmp-` kimliği listenin başına oturuyor — görev bir
+         * an için yukarıda görünüp sunucu cevabıyla yerine kayabilir.
+         * Kabul edilen bir kusur: alternatifi, sunucunun vereceği
+         * sırayı istemcide tahmin etmeye çalışmaktı.
+         */
         sortOrder: 0,
-        startTime: draft.startTime ?? null,
-        durationMinutes: draft.startTime ? (draft.durationMinutes ?? null) : null,
+        startTime: null,
+        durationMinutes: null,
         categoryId: null,
         goalId: null,
         // Yeni görev rengini KATEGORİDEN devralır ve kategorisi de yok:
@@ -253,7 +254,7 @@ export function useRenameTask(onError?: (message: string) => void) {
  * `null` bir SİLME emridir ve meşrudur: notu boşaltmak kullanıcının
  * yapabileceği bir harekettir. Bu yüzden `null` "yok say" anlamına
  * gelmez — o ayrım çağrı yerinde, `shouldPersistNote`'ta çözülür
- * (taskpopover/note.ts).
+ * (`tasks/note.ts`).
  */
 export function useSetTaskNote(onError?: (message: string) => void) {
   const qc = useQueryClient();
@@ -356,148 +357,6 @@ export function useRescheduleTask(onError?: (message: string) => void) {
     },
 
     onSettled: () => qc.invalidateQueries({ queryKey: qk.tasks() }),
-  });
-}
-
-/**
- * Görevin saatini ve süresini ayarlar — optimistic.
- *
- * `startTime` null verilirse süre de temizlenir: veritabanı kısıtı
- * saatsiz süreye izin vermez ("45 dakika ama ne zaman?" bir plan
- * değildir) ve bunu istemcide zorlamak, sunucudan kısıt hatası almaya
- * yeğdir.
- */
-export function useSetTaskTime(onError?: (message: string) => void) {
-  const qc = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      id,
-      startTime,
-      durationMinutes,
-    }: {
-      id: string;
-      startTime: string | null;
-      durationMinutes: number | null;
-    }) => {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("tasks")
-        .update({
-          start_time: startTime,
-          duration_minutes: startTime ? durationMinutes : null,
-        })
-        .eq("id", id);
-      if (error) throw error;
-    },
-
-    onMutate: async ({ id, startTime, durationMinutes }) => {
-      await qc.cancelQueries({ queryKey: qk.tasks() });
-      const previous = qc.getQueryData<Task[]>(qk.tasks());
-      qc.setQueryData<Task[]>(qk.tasks(), (tasks) =>
-        tasks?.map((t) =>
-          t.id === id
-            ? {
-                ...t,
-                startTime,
-                durationMinutes: startTime ? durationMinutes : null,
-              }
-            : t,
-        ),
-      );
-      return { previous };
-    },
-
-    onError: (error, _vars, context) => {
-      qc.setQueryData(qk.tasks(), context?.previous);
-      onError?.(errorText(error));
-    },
-
-    onSettled: () => qc.invalidateQueries({ queryKey: qk.tasks() }),
-  });
-}
-
-const MOVE_KEY = ["moveTask"] as const;
-
-/**
- * Görevi tek işlemde başka güne VE saate taşır — optimistic.
- *
- * ── Neden `useRescheduleTask` + `useSetTaskTime` DEĞİL? ──
- * Bir bırakma TEK kullanıcı hareketidir; iki mutasyon iki `onSettled`
- * ve iki `invalidateQueries` demektir. Biri diğeri uçarken dönerse
- * önbellek yarı-eski bir satırla ezilir ve blok bir kare eski yerine
- * zıplar. Daha kötüsü kısmi başarıdır: gün yazılıp saat yazılamazsa
- * görev doğru güne ama YANLIŞ saate yerleşir ve `onError`'daki geri
- * alma diğer mutasyonun yamasını da siler. Tek `update` her iki sütunu
- * atomik yazar.
- *
- * `useRescheduleTask` ve `useSetTaskTime` yerinde DURUYOR: "yarına
- * ertele" saatle ilgilenmez, "saati kaldır" günle. Dar mutasyon
- * yalnızca dokunduğu alanı riske atar (bkz. useRenameTask gerekçesi).
- */
-export function useMoveTask(onError?: (message: string) => void) {
-  const qc = useQueryClient();
-
-  return useMutation({
-    mutationKey: MOVE_KEY,
-
-    mutationFn: async ({
-      id,
-      dueDate,
-      startTime,
-      durationMinutes,
-    }: {
-      id: string;
-      dueDate: DateStr;
-      startTime: string | null;
-      durationMinutes: number | null;
-    }) => {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("tasks")
-        .update({
-          due_date: dueDate,
-          start_time: startTime,
-          duration_minutes: startTime ? durationMinutes : null,
-        })
-        .eq("id", id);
-      if (error) throw error;
-    },
-
-    onMutate: async ({ id, dueDate, startTime, durationMinutes }) => {
-      await qc.cancelQueries({ queryKey: qk.tasks() });
-      const previous = qc.getQueryData<Task[]>(qk.tasks());
-
-      qc.setQueryData<Task[]>(qk.tasks(), (tasks) =>
-        tasks?.map((t) =>
-          t.id === id
-            ? {
-                ...t,
-                dueDate,
-                startTime,
-                durationMinutes: startTime ? durationMinutes : null,
-              }
-            : t,
-        ),
-      );
-
-      return { previous };
-    },
-
-    onError: (error, _vars, context) => {
-      qc.setQueryData(qk.tasks(), context?.previous);
-      onError?.(errorText(error));
-    },
-
-    /*
-     * Hızlı ardışık sürüklemelerde her bırakma ayrı bir refetch
-     * tetiklemesin — `useToggleTask`'taki disiplinin aynısı.
-     */
-    onSettled: () => {
-      if (qc.isMutating({ mutationKey: MOVE_KEY }) === 1) {
-        qc.invalidateQueries({ queryKey: qk.tasks() });
-      }
-    },
   });
 }
 

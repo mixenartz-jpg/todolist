@@ -1,7 +1,6 @@
 "use client";
 
 import { slotVar } from "@/lib/ui/colors";
-import { formatDuration } from "@/features/tasks/schedule";
 import { formatPercent } from "@/lib/ui/tr";
 import type { CategorySlice } from "./rollup";
 
@@ -70,14 +69,6 @@ export function CategoryBreakdown({
                 }}
               />
             </div>
-
-            {/* Süre yalnızca saatli işlerden gelir; sıfırsa hiç
-                yazılmaz — "0 dk" bir bilgi değil, gürültü. */}
-            {slice.minutes > 0 && (
-              <p className="mt-0.5 text-[length:var(--text-2xs)] text-[var(--color-ink-3)]">
-                {formatDuration(slice.minutes)} planlandı
-              </p>
-            )}
           </li>
         );
       })}

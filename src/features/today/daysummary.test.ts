@@ -91,48 +91,6 @@ describe("buildDayClose — görevler", () => {
   });
 });
 
-describe("buildDayClose — dakika", () => {
-  it("yalnızca TAMAMLANMIŞ ve SAATLİ görevlerin süresini toplar", () => {
-    const close = buildDayClose({
-      entries: noEntries,
-      routines: [],
-      tasks: [
-        task({
-          id: "t1",
-          dueDate: TODAY,
-          done: true,
-          startTime: "09:00",
-          durationMinutes: 60,
-        }),
-        // Tamamlanmamış: planlanmış ama yapılmamış zaman sayılmaz.
-        task({
-          id: "t2",
-          dueDate: TODAY,
-          done: false,
-          startTime: "11:00",
-          durationMinutes: 30,
-        }),
-        // Saatsiz: süresi yok.
-        task({ id: "t3", dueDate: TODAY, done: true }),
-      ],
-      today: TODAY,
-    });
-
-    expect(close.minutes).toBe(60);
-  });
-
-  it("saatli görev yoksa sıfırdır", () => {
-    const close = buildDayClose({
-      entries: noEntries,
-      routines: [],
-      tasks: [task({ id: "t1", dueDate: TODAY, done: true })],
-      today: TODAY,
-    });
-
-    expect(close.minutes).toBe(0);
-  });
-});
-
 describe("buildDayClose — hiç iş yokken", () => {
   it("her alanı sıfır döner", () => {
     const close = buildDayClose({
@@ -145,7 +103,6 @@ describe("buildDayClose — hiç iş yokken", () => {
     expect(close).toEqual({
       routines: { done: 0, total: 0 },
       tasks: { done: 0, total: 0 },
-      minutes: 0,
     });
   });
 });

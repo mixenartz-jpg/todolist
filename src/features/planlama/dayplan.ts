@@ -14,7 +14,7 @@
  */
 
 import type { DateStr } from "@/lib/date/types";
-import { splitDaySchedule } from "@/features/tasks/schedule";
+import { orderForDay } from "@/features/tasks/dayorder";
 import type { Task } from "@/features/tasks/types";
 import type { PlanBucket } from "./range";
 
@@ -30,12 +30,10 @@ export interface DayPlanView {
   date: DateStr;
   /** Serbest metin plan (day_notes.plan). Boşsa null. */
   plan: string | null;
-  /** Saatliler saate göre, sonra saatsizler. */
+  /** Günün sırasıyla — bkz. orderForDay. */
   ordered: Task[];
   total: number;
   done: number;
-  /** Saati OLAN işlerin toplam süresi, dakika. */
-  minutes: number;
   summary: DaySummary;
 }
 
@@ -54,8 +52,8 @@ export function hasPlanText(plan: string | null): boolean {
 /**
  * Gün panelini kurar.
  *
- * Sıralama `splitDaySchedule` ile — Bugün ekranı, hafta ızgarası ve bu
- * panel AYNI kuralı paylaşır. Ayrı bir sıralama yazmak, aynı günün üç
+ * Sıralama `orderForDay` ile — Bugün ekranı, plan listesi ve bu panel
+ * AYNI kuralı paylaşır. Ayrı bir sıralama yazmak, aynı günün üç
  * ekranda farklı sırada görünmesi demek olurdu.
  */
 export function buildDayPlan(
@@ -63,24 +61,12 @@ export function buildDayPlan(
   date: DateStr,
   plan: string | null,
 ): DayPlanView {
-  const { timed, untimed } = splitDaySchedule(tasks);
-  const ordered = [...timed, ...untimed];
+  const ordered = orderForDay(tasks);
 
   let done = 0;
-  let minutes = 0;
 
   for (const task of ordered) {
     if (task.done) done += 1;
-
-    /*
-     * Süre yalnızca SAATİ OLAN işlerden toplanır. Veritabanı kısıtı
-     * zaten saatsiz süreye izin vermiyor (0006: "45 dakika ama ne
-     * zaman?" bir plan değildir), ama burada da kontrol edilir ki
-     * bozuk bir satır toplamı sessizce şişirmesin.
-     */
-    if (task.startTime !== null && task.durationMinutes !== null) {
-      minutes += task.durationMinutes;
-    }
   }
 
   const normalizedPlan = hasPlanText(plan) ? plan : null;
@@ -91,7 +77,6 @@ export function buildDayPlan(
     ordered,
     total: ordered.length,
     done,
-    minutes,
     summary: {
       openCount: ordered.length - done,
       doneCount: done,

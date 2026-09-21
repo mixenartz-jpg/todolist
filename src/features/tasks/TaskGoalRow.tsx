@@ -3,7 +3,7 @@
 import { startOfMonth, todayStr } from "@/lib/date/date";
 import { GoalPicker } from "@/features/planlama/GoalPicker";
 import { usePlanGoals } from "@/features/planlama/queries";
-import type { Task } from "@/features/tasks/types";
+import type { Task } from "./types";
 
 /**
  * Görevin bağlı olduğu aylık hedef.

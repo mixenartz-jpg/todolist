@@ -15,10 +15,14 @@
  * bırakmak özeti yalancı yapardı: ekranda "0 bekleyen tekrar" yazan bir
  * satır, tekrar sisteminin çalıştığını ve boş olduğunu iddia eder.
  *
- * ── `minutes` ne ölçüyor? ──
- * Tamamlanmış ve SAATİ OLAN görevlerin planlanan süresi. "Gerçekten
- * harcanan zaman" DEĞİL — onu ölçmek `completed_at` ister ve o sütun
- * yok. Arayüzde de "planlanan" diye adlandırılmalı.
+ * ── `minutes` alanı neden GİTTİ? ──
+ * Saat sütunları (`start_time`, `duration_minutes`) kaldırıldı; alan
+ * tamamlanmış SAATLİ görevlerin planlanan süresini topluyordu ve artık
+ * hiçbir görevin saati yok. `reviews` ile aynı gerekçe: hep 0 döndüren
+ * bir alan, ölçtüğünü iddia ettiği şeyin var olduğunu söyler.
+ *
+ * Harcanan zamanı ölçmek ayrı bir iştir ve `completed_at` ister — o
+ * sütun bilerek yok (bkz. mimari kararları).
  */
 
 import type { DateStr } from "@/lib/date/types";
@@ -34,8 +38,6 @@ export interface DayClose {
   routines: { done: number; total: number };
   /** Bugünün ekranında duran görevler — taşananlar DAHİL. */
   tasks: { done: number; total: number };
-  /** Tamamlanmış saatli görevlerin PLANLANAN toplam süresi, dakika. */
-  minutes: number;
 }
 
 /*
@@ -86,19 +88,13 @@ export function buildDayClose({
   const dayTasks = tasksForDay(tasks, today);
 
   let tasksDone = 0;
-  let minutes = 0;
 
   for (const t of dayTasks) {
-    if (!t.done) continue;
-    tasksDone += 1;
-    if (t.startTime !== null && t.durationMinutes !== null) {
-      minutes += t.durationMinutes;
-    }
+    if (t.done) tasksDone += 1;
   }
 
   return {
     routines: { done: routinesDone, total: routinesTotal },
     tasks: { done: tasksDone, total: dayTasks.length },
-    minutes,
   };
 }
