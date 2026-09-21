@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { DayClose } from "@/features/today/daysummary";
 import type { StreakResult } from "@/features/stats/streak";
+import type { GoalPace } from "@/features/planlama/pace";
 import {
   atRiskLine,
   dayLine,
+  idleGoalLine,
+  paceLine,
   streakLine,
   trendLine,
   weakDayLine,
@@ -197,5 +200,70 @@ describe("weakDayLine", () => {
 
   it("tek ölçülmüş gün varsa karşılaştırma yapmaz", () => {
     expect(weakDayLine([day(1, 0.3, 9)], NAMES)).toBeNull();
+  });
+});
+
+describe("paceLine", () => {
+  function pace(over: Partial<GoalPace>): GoalPace {
+    return {
+      verdict: "onTrack",
+      expected: 0.5,
+      actual: 0.5,
+      perDayNeeded: null,
+      ...over,
+    };
+  }
+
+  it("öndeyken kutlar, eylem vermez", () => {
+    const line = paceLine(pace({ verdict: "ahead", actual: 0.8 }), "Üçgenler");
+
+    expect(line!.tone).toBe("good");
+    expect(line!.headline).toContain("Üçgenler");
+    expect(line!.action).toBeNull();
+  });
+
+  it("gerideyken suçlamadan söyler ve günlük hedef verir", () => {
+    const line = paceLine(
+      pace({ verdict: "behind", actual: 0.2, perDayNeeded: 4 }),
+      "Üçgenler",
+    );
+
+    expect(line!.tone).toBe("warn");
+    expect(line!.detail).toContain("günde 4");
+    expect(line!.action).not.toBeNull();
+  });
+
+  /*
+   * Ölçmediğimiz bir hedef hakkında konuşmak uydurmaktır;
+   * `goalProgress`'in `none` modunun arayüzdeki karşılığı susmaktır.
+   */
+  it("ölçülmeyen hedefte null döner", () => {
+    expect(paceLine(pace({ verdict: "noTarget" }), "Üçgenler")).toBeNull();
+  });
+
+  it("yolundayken nötr kalır", () => {
+    const line = paceLine(pace({ verdict: "onTrack" }), "Üçgenler");
+
+    expect(line!.tone).toBe("neutral");
+  });
+});
+
+describe("idleGoalLine", () => {
+  it("uzun boşluğu suçlamadan bildirir", () => {
+    const line = idleGoalLine("Üçgenler", 9);
+
+    expect(line!.tone).toBe("warn");
+    expect(line!.detail).toContain("9 gündür");
+    expect(line!.action).not.toBeNull();
+  });
+
+  /* Üç gün bir ihmal değil, bir hafta sonu. */
+  it("eşiğin altındaki boşluğu ANMAZ", () => {
+    expect(idleGoalLine("Üçgenler", 3)).toBeNull();
+    expect(idleGoalLine("Üçgenler", 6)).toBeNull();
+  });
+
+  it("hiç bağlı görev yoksa null döner", () => {
+    expect(idleGoalLine("Üçgenler", null)).toBeNull();
   });
 });

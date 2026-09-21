@@ -32,6 +32,7 @@ import { formatPercent } from "@/lib/ui/tr";
 import type { DayClose } from "@/features/today/daysummary";
 import type { StreakResult, StreakUnit } from "@/features/stats/streak";
 import type { TrendDelta } from "@/features/stats/trend";
+import type { GoalPace } from "@/features/planlama/pace";
 
 export interface CoachLine {
   /** Büyük satır: sayı ya da kısa gerçek. */
@@ -229,6 +230,78 @@ export function dayLine(close: DayClose): CoachLine {
     detail: `${remaining} iş kaldı.`,
     action: { label: "Bugüne git", href: "/bugun" },
     tone: "neutral",
+  };
+}
+
+/**
+ * Hedef temposu cümlesi.
+ *
+ * `goalProgress` "neredeyim" der, `goalPace` "yetişiyor muyum" der;
+ * bu cümle ikincisini Türkçeye çevirir. `noTarget` durumunda `null`
+ * döner — ölçmediğimiz bir hedef hakkında konuşmak uydurmaktır ve
+ * `goalProgress`'in `none` modunun arayüzdeki karşılığı susmaktır.
+ */
+export function paceLine(pace: GoalPace, goalTitle: string): CoachLine | null {
+  if (pace.verdict === "noTarget") return null;
+
+  /** "günde 4 soru gerekiyor" — yalnızca sayısal hedeflerde var. */
+  const needed =
+    pace.perDayNeeded === null
+      ? null
+      : `Yetişmek için günde ${pace.perDayNeeded}.`;
+
+  if (pace.verdict === "ahead") {
+    return {
+      headline: `${goalTitle} — öndesin`,
+      detail: `${formatPercent(pace.actual)} tamam, bu tarihte beklenen ${formatPercent(pace.expected)}.`,
+      action: null,
+      tone: "good",
+    };
+  }
+
+  if (pace.verdict === "behind") {
+    return {
+      headline: `${goalTitle} — geridesin`,
+      // Suçlama yok: iki sayı ve bir talimat.
+      detail: `${formatPercent(pace.actual)} tamam, bu tarihte beklenen ${formatPercent(pace.expected)}.${needed ? ` ${needed}` : ""}`,
+      action: { label: "Görev ekle", href: "/bugun" },
+      tone: "warn",
+    };
+  }
+
+  return {
+    headline: `${goalTitle} — yolunda`,
+    detail: needed ?? `${formatPercent(pace.actual)} tamam.`,
+    action: null,
+    tone: "neutral",
+  };
+}
+
+/**
+ * Unutulmuş hedef uyarısı.
+ *
+ * Koçun "kötü haberi suçlamadan söyleme" kuralının en saf örneği:
+ * "Üçgenler hedefine 9 gündür hiç görev bağlamadın" bir gerçek,
+ * eyleme dönük ve yargısız. "Bu hedefi ihmal ediyorsun" olmazdı.
+ *
+ * `null` döner: hedefe hiç görev bağlanmamışsa (o zaman "kaç gündür"
+ * sorusunun başlangıcı yok) ya da boşluk eşiğin altındaysa. Üç gün
+ * bir ihmal değil, bir hafta sonu.
+ */
+export function idleGoalLine(
+  goalTitle: string,
+  daysIdle: number | null,
+): CoachLine | null {
+  /** Bir hafta: altındaki boşluk normal bir ritmin parçası olabilir. */
+  const IDLE_THRESHOLD = 7;
+
+  if (daysIdle === null || daysIdle < IDLE_THRESHOLD) return null;
+
+  return {
+    headline: `${goalTitle} bekliyor`,
+    detail: `${daysIdle} gündür bu hedefe hiç görev bağlamadın.`,
+    action: { label: "Görev ekle", href: "/bugun" },
+    tone: "warn",
   };
 }
 

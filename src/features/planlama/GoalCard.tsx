@@ -6,13 +6,26 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { cn } from "@/lib/ui/cn";
 import { slotVar } from "@/lib/ui/colors";
 import { formatPercent } from "@/lib/ui/tr";
+import type { DateStr } from "@/lib/date/types";
+import { idleGoalLine, paceLine } from "@/features/coach/messages";
 import { stepDoneCount } from "./goal";
+import { goalPace } from "./pace";
 import { GoalForm } from "./GoalForm";
 import type { GoalProgress } from "./rollup";
 import type { PlanGoalDraft } from "./types";
 
 interface GoalCardProps {
   progress: GoalProgress;
+  /** Tempo için — `goalPace` bugünü bilmeden "yolunda mı" diyemez. */
+  today: DateStr;
+  /**
+   * Bu hedefe kaç gündür görev bağlanmadı (`daysSinceGoalTask`).
+   *
+   * Prop olarak geliyor, burada HESAPLANMIYOR: kart görev listesine
+   * sahip değil ve ona erişmek için tüm görevleri her karta geçirmek
+   * gerekirdi — ekranda on hedef varsa on kopya.
+   */
+  daysIdle: number | null;
   pending: boolean;
   onUpdate: (draft: PlanGoalDraft) => void;
   onStep: (doneCount: number) => void;
@@ -35,6 +48,8 @@ interface GoalCardProps {
  */
 export function GoalCard({
   progress,
+  today,
+  daysIdle,
   pending,
   onUpdate,
   onStep,
@@ -188,6 +203,18 @@ export function GoalCard({
             </div>
           </>
         )}
+
+        {/*
+          Koçluk satırı: "neredeyim" değil "yetişiyor muyum".
+          Arşivlenmiş hedefte ÇİZİLMEZ — artık takip edilmeyen bir
+          hedefin temposu hakkında konuşmak, kullanıcının bıraktığı
+          bir işi hâlâ ölçüyormuş gibi davranmak olurdu.
+        */}
+        {!archived && <GoalCoachLine
+          progress={progress}
+          today={today}
+          daysIdle={daysIdle}
+        />}
       </div>
 
       {confirmDelete && (
@@ -232,5 +259,41 @@ function StepButton({
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * Hedefin koçluk satırı: tempo ya da unutulmuşluk uyarısı.
+ *
+ * İkisinden YALNIZCA BİRİ çizilir ve uyarı önceliklidir: dokuz gündür
+ * dokunulmamış bir hedefe "yolunda" demek, ölçünün kendisini
+ * gülünçleştirirdi (oran değişmediği için teknik olarak doğru bile
+ * olabilir).
+ */
+function GoalCoachLine({
+  progress,
+  today,
+  daysIdle,
+}: {
+  progress: GoalProgress;
+  today: DateStr;
+  daysIdle: number | null;
+}) {
+  const idle = idleGoalLine(progress.goal.title, daysIdle);
+  const pace = idle ?? paceLine(goalPace(progress, today), progress.goal.title);
+
+  if (pace === null) return null;
+
+  return (
+    <p
+      className={cn(
+        "mt-2 text-[length:var(--text-xs)] leading-relaxed",
+        pace.tone === "warn"
+          ? "text-[var(--color-warn)]"
+          : "text-[var(--color-ink-3)]",
+      )}
+    >
+      {pace.detail ?? pace.headline}
+    </p>
   );
 }

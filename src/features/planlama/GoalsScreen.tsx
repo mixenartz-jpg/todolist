@@ -17,6 +17,7 @@ import {
 } from "./mutations";
 import { PlanlamaHeader } from "./PlanlamaHeader";
 import { usePlanGoals } from "./queries";
+import { daysSinceGoalTask } from "./pace";
 import { goalProgress } from "./rollup";
 import { usePlanlamaSurface } from "./usePlanlamaSurface";
 import { WeekGoalsSection } from "./WeekGoalsSection";
@@ -44,6 +45,11 @@ import "./planlama.css";
  */
 export function GoalsScreen() {
   const toast = useToast();
+  /*
+   * `today` yüzeyden geliyor: ekran geçmiş bir aya bakıyor olabilir
+   * ama "yolunda mıyım" sorusu her zaman BUGÜNE göre cevaplanır —
+   * geçmiş bir ayın hedefinde `goalPace` beklenen oranı 1'e kırpıyor.
+   */
   const { today, anchor, setAnchor } = usePlanlamaSurface();
 
   const goalsQuery = usePlanGoals(anchor);
@@ -132,6 +138,8 @@ export function GoalsScreen() {
                   <GoalCard
                     key={progress.goal.id}
                     progress={progress}
+                    today={today}
+                    daysIdle={daysSinceGoalTask(progress, tasksQuery.data ?? [], today)}
                     pending={updateGoal.isPending}
                     onUpdate={(draft) =>
                       updateGoal.mutate({
