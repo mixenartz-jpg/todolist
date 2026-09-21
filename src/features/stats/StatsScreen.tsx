@@ -5,6 +5,7 @@ import { minDate, todayStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { formatPercent } from "@/lib/ui/tr";
+import Link from "next/link";
 import { Screen, ScreenHeader, ScreenBody } from "@/components/Screen";
 import { EmptyState } from "@/components/EmptyState";
 import { ChartIcon } from "@/components/icons";
@@ -106,7 +107,20 @@ export function StatsScreen() {
 
   return (
     <Screen>
-      <ScreenHeader title="İstatistik" width="3xl" />
+      <ScreenHeader
+        title="İstatistik"
+        width="3xl"
+        /* Arşiv sekme değil (beş sekme sınırı); geriye bakmanın iki
+           kapısından biri burası. Öteki Bugün'ün gün kapanışı. */
+        actions={
+          <Link
+            href="/arsiv"
+            className="rounded-md px-2 py-1 text-[length:var(--text-sm)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-accent)]"
+          >
+            Arşiv
+          </Link>
+        }
+      />
 
       <ScreenBody width="3xl">
         {/* Tek filtre satırı, kapsadığı her şeyin üstünde. Grafik

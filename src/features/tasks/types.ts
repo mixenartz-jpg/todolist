@@ -16,6 +16,19 @@ export interface Task {
   note: string | null;
   sortOrder: number;
   /**
+   * Görevin BİTTİĞİ an, ISO damga.
+   *
+   * null → ya hiç bitmedi ya da 0017 öncesinde bitti. Arşiv bu ikinci
+   * durumda `dueDate`'e düşüyor (bkz. `archive.ts`) — geriye dönük bir
+   * zaman uydurmak yerine elimizdeki en yakın gerçeğe yaslanıyoruz.
+   *
+   * `done` ile ayrı tutuluyor ve birleştirilemez: `done` bir DURUM,
+   * bu bir ZAMAN. İşaretlemeyi geri alan kullanıcıda damga da
+   * siliniyor, yoksa "bitmemiş ama şu an bitmiş" diye çelişkili bir
+   * satır kalırdı.
+   */
+  completedAt: string | null;
+  /**
    * Kategori kimliği. En fazla BİR tane — çoklu etiket değil.
    *
    * null → kategorisiz ve bu birinci sınıf bir durumdur: görevlerin

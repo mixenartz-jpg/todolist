@@ -45,6 +45,7 @@ export function toTask(row: TaskRow): Task {
     done: row.done,
     note: row.note,
     sortOrder: row.sort_order,
+    completedAt: row.completed_at,
     categoryId: row.category_id,
     goalId: row.goal_id,
     colorSlot: row.color_slot,

@@ -49,6 +49,11 @@ export interface TaskRow {
   done: boolean;
   note: string | null;
   sort_order: number;
+  /**
+   * Tamamlanma anı, ISO damga. null → hiç tamamlanmadı YA DA 0017
+   * öncesinde tamamlandı (arşiv o zaman `due_date`'e düşer).
+   */
+  completed_at: string | null;
   /** Kategori FK. En fazla BİR tane — çoklu etiket değil (0008). */
   category_id: string | null;
   /** Aylık hedef FK. En fazla BİR tane. */

@@ -115,6 +115,8 @@ interface TaskOptions {
   done?: boolean;
   note?: string | null;
   sortOrder?: number;
+  /** ISO damga; arşiv testleri için. */
+  completedAt?: string | null;
   categoryId?: string | null;
   goalId?: string | null;
   colorSlot?: number | null;
@@ -139,6 +141,7 @@ export function task(options: TaskOptions = {}): Task {
     done: options.done ?? false,
     note: options.note ?? null,
     sortOrder: options.sortOrder ?? 0,
+    completedAt: options.completedAt ?? null,
     categoryId: options.categoryId ?? null,
     goalId: options.goalId ?? null,
     colorSlot: options.colorSlot ?? null,

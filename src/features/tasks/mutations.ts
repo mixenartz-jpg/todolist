@@ -30,7 +30,19 @@ export function useToggleTask(onError?: (message: string) => void) {
 
     mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
       const supabase = createClient();
-      const { error } = await supabase.from("tasks").update({ done }).eq("id", id);
+      const { error } = await supabase
+        .from("tasks")
+        /*
+         * Damga İŞARETLE BİRLİKTE yazılıyor, ayrı bir yazmayla değil:
+         * iki tur arasında biri başarısız olursa "bitti ama ne zaman
+         * bilinmiyor" ya da tersi bir satır kalırdı.
+         *
+         * Geri alındığında `null`: `done=false` olan bir satırda
+         * damga kalsaydı "bitmemiş ama şu an bitmiş" diye çelişkili
+         * bir kayıt olurdu ve arşiv onu yine de listelerdi.
+         */
+        .update({ done, completed_at: done ? new Date().toISOString() : null })
+        .eq("id", id);
       if (error) throw error;
     },
 
@@ -38,8 +50,16 @@ export function useToggleTask(onError?: (message: string) => void) {
       await qc.cancelQueries({ queryKey: qk.tasks() });
       const previous = qc.getQueryData<Task[]>(qk.tasks());
 
+      /*
+       * İyimser damga İSTEMCİ saatinden. Sunucununkinden birkaç
+       * milisaniye sapabilir ama arşiv GÜN çözünürlüğünde çalışıyor;
+       * fark ancak gece yarısına saniyeler kala anlam taşır ve o
+       * durumda da `onSettled`'ın tazelemesi doğruyu getirir.
+       */
+      const completedAt = done ? new Date().toISOString() : null;
+
       qc.setQueryData<Task[]>(qk.tasks(), (tasks) =>
-        tasks?.map((t) => (t.id === id ? { ...t, done } : t)),
+        tasks?.map((t) => (t.id === id ? { ...t, done, completedAt } : t)),
       );
 
       return { previous };
@@ -115,6 +135,8 @@ export function useCreateTask(onError?: (message: string) => void) {
          * sırayı istemcide tahmin etmeye çalışmaktı.
          */
         sortOrder: 0,
+        // Yeni görev bitmemiş doğar; damga da yok.
+        completedAt: null,
         categoryId: null,
         goalId: null,
         // Yeni görev rengini KATEGORİDEN devralır ve kategorisi de yok:

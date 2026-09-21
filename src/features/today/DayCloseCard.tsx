@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import type { DateStr } from "@/lib/date/types";
 import { DayNoteCard } from "@/features/notes/DayNoteCard";
+import { dayLine } from "@/features/coach/messages";
 import type { DayClose } from "./daysummary";
 
 /**
@@ -29,7 +31,26 @@ export function DayCloseCard({
   return (
     <div className="flex flex-col gap-2.5">
       <DaySummaryLines close={close} />
+
+      {/*
+        Koçluk satırı AYRI bir grup olarak ekleniyor, `DayClose`
+        genişletilerek değil: `daysummary.ts` `score` alanını bilerek
+        dışlıyor ("ikinci kopya = iki bağımsız doğruluk kaynağı") ve
+        cümle de aynı sebeple ayrı bir modülden (`coach/messages.ts`)
+        geliyor. Burası onu yalnızca OKUYOR.
+      */}
+      <CoachNote close={close} />
+
       <DayNoteCard date={date} onError={onError} />
+
+      {/* Arşiv sekme değil, buradan ulaşılıyor: günü kapatan kişi
+          "daha önce ne yaptım"a en yakın olan kişidir. */}
+      <Link
+        href="/arsiv"
+        className="text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-accent)]"
+      >
+        Arşive git
+      </Link>
     </div>
   );
 }
@@ -73,5 +94,25 @@ function DaySummaryLines({ close }: { close: DayClose }) {
         </div>
       ))}
     </dl>
+  );
+}
+
+/**
+ * Günün tek cümlesi.
+ *
+ * Sayılar yukarıda zaten var; bu satır onlara YORUM ekliyor — "3/6"
+ * bir ölçü, "3 iş kaldı" bir sonraki adım. Koçluğun ilk kuralı: sayı
+ * tek başına yetmez.
+ *
+ * Eylem düğmesi ÇİZİLMİYOR: bu blok zaten Bugün ekranının içinde ve
+ * "Bugüne git" düğmesi kullanıcıyı bulunduğu yere göndermek olurdu.
+ */
+function CoachNote({ close }: { close: DayClose }) {
+  const line = dayLine(close);
+
+  return (
+    <p className="text-[length:var(--text-xs)] leading-relaxed text-[var(--color-ink-3)]">
+      {line.detail ?? line.headline}
+    </p>
   );
 }
