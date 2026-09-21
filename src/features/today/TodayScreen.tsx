@@ -565,16 +565,26 @@ function TodayHeader({
               aria-valuemax={100}
               aria-label="Günün tamamlanma oranı"
             >
-              {/* Gün tamamlandığında renk `good`'a geçer. Durum
-                  bildirimi — kutlama değil; yüzde zaten yanında yazıyor
-                  ve renk tek başına bilgi taşımıyor. */}
+              {/*
+                  Gün tamamlandığında renk `good`'a geçer ve çubuk IŞIR.
+
+                  Buradaki eski karar "durum bildirimi — kutlama değil"
+                  idi ve o zaman doğruydu: ürün bir kayıt aracıydı.
+                  Koçluk ürününde günü bitirmek bildirilecek bir durum
+                  değil, kutlanacak bir şeydir. Karar bilerek devrildi.
+
+                  Kutlama yine de KIT ve VERİYE DAYALI: ışıma yalnızca
+                  %100'de çıkar, yüzde zaten yanında yazıyor ve renk tek
+                  başına bilgi taşımıyor. "Harikasın!" yazmıyoruz —
+                  sayıyı gösterip ışıtıyoruz.
+              */}
               <div
                 className={cn(
                   "h-full rounded-full",
-                  "transition-[width,background-color] duration-[var(--duration-base)] ease-[var(--ease-out-quart)]",
+                  "transition-[width,background-color,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-out-quart)]",
                   ratio >= 1
-                    ? "bg-[var(--color-good)]"
-                    : "bg-[var(--color-accent)]",
+                    ? "bg-[var(--color-good)] shadow-[0_0_12px_-2px_oklch(0.72_0.17_148/0.6)]"
+                    : "bg-[var(--color-accent)] shadow-[var(--glow-accent-sm)]",
                 )}
                 style={{ width: `${Math.round(ratio * 100)}%` }}
               />

@@ -113,13 +113,14 @@ function NavRail() {
                 "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-quart)]",
                 // Vurgu mevcut seçimi bildirir — dekorasyon değil.
                 // Yan şerit KULLANILMAZ; ikon aydınlanır ve zemin
-                // mürekkebin kendi tonuna kayar.
+                // vurgunun kendi tonuna kayar.
                 //
-                // %15 → %10: vurgu kobalttan BEYAZA döndü ve aynı oran
-                // artık gözü acıtan bir parlaklık veriyordu. Cam
-                // şeridin üstünde okunması için bu kadarı yeterli.
+                // Zemin oranı %10 → %12: vurgu beyazdan turuncuya
+                // döndü ve turuncunun %10'u koyu yüzeyde beyazınki
+                // kadar okunmuyordu. Metin İNK kalır (turuncu metin
+                // okunabilirliği düşürürdü); rengi ikon taşır.
                 isActive(pathname, item.href)
-                  ? "bg-[color-mix(in_oklch,var(--color-ink)_10%,transparent)] font-medium text-[var(--color-ink)]"
+                  ? "bg-[color-mix(in_oklch,var(--color-accent)_12%,transparent)] font-medium text-[var(--color-ink)]"
                   : "text-[var(--color-ink-2)] hover:bg-[color-mix(in_oklch,var(--color-ink)_5%,transparent)] hover:text-[var(--color-ink)]",
               )}
             >
@@ -184,8 +185,12 @@ function MobileTabBar() {
               "text-[length:var(--text-2xs)]",
               "transition-[color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out-expo)]",
               "active:scale-[0.97]",
+              // Aktif sekme ışır — "buradasın"ın dört meşru
+              // ışıma yerinden biri (bkz. globals.css glow bloğu).
+              // İkon ve etiket turuncuya döner, ışıma ikonun
+              // arkasından gelir.
               active
-                ? "font-medium text-[var(--color-accent)]"
+                ? "font-medium text-[var(--color-accent)] [&>svg]:drop-shadow-[0_0_6px_oklch(0.7_0.19_48/0.55)]"
                 : "text-[var(--color-ink-3)]",
             )}
           >

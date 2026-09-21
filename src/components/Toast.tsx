@@ -5,7 +5,19 @@ import { cn } from "@/lib/ui/cn";
 import "./toast.css";
 import "./glass.css";
 
-export type ToastVariant = "error" | "info";
+/**
+ * Bildirim türü.
+ *
+ * `success` koçluk ürünüyle geldi ve KIT kullanılır: yalnızca gün
+ * %100 bitince, seri rekoru kırılınca ve hedef tamamlanınca. Her
+ * görev işaretlemesinde bildirim çıkarmak gürültüdür — görev
+ * satırının kendi geri bildirimi (üstü çizilme, turuncu işaret)
+ * zaten yeterli.
+ *
+ * `info` hâlâ hiçbir yerden çağrılmıyor; varyant durmakla birlikte
+ * ilk gerçek kullanıcısını bekliyor.
+ */
+export type ToastVariant = "error" | "info" | "success";
 
 interface ToastState {
   text: string;
@@ -63,6 +75,7 @@ export function Toast({
   if (!message) return null;
 
   const isError = variant === "error";
+  const isSuccess = variant === "success";
 
   return (
     <div
@@ -86,16 +99,23 @@ export function Toast({
         // Kenarlık yerine `ring`: Tailwind ring'i gölgeyle aynı
         // `box-shadow` bileşiminde ayrı bir değişkende taşır, ikisi
         // birbirini ezmez. Yan şerit YOK — çevreyi saran ince hat.
-        isError
-          ? "ring-1 ring-[color-mix(in_oklch,var(--color-danger)_38%,transparent)]"
-          : "ring-1 ring-[var(--glass-line-strong)]",
+        isError &&
+          "ring-1 ring-[color-mix(in_oklch,var(--color-danger)_38%,transparent)]",
+        // Başarı ışır — koçluğun üç kutlama anından biri. Işıma
+        // `good`'un kendi hue'sunda: turuncu ışıma "eylem gerekiyor"
+        // der, yeşil "bitti" der.
+        isSuccess &&
+          "ring-1 ring-[color-mix(in_oklch,var(--color-good)_38%,transparent)] shadow-[var(--shadow-overlay),0_0_20px_-4px_oklch(0.72_0.17_148/0.45)]",
+        !isError && !isSuccess && "ring-1 ring-[var(--glass-line-strong)]",
       )}
     >
       <span
         aria-hidden
         className={cn(
           "mt-[0.4rem] size-1.5 shrink-0 rounded-full",
-          isError ? "bg-[var(--color-danger)]" : "bg-[var(--color-accent)]",
+          isError && "bg-[var(--color-danger)]",
+          isSuccess && "bg-[var(--color-good)]",
+          !isError && !isSuccess && "bg-[var(--color-accent)]",
         )}
       />
 

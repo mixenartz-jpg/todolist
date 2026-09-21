@@ -14,9 +14,26 @@ import { SLOT_HEX, SLOT_COUNT, SLOT_NAMES } from "./colors";
  */
 
 /** `globals.css` ile AYNI değerler. Değişirse burası da değişmeli. */
-const SURFACE_L = 0.175; // --color-surface: oklch(0.175 0 0)
+const SURFACE_L = 0.175; // --color-surface: oklch(0.175 0.008 48)
 const BG_L = 0.135; // --color-bg
 const SURFACE_3_L = 0.25; // --color-surface-3
+
+/*
+ * Yüzey rampası artık kroma TAŞIYOR (0.008–0.010, hue 48 — vurgunun
+ * kendi hue'su). Kroma bu kadar düşükken parlanıklığa etkisi
+ * ölçülebilir ama küçüktür; `luminanceFromOklchL` (chroma-0 kestirmesi)
+ * yüzey testleri için hâlâ yeterince doğru ve kontrolleri DAHA SIKI
+ * tarafta tutar.
+ *
+ * Vurgu (kroma 0.19) için bu kestirme geçersiz: tam OKLCH → sRGB
+ * dönüşümü gerekir ve aşağıda `oklchToSrgb` onu yapıyor.
+ */
+
+/** `globals.css` vurgu rampası. */
+const ACCENT = { L: 0.7, C: 0.19, H: 48 };
+const ACCENT_HOVER = { L: 0.755, C: 0.185, H: 48 };
+const ON_ACCENT = { L: 0.145, C: 0.02, H: 48 };
+const WARN = { L: 0.85, C: 0.16, H: 95 };
 
 const INK = { name: "ink", L: 0.965 };
 const INK_2 = { name: "ink-2", L: 0.78 };
@@ -47,6 +64,40 @@ function relativeLuminance(hex: string): number {
  */
 function luminanceFromOklchL(L: number): number {
   return L ** 3;
+}
+
+/**
+ * Tam OKLCH → doğrusal sRGB → bağıl parlaklık.
+ *
+ * `luminanceFromOklchL` yalnızca kroma 0 için doğrudur. Vurgu
+ * rampası 0.19 kroma taşıyor ve orada kestirme kullanmak kontrast
+ * iddiasını UYDURMAK olurdu.
+ */
+function luminanceFromOklch({
+  L,
+  C,
+  H,
+}: {
+  L: number;
+  C: number;
+  H: number;
+}): number {
+  const h = (H * Math.PI) / 180;
+  const a = C * Math.cos(h);
+  const b = C * Math.sin(h);
+
+  // OKLab → LMS (küp kökün tersi)
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+
+  // LMS → doğrusal sRGB
+  const r = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+  const g = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+  const bl = -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s;
+
+  const clamp = (v: number) => Math.min(1, Math.max(0, v));
+  return 0.2126 * clamp(r) + 0.7152 * clamp(g) + 0.0722 * clamp(bl);
 }
 
 /** WCAG kontrast oranı. */
@@ -190,5 +241,69 @@ describe("yüzey rampası", () => {
   test("nötr siyah rampa monoton açılır", () => {
     expect(SURFACE_L).toBeGreaterThan(BG_L);
     expect(SURFACE_3_L).toBeGreaterThan(SURFACE_L);
+  });
+});
+
+/*
+ * VURGU RAMPASI — turuncu.
+ *
+ * Palet monokromdan (accent = ink) turuncuya döndü. Monokromken
+ * kontrast sorusu yoktu: vurgu zaten mürekkebin kendisiydi. Turuncu
+ * kendi parlaklığını getiriyor ve her iddia ölçülmeli.
+ *
+ * `globals.css`'teki yorumlarda yazılı sayılar BURADAN geliyor;
+ * değerler değişirse bu testler kırmızıya döner ve yorumlar da
+ * güncellenmek zorunda kalır.
+ */
+describe("vurgu rampası (turuncu)", () => {
+  const bgLum = luminanceFromOklchL(BG_L);
+  const surfaceLum = luminanceFromOklchL(SURFACE_L);
+
+  test("vurgu zemine karşı en az 3:1 taşır (büyük metin, ikon)", () => {
+    expect(contrast(luminanceFromOklch(ACCENT), bgLum)).toBeGreaterThanOrEqual(
+      3,
+    );
+  });
+
+  test("vurgu yüzeye karşı en az 3:1 taşır", () => {
+    expect(
+      contrast(luminanceFromOklch(ACCENT), surfaceLum),
+    ).toBeGreaterThanOrEqual(3);
+  });
+
+  /*
+   * EN KRİTİK KONTROL. Birincil düğmenin dolgusu vurgu, METNİ
+   * `on-accent`. Bu oran 4.5'in altına düşerse düğme yazısı
+   * okunmaz olur ve bunu hiçbir derleme hatası söylemez.
+   *
+   * Beyaz metin burada YETMEZ: L=0.70 turuncu üstünde beyaz yalnızca
+   * ~2.9:1 verir. `on-accent`'in koyu olmasının sebebi bu.
+   */
+  test("dolgu üstündeki metin (on-accent) en az 4.5:1 taşır", () => {
+    expect(
+      contrast(luminanceFromOklch(ON_ACCENT), luminanceFromOklch(ACCENT)),
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test("hover dolgusunda da metin en az 4.5:1 taşır", () => {
+    expect(
+      contrast(luminanceFromOklch(ON_ACCENT), luminanceFromOklch(ACCENT_HOVER)),
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+
+  /*
+   * `warn` ile `accent` AYRIŞMALI.
+   *
+   * İkisi de sıcak renkler ve eski `warn` (hue 82) turuncu-sarıydı:
+   * vurgu turuncuya dönünce "uyarı" ile "birincil eylem" aynı
+   * sıcaklıkta okunuyordu. Hue farkı bu ayrımın mekanizmasıdır ve
+   * bu test onu dondurur.
+   */
+  test("uyarı rengi vurgudan en az 40 derece hue uzaklıkta durur", () => {
+    expect(Math.abs(WARN.H - ACCENT.H)).toBeGreaterThanOrEqual(40);
+  });
+
+  test("uyarı rengi zemine karşı en az 3:1 taşır", () => {
+    expect(contrast(luminanceFromOklch(WARN), bgLum)).toBeGreaterThanOrEqual(3);
   });
 });

@@ -28,8 +28,19 @@ const VARIANTS: Record<Variant, string> = {
    *
    * Kenarlığı YOK — kenarlık ve gölge aynı elemanda birleşmez.
    */
+  /*
+   * Birincil — ışıyan tek düğme türü.
+   *
+   * `hover`/`active`'de ışıma dokunsal geri bildirimdir: fare üstüne
+   * gelince düğme "canlanır". `disabled` ASLA ışımaz — inaktif bir
+   * öğenin ışıması "tıklanabilir" der ve yalan söyler; devre dışı
+   * hâlde kroma da düşer (`--color-accent-soft`).
+   *
+   * Kenarlık YOK: 1px kenarlık + geniş yumuşak ışıma aynı elemanda
+   * "hayalet kart" görüntüsü verirdi (bkz. globals.css glow bloğu).
+   */
   primary:
-    "bg-[var(--color-accent)] text-[var(--color-on-accent)] shadow-[var(--shadow-raised),var(--sheen-top)] hover:bg-[var(--color-accent-hover)] active:bg-[var(--color-accent-active)] active:shadow-none disabled:bg-[var(--color-accent-soft)] disabled:text-[var(--color-ink-3)] disabled:shadow-none focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus)]",
+    "bg-[var(--color-accent)] text-[var(--color-on-accent)] shadow-[var(--shadow-raised),var(--sheen-top)] hover:bg-[var(--color-accent-hover)] hover:shadow-[var(--shadow-raised),var(--sheen-top),var(--glow-accent-sm)] active:bg-[var(--color-accent-active)] active:shadow-[var(--glow-accent-sm)] disabled:bg-[var(--color-accent-soft)] disabled:text-[var(--color-ink-3)] disabled:shadow-none focus-visible:outline-none focus-visible:shadow-[var(--shadow-focus-glow)]",
   secondary:
     "bg-[var(--color-surface-3)] text-[var(--color-ink)] hover:bg-[var(--color-line)] active:bg-[var(--color-surface-2)] border border-[var(--color-line-2)]",
   ghost:
