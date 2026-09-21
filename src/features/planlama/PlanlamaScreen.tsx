@@ -1,46 +1,58 @@
 "use client";
-import { ScreenBody } from "@/components/Screen";
 
 import { useEffect, useMemo, useState } from "react";
-import { endOfMonth, startOfMonth, toParts } from "@/lib/date/date";
+import {
+  endOfIsoWeek,
+  endOfMonth,
+  startOfMonth,
+  toParts,
+} from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
+import { ScreenBody } from "@/components/Screen";
 import { Toast, useToast } from "@/components/Toast";
-import { monthGrid } from "./monthgrid";
 import { useTasks } from "@/features/tasks/queries";
+import { monthGrid } from "./monthgrid";
 import { buildPlanRange, chunkWeeks } from "./range";
 import { CategoryFilterBar } from "./CategoryFilterBar";
 import { daySummaries } from "./dayplan";
 import { useSetTaskCategory, useSetTaskGoal } from "./mutations";
-import { useMonthPlanDays, usePlanGoals } from "./queries";
+import {
+  useMonthPlanDays,
+  usePlanGoals,
+  useWeekGoalsRange,
+} from "./queries";
 import { PlanBacklog } from "./PlanBacklog";
 import { PlanDaySheet } from "./PlanDaySheet";
+import { PlanGrid } from "./PlanGrid";
 import { PlanlamaHeader } from "./PlanlamaHeader";
-import { PlanMonthGrid } from "./PlanMonthGrid";
 import { PlanOverdue } from "./PlanOverdue";
+import { PlanScaleToggle } from "./PlanScaleToggle";
 import { PlanSkeleton } from "./PlanSkeleton";
 import { usePlanlamaSurface } from "./usePlanlamaSurface";
 import { usePlanCategories } from "./usePlanCategories";
 import { useCollapsedDays } from "./useCollapsedDays";
 import { useCollapsedWeeks } from "./useCollapsedWeeks";
 import { usePlanTaskActions } from "./usePlanTaskActions";
+import { eachDay } from "@/lib/date/date";
 import "./planlama.css";
 
 /**
- * Ayı KURMA yüzeyi — Planlamanın varsayılan görünümü.
+ * Planlamanın takvim yüzeyi — TEK ekran, iki ölçek.
  *
- * Hafta ekranıyla aynı veriyi farklı ölçekte gösterir: ay, hafta
- * SATIRLARI hâlinde aşağı kaydırılır ve her gün kutusu gerçek görev
- * satırları taşır. Önceki sürüm kare hücrelerde yalnızca sayı
- * gösteriyordu; "hangileri" sorusu her gün için ayrı bir panel
- * tıklaması istiyordu.
+ * ── Neden birleşti? ──
+ * `/planlama/ay` ve `/planlama/hafta` ayrı rotalardı ve aynı satırı
+ * çiziyorlardı; farkları görünmez ve tutarsızdı (gün numarasına basmak
+ * ayda panel açıyor, haftada hiçbir şey yapmıyordu). İkisi ayrı ekran
+ * değil, tek ekranın iki ölçeği — rota birleşince davranış da birleşti.
  *
- * Gün paneli DURUYOR ama artık tek yol değil: plan metni, kategori ve
- * hedef seçicileri yalnızca orada, satırları düzenlemekse kutuda.
+ * Ayrıca çapa (`?t=`) artık her zaman bir GÜN; ölçek onu hizalıyor.
+ * Eskiden `?ay=` ölçeğe göre iki farklı tarihe çözülüyordu ve Ağustos'a
+ * bakarken Hafta'ya geçen kullanıcı Temmuz'a düşüyordu.
  */
-export function PlanlamaMonthScreen() {
+export function PlanlamaScreen() {
   const toast = useToast();
-  const { today, anchor, category, setAnchor, setCategory } =
-    usePlanlamaSurface("month");
+  const { today, anchor, scale, category, setAnchor, setScale, setCategory } =
+    usePlanlamaSurface();
   const actions = usePlanTaskActions(toast.show);
   const { collapsedDays, toggleCollapsed } = useCollapsedDays(anchor);
 
@@ -55,17 +67,29 @@ export function PlanlamaMonthScreen() {
   const setTaskGoal = useSetTaskGoal(toast.show);
 
   /*
-   * `monthGrid` komşu aylardan taşan günleri de getirir; onlar
+   * Ölçek yalnızca ARALIĞI belirler.
+   *
+   * Ay: `monthGrid` komşu aylardan taşan günleri de getirir; onlar
    * `scope` dışında kalır ama gerçek günlerdir ve görev alabilirler.
+   * Hafta: yedi gün, taşma yok, hepsi kapsamda.
    */
   const { dates, scopeStart, scopeEnd } = useMemo(() => {
+    if (scale === "week") {
+      const end = endOfIsoWeek(anchor);
+      return {
+        dates: eachDay(anchor, end),
+        scopeStart: anchor,
+        scopeEnd: end,
+      };
+    }
+
     const { year, month } = toParts(anchor);
     return {
       dates: monthGrid(year, month).map((c) => c.date),
       scopeStart: startOfMonth(anchor),
       scopeEnd: endOfMonth(anchor),
     };
-  }, [anchor]);
+  }, [anchor, scale]);
 
   /*
    * Filtre `buildPlanRange`e GİRERKEN uygulanır, çıkarken değil:
@@ -77,7 +101,7 @@ export function PlanlamaMonthScreen() {
     [categories.visible, dates, scopeStart, scopeEnd],
   );
 
-  /* Ayın hangi günlerinde plan yazılı — hücre noktaları için. */
+  /* Hangi günlerde plan yazılı — hücre noktaları için. */
   const planDaysQuery = useMonthPlanDays(scopeStart, scopeEnd, scopeStart);
 
   const summaries = useMemo(
@@ -88,12 +112,15 @@ export function PlanlamaMonthScreen() {
   /*
    * Hafta bölümlerinin başlangıç tarihleri.
    *
-   * `PlanMonthGrid` ile AYNI `chunkWeeks` çağrısı: bölümleme iki
-   * yerde ayrı hesaplansaydı katlama anahtarları ile çizilen
-   * bölümler sessizce ayrışabilirdi.
+   * `PlanGrid` ile AYNI `chunkWeeks` çağrısı: bölümleme iki yerde ayrı
+   * hesaplansaydı katlama anahtarları ile çizilen bölümler sessizce
+   * ayrışabilirdi.
    */
   const weekStarts = useMemo(
-    () => chunkWeeks(range.buckets).map((w) => w[0]?.date).filter((d) => d !== undefined),
+    () =>
+      chunkWeeks(range.buckets)
+        .map((w) => w[0]?.date)
+        .filter((d) => d !== undefined),
     [range.buckets],
   );
 
@@ -104,7 +131,46 @@ export function PlanlamaMonthScreen() {
   );
 
   /* Ayın hedefleri — gün panelindeki hedef seçici için. */
-  const goalsQuery = usePlanGoals(scopeStart);
+  const goalsQuery = usePlanGoals(startOfMonth(anchor));
+
+  /*
+   * Görünen aralığın haftalık hedefleri.
+   *
+   * Ay ölçeğinde her hafta başlığı kendi hedeflerini gösterir —
+   * "aylık planda haftalığı görebilmeli" ihtiyacı tam olarak bu.
+   * Önce bu bağ (0014'ün `plan_goal_id`'si) Planlama'nın HİÇBİR
+   * ekranında görünmüyordu; yalnızca Bugün ekranının yan rayında
+   * çiziliyordu.
+   *
+   * Aralık `weekStarts`'tan değil `dates`'ten türetilir: `weekStarts`
+   * `range.buckets`'a bağlı ve o da filtreye göre değişiyor; hedefler
+   * kategori filtresinden ETKİLENMEMELİ.
+   */
+  const weekGoalsQuery = useWeekGoalsRange(
+    dates[0] ?? anchor,
+    dates[dates.length - 1] ?? anchor,
+  );
+
+  /** Hafta başlangıcından o haftanın hedef rozetlerine. */
+  const weekGoalsByWeek = useMemo(() => {
+    const out = new Map<
+      DateStr,
+      { id: string; title: string; done: boolean }[]
+    >();
+
+    for (const goal of weekGoalsQuery.data ?? []) {
+      const bucket = out.get(goal.weekStart);
+      const badge = {
+        id: goal.id,
+        title: goal.title,
+        done: goal.completedAt !== null,
+      };
+      if (bucket === undefined) out.set(goal.weekStart, [badge]);
+      else bucket.push(badge);
+    }
+
+    return out;
+  }, [weekGoalsQuery.data]);
 
   const placing = placingId !== null;
 
@@ -133,24 +199,27 @@ export function PlanlamaMonthScreen() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PlanlamaHeader
-        scale="month"
+        scale={scale}
         anchor={anchor}
         today={today}
         openTotal={range.openTotal}
         onAnchorChange={setAnchor}
       >
-        <CategoryFilterBar
-          categories={categories.active}
-          value={category}
-          onChange={setCategory}
-          counts={categories.counts}
-          uncategorizedCount={categories.uncategorizedCount}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <PlanScaleToggle value={scale} onChange={setScale} />
+          <CategoryFilterBar
+            categories={categories.active}
+            value={category}
+            onChange={setCategory}
+            counts={categories.counts}
+            uncategorizedCount={categories.uncategorizedCount}
+          />
+        </div>
       </PlanlamaHeader>
 
       <ScreenBody width="6xl">
         {tasksQuery.isPending ? (
-          <PlanSkeleton scale="month" />
+          <PlanSkeleton scale={scale} />
         ) : (
           <>
             <PlanOverdue
@@ -160,15 +229,13 @@ export function PlanlamaMonthScreen() {
               onError={toast.show}
             />
 
-            {/* Havuz ≥1280px'de SAĞDA, altında üstte. Eski yerleşimde
-                üste alınmıştı çünkü 16rem'lik sütun 7 gün kutusunu
-                ~113px'e indiriyordu; ajanda kağıdı tek sütun olduğu için
-                o hesap düştü (bkz. planlama.css → .planLayout).
+            {/* Havuz ≥1280px'de SAĞDA, altında üstte.
 
                 DOM sırası: kağıt ÖNCE. Havuz görsel olarak sağda ama
                 okuma ve klavye sırasında ikincil — asıl yüzey kağıt. */}
             <div className="planLayout">
-              <PlanMonthGrid
+              <PlanGrid
+                scale={scale}
                 buckets={range.buckets}
                 today={today}
                 summaries={summaries}
@@ -179,6 +246,7 @@ export function PlanlamaMonthScreen() {
                 onToggleCollapsed={toggleCollapsed}
                 collapsedWeeks={collapsedWeeks}
                 onToggleWeek={toggleWeek}
+                weekGoals={weekGoalsByWeek}
                 onPlace={handlePlace}
                 // Gün numarası yerleştirme modunda da paneli açar:
                 // yerleştirmenin kendi düğmesi var, aynı hedefin anlamı
@@ -214,14 +282,12 @@ export function PlanlamaMonthScreen() {
           tasks={openDayTasks}
           categories={categories.all}
           goals={goalsQuery.data ?? []}
-          addPending={actions.addPending}
           onError={toast.show}
           onSetCategory={(t, categoryId) =>
             setTaskCategory.mutate({ id: t.id, categoryId })
           }
           onSetGoal={(t, goalId) => setTaskGoal.mutate({ id: t.id, goalId })}
           onClose={() => setOpenDay(null)}
-          onAdd={actions.onAdd}
           onToggle={actions.onToggle}
           onDelete={actions.onDelete}
           onRename={actions.onRename}

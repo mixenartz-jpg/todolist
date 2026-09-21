@@ -28,24 +28,25 @@ export interface CollapsedWeeks {
 }
 
 /**
- * Açılışta katlanacak haftalar: bugünün haftası HARİÇ hepsi.
+ * Açılışta HİÇBİR hafta katlanmaz.
  *
- * Hepsi kapalı olsaydı ekranı açar açmaz hiçbir iş görünmezdi ve
- * "şu an ne yapmalıyım" sorusu bir tıklama uzağa düşerdi.
+ * ── Eski davranış ve neden değişti ──
+ * Önce "bugünün haftası hariç hepsi kapalı" idi. Gerekçesi şuydu:
+ * geçmiş/gelecek bir aya "kurmak" için gidilir ve hangi haftayla
+ * ilgilenildiği seçilerek belirtilir.
  *
- * Geçmiş ya da gelecek bir aya bakarken `today` hiçbir haftaya
- * düşmez ve doğal olarak hepsi kapalı gelir — istenen davranış bu:
- * o aya "kurmak" için gidilir, hangi haftayla ilgilenildiği
- * seçilerek belirtilir.
+ * Pratikte bunun sonucu şuydu: Ekim'i planlamaya giden kullanıcı
+ * BOMBOŞ bir ekran görüyordu — `today` Ekim'in hiçbir haftasına
+ * düşmediği için altı bölümün altısı da kapalı geliyordu. "Tüm
+ * planlamaları görebilmeli" beklentisinin tam tersi. Kullanıcı altı
+ * başlığı tek tek açmak zorundaydı.
+ *
+ * Şimdi hepsi açık gelir; katlamak kullanıcının seçimi. Katlama hâlâ
+ * değerli — ama "gürültüyü azaltmak isteyen kapatır", "görmek isteyen
+ * açar" değil.
  */
-function collapseAllButToday(
-  weekStarts: readonly DateStr[],
-  today: DateStr,
-): ReadonlySet<DateStr> {
-  return new Set(
-    // Hafta bölümleri 7 günlük; son gün başlangıç + 6.
-    weekStarts.filter((start) => !(start <= today && today <= addDays(start, 6))),
-  );
+function collapseNone(): ReadonlySet<DateStr> {
+  return new Set();
 }
 
 /**
@@ -68,10 +69,7 @@ export function useCollapsedWeeks(
    * geri kapanırdı — yani bu, hook'un çağıranından beklediği bir
    * sözleşme.
    */
-  const defaults = useMemo(
-    () => collapseAllButToday(weekStarts, today),
-    [weekStarts, today],
-  );
+  const defaults = useMemo(() => collapseNone(), []);
 
   /*
    * Aralık değişince küme yeniden kurulur — efekt İÇİNDE `setState`

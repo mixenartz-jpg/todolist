@@ -36,7 +36,7 @@ import "./planlama.css";
  */
 export function SummaryScreen() {
   const toast = useToast();
-  const { today, anchor, setAnchor } = usePlanlamaSurface("month");
+  const { today, anchor, setAnchor } = usePlanlamaSurface();
 
   const tasksQuery = useTasks();
   const goalsQuery = usePlanGoals(anchor);

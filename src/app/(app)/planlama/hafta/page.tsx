@@ -1,15 +1,11 @@
-import type { Metadata } from "next";
-import { Suspense } from "react";
-import { PlanlamaWeekScreen } from "@/features/planlama/PlanlamaWeekScreen";
-import { PlanBoot } from "@/features/planlama/PlanBoot";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Haftalık plan · Rutin" };
-
-/* Gerekçe için bkz. ../ay/page.tsx. */
-export default function Page() {
-  return (
-    <Suspense fallback={<PlanBoot scale="week" />}>
-      <PlanlamaWeekScreen />
-    </Suspense>
-  );
+/**
+ * Hafta ölçeği artık ayrı bir rota değil — `/planlama?ol=hafta`.
+ *
+ * Dosya redirect olarak duruyor: adres yer imlerinde ve tarayıcı
+ * geçmişinde olabilir, PWA'da 404 çıkmaz sokaktır.
+ */
+export default function PlanlamaHaftaPage() {
+  redirect("/planlama?ol=hafta");
 }

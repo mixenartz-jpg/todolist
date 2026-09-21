@@ -1,16 +1,27 @@
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import { PlanlamaScreen } from "@/features/planlama/PlanlamaScreen";
+import { PlanBoot } from "@/features/planlama/PlanBoot";
 
-/**
- * Planlamanın kendisi bir ekran değildir; ilk görünüme yönlendirir.
+export const metadata: Metadata = { title: "Plan · Rutin" };
+
+/*
+ * Planlamanın takvim yüzeyi. Ay ve Hafta ARTIK AYRI ROTA DEĞİL —
+ * ikisi de burada, `?ol=` ölçek parametresiyle.
  *
- * Ay varsayılandır: planlama ayın başında yapılan bir iştir ve hedefler
- * de aylık. Hafta, ayın içinde bir yakınlaşmadır.
+ * `<Suspense>` ZORUNLU: ekran çapayı ve ölçeği URL'den okuyor
+ * (usePlanlamaSurface → useSearchParams) ve sarmalanmadan bırakılırsa
+ * Next derlemeyi durdurur. Layout'taki sarmalayıcı YETMEZ — o yalnızca
+ * sekme çubuğunu kapsıyor, `children` onun dışında kalıyor.
  *
- * Neden `/planlama` doğrudan ay ekranı DEĞİL? `PlanlamaTabs` aktifliği
- * `pathname.startsWith(tab.href)` ile ölçüyor; `/planlama` hiçbir
- * sekmenin öneki olmadığı için dördü de sönük görünür ve kullanıcı
- * nerede olduğunu okuyamazdı.
+ * Fallback ızgara iskeletidir, boş bir kutu değil: sorgu parametreleri
+ * çözülene kadar geçen kare boyunca sayfa yüksekliği korunur ve
+ * içerik zıplamaz.
  */
-export default function PlanlamaPage() {
-  redirect("/planlama/ay");
+export default function Page() {
+  return (
+    <Suspense fallback={<PlanBoot scale="month" />}>
+      <PlanlamaScreen />
+    </Suspense>
+  );
 }

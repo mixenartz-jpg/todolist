@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import type { DateStr } from "@/lib/date/types";
 import { Chevron } from "@/components/Chevron";
 import { cn } from "@/lib/ui/cn";
 import "./planlama.css";
@@ -53,7 +54,23 @@ interface PlanWeekSectionProps {
    * işaret yoktur. `PlanDayRow` aynı gerekçeyle katlı GÜNDE de
    * bırakma şeridini gizlemiyor.
    */
-  forceOpen?: boolean;
+  /**
+   * Yerleştirme modu. Bölümü ZORLA AÇMAZ — başlığa hafta düzeyinde
+   * bir yerleştirme hedefi ekler (bkz. bileşen doc-block'u).
+   */
+  placing?: boolean;
+  /** Hafta düzeyinde yerleştirmenin hedef günü: haftanın ilk günü. */
+  weekStart?: DateStr;
+  onPlace?: (date: DateStr) => void;
+  /**
+   * Bu haftanın hedefleri — başlıkta rozet olarak görünür.
+   *
+   * Aylık planda haftalık hedefleri görmek, 0014'ün kurduğu bağın
+   * (haftalık hedef = aylık hedefin dilimi) Planlama'da ilk kez
+   * görünür olması demek: o bağ yalnızca Bugün ekranının yan rayında
+   * çiziliyordu.
+   */
+  goals?: readonly { id: string; title: string; done: boolean }[];
   children: ReactNode;
 }
 
@@ -73,6 +90,17 @@ interface PlanWeekSectionProps {
  * Gün satırındaki oktan FARKLI: orada tarih kanalı zaten gün panelini
  * açıyordu ve başlığa ikinci bir işlev bindirilemezdi. Hafta
  * başlığının başka bir işi yok.
+ *
+ * ── Yerleştirme modu bölümü ZORLA AÇMAZ ──
+ * Önce `forceOpen` vardı: havuzdan bir görev seçilince tüm kapalı
+ * haftalar açılıyordu, "yoksa oraya iş atamanın yolu kalmaz" diye.
+ * Sonuç, seçim anında ekranın 42 satıra patlaması ve kullanıcının az
+ * önce kapattığı haftaların geri açılmasıydı — ferahlatmanın tam
+ * tersi.
+ *
+ * Yerine hafta başlığının kendisi bir hedef olur: kapalı hafta kapalı
+ * kalır, ona iş atamak isteyen başlığa bırakır ve görev haftanın ilk
+ * gününe düşer. Gün seçmek isteyen haftayı açar.
  */
 export function PlanWeekSection({
   label,
@@ -80,11 +108,17 @@ export function PlanWeekSection({
   openCount,
   collapsed,
   onToggle,
-  forceOpen = false,
+  placing = false,
+  weekStart,
+  onPlace,
+  goals,
   children,
 }: PlanWeekSectionProps) {
-  // Yerleştirme modunda katlama devre dışı: her gün hedef olmalı.
-  const open = !collapsed || forceOpen;
+  const open = !collapsed;
+  /* Hafta hedefi YALNIZCA kapalıyken: açık haftada gün satırlarının
+     kendi şeritleri zaten var ve ikisi üst üste binerdi. */
+  const showWeekDrop =
+    placing && collapsed && onPlace !== undefined && weekStart !== undefined;
 
   return (
     <section aria-labelledby={id} className="planWeekSection">
@@ -93,9 +127,6 @@ export function PlanWeekSection({
           type="button"
           id={id}
           onClick={onToggle}
-          /* `open`, `!collapsed` DEĞİL: ekranda görünen durum
-             duyurulmalı. Yerleştirme modunda hafta açık görünüyorsa
-             ekran okuyucu da "açık" demeli. */
           aria-expanded={open}
           aria-controls={`${id}-icerik`}
           className="planWeekToggle"
@@ -115,6 +146,38 @@ export function PlanWeekSection({
           )}
         </button>
       </h2>
+
+      {/*
+        Haftanın hedefleri — başlığın ALTINDA, düğmenin dışında.
+        İçine koymak tıklanabilir alanı hedeflerin üstüne yayardı ve
+        "hedefe mi bastım, haftayı mı kapattım" belirsizliği doğardı.
+
+        Katlama durumundan BAĞIMSIZ görünür: hafta kapalıyken bile "bu
+        hafta neyi hedefliyordum" okunabilmeli — kapatmanın amacı gün
+        satırlarını gizlemek, hedefi değil.
+      */}
+      {goals !== undefined && goals.length > 0 && (
+        <ul className="planWeekGoals">
+          {goals.map((goal) => (
+            <li
+              key={goal.id}
+              className={cn("planWeekGoal", goal.done && "planWeekGoal--done")}
+            >
+              {goal.title}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {showWeekDrop && (
+        <button
+          type="button"
+          className="planDropStrip planWeekDrop"
+          onClick={() => onPlace(weekStart)}
+        >
+          ＋ {label} haftasına koy
+        </button>
+      )}
 
       <div id={`${id}-icerik`}>{open && children}</div>
     </section>

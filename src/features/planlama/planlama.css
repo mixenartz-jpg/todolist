@@ -317,22 +317,23 @@
  * öncelikli akış o sırayı gizlerdi.
  */
 .planDayTasks {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   /*
-   * `min()` ZORUNLU: çıplak `minmax(280px, 1fr)` dar ekranda sütunu
-   * konteynerden GENİŞ tutar ve kutular sağdan kesilir. 320px'de
-   * görev alanına ~215px kalıyor ve 280px'lik taban oraya sığmıyordu.
+   * TEK SÜTUN — çok sütunlu akış KALDIRILDI.
    *
-   * `min(--plan-task-col, 100%)` tabanı konteynerle sınırlar: geniş
-   * ekranda 280px'lik çok sütunlu akış aynen sürer, dar ekranda taban
-   * %100'e iner ve tek sütun taşmadan oturur.
+   * Önce `repeat(auto-fit, minmax(min(280px, 100%), 1fr))` vardı:
+   * geniş ekranda bir günün görevleri yatay olarak 2-3 sütuna
+   * akıyordu. Sorun, okuma yükü: göz soldan sağa tarıyor ve hangi
+   * görevin hangi güne ait olduğunu takip etmek için sürekli sütun
+   * sınırını hatırlamak zorunda kalıyordu. Beş görevli bir gün iki
+   * satıra sarınca "bu hâlâ aynı gün mü?" sorusu doğuyordu.
+   *
+   * Dikey akış günü tek bir blok olarak okutur. 1440px'de satır
+   * genişliği artık 65-75ch'yi aşabilir ama bunlar görev BAŞLIKLARI,
+   * paragraf değil — çoğu 40 karakterin altında kalıyor.
    */
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(min(var(--plan-task-col), 100%), 1fr)
-  );
-  gap: var(--row-gap) 1.25rem;
-  align-content: start;
+  gap: var(--row-gap);
   min-width: 0;
 }
 
@@ -530,6 +531,64 @@
 }
 
 /*
+ * KAPALI haftanın bırakma şeridi.
+ *
+ * Önce yerleştirme modu bütün kapalı haftaları zorla açıyordu
+ * (`forceOpen`) ve ekran 42 satıra patlıyordu. Şimdi kapalı hafta
+ * kapalı kalır ve başlığının altında tek bir hedef belirir: görev
+ * haftanın ilk gününe düşer, gün seçmek isteyen haftayı açar.
+ *
+ * Gün şeridinden daha dar dolgulu ve kağıdın kenarına hizalı — hafta
+ * başlığının altındaki bir uzantı gibi okunmalı, ayrı bir satır gibi
+ * değil.
+ */
+.planWeekDrop {
+  padding: 0.5rem var(--card-p);
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+/*
+ * Haftanın hedefleri — başlığın altında ince bir rozet şeridi.
+ *
+ * Gün satırlarından GÖRSEL OLARAK AYRI durmalı: bunlar o haftada
+ * yapılacak işler değil, o haftanın NEYE hizmet ettiği. Küçük punto ve
+ * sönük mürekkep bu ayrımı taşıyor; kutu ya da kenarlık eklemek
+ * hedefleri gün satırlarıyla eşit ağırlığa çıkarırdı.
+ */
+.planWeekGoals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  padding: 0 var(--card-p) 0.5rem;
+  margin: 0;
+  list-style: none;
+}
+
+.planWeekGoal {
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--r-xs);
+  background: var(--color-surface-2);
+
+  font-size: var(--text-2xs);
+  line-height: var(--leading-snug);
+  color: var(--color-ink-2);
+}
+
+/*
+ * Tamamlanmış hedef: üstü çizili ve daha sönük.
+ *
+ * Listeden ÇIKARILMAZ — "bu hafta şunu hedeflemiştim ve yaptım"
+ * bilgisi, hiç hedef koymamış bir haftadan farklıdır.
+ */
+.planWeekGoal--done {
+  color: var(--color-ink-3);
+  text-decoration: line-through;
+  text-decoration-color: var(--color-ink-4);
+}
+
+/*
  * Boş gün: ince şerit.
  *
  * Ayın ~%60'ı boş olabiliyor. Hepsi tam yükseklikte dursa ay beş ekran
@@ -618,80 +677,29 @@
  * ölçümü ya da JS'e gerek yok.
  */
 .goalList {
-  max-height: var(--goal-list-max);
-  overflow-y: auto;
-
-  /* Çubuk göründüğünde kartlar daralıp genişlik zıplamasın. */
-  scrollbar-gutter: stable;
-  padding-right: 0.25rem;
-
   /*
-   * Alt kenarda soluma: listenin DEVAMI olduğunu söyleyen işaret.
-   * Kaydırma çubuğu tek başına yetmez — overlay çubuklar dokunmatik
-   * cihazda parmak kalkınca kaybolur ve kesilmiş liste "hedeflerim
-   * silinmiş" olarak okunur.
+   * İÇ SCROLL KALDIRILDI.
    *
-   * `mask-image` ayrı bir overlay katmanı gerektirmez: gradient
-   * kutunun kendi içeriğine uygulanır ve kaydırdıkça onunla akar.
-   * Üst kenarda da 0.75rem'lik bir pay var, yoksa yukarı kaydırınca
-   * ilk kart kutunun tepesinden keskin biçimde kesilirdi.
+   * Önce `max-height: var(--goal-list-max)` + `overflow-y: auto` vardı
+   * ve liste ~6 kartı aşınca kendi içinde kayıyordu. Yanında bir de
+   * `animation-timeline: scroll(self block)` ile çalışan, yalnızca
+   * gerçekten kaydırılabilir olduğunda beliren bir kenar soluması vardı
+   * — kesilmiş içeriği haber vermek için.
    *
-   * ── Neden `animation-timeline: scroll()` üzerinden? ──
-   * Maske KOŞULSUZ uygulandığında, kaydırma HİÇ olmayan kısa listede
-   * de çalışıyordu: tek hedefi olan kullanıcı kartın üst ve alt
-   * kenarının eridiğini, kenarlığın kaybolduğunu ve kartın yerinde
-   * gradyanlı bir leke durduğunu görüyordu. Kutu "kutu" gibi
-   * görünmüyordu — bildirilen hata tam olarak buydu.
+   * Mekanizma doğruydu ama sorunun kendisi gereksizdi: sayfa zaten
+   * kayıyor ve içine ikinci bir kaydırma kabı koymak "hangi tekerleği
+   * çevirdiğim neyi kaydırıyor" sorusunu doğuruyordu. Hedefler bir
+   * ekranı aşacak kadar çoksa asıl mesele hedef sayısıdır, kabın
+   * yüksekliği değil.
    *
-   * Maskenin var olma sebebi KESİLMİŞ içeriği haber vermek; kesilme
-   * yoksa maskenin de işi yoktur. `scroll()` zaman çizelgesi bu ayrımı
-   * CSS içinde yapar: kaydırılamayan bir kutuda ilerleme çizelgesi
-   * BOŞTUR, animasyon hiç uygulanmaz ve kart maskesiz — yani tam
-   * kenarlıklı — kalır. Liste eşiği aşıp kayabilir hâle geldiği anda
-   * çizelge canlanır ve soluma geri gelir.
-   *
-   * Ek kazanç: soluma artık uca göre AÇILIP KAPANIR. Listenin en
-   * üstündeyken üst kenar keskindir (yukarıda gizlenmiş bir şey yok),
-   * aşağı kaydırınca belirir; en altta alt kenar keskinleşir. Sabit
-   * maskede alt soluma liste bittiğinde bile duruyor ve son kartı
-   * kırpıyordu.
+   * Scroll kalkınca soluma da kendiliğinden anlamsızlaşıyor: maske
+   * zaten "kaydırılamayan kutuda hiç uygulanma" diye yazılmıştı.
    */
-  animation: goalListFade linear both;
-  animation-timeline: scroll(self block);
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-gap);
 }
 
-@keyframes goalListFade {
-  /* Tepede: yalnızca ALT kenar solar. */
-  from {
-    mask-image: linear-gradient(
-      to bottom,
-      #000 0,
-      #000 calc(100% - 1.5rem),
-      transparent 100%
-    );
-  }
-
-  /* Ortada: iki uç da solar — her iki yönde de gizlenmiş içerik var. */
-  50% {
-    mask-image: linear-gradient(
-      to bottom,
-      transparent 0,
-      #000 0.75rem,
-      #000 calc(100% - 1.5rem),
-      transparent 100%
-    );
-  }
-
-  /* Dipte: yalnızca ÜST kenar solar; son kart tam görünür. */
-  to {
-    mask-image: linear-gradient(
-      to bottom,
-      transparent 0,
-      #000 0.75rem,
-      #000 100%
-    );
-  }
-}
 
 /*
  * `scroll()` zaman çizelgesini desteklemeyen tarayıcı (bu yazının

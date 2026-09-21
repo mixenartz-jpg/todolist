@@ -2,72 +2,102 @@
 
 import { useCallback, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { isDateStr, startOfIsoWeek, startOfMonth, todayStr } from "@/lib/date/date";
+import { isDateStr, todayStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
-import type { PlanScale } from "./range";
+import { anchorForScale, type PlanScale } from "./range";
 import type { CategoryFilter } from "./types";
 
-/** Çapanın yaşadığı sorgu parametresi. */
-const ANCHOR_PARAM = "ay";
+/**
+ * Çapanın yaşadığı sorgu parametresi.
+ *
+ * Adı "ay" DEĞİL "t": eski ad bir yalandı. Parametre ölçeğe göre ya
+ * ayın 1'ine ya haftanın Pazartesi'sine çözülüyordu, yani aynı URL iki
+ * farklı tarih anlamına geliyordu. `?ay=2026-08-01` ile Hafta ekranına
+ * geçen kullanıcı 28 Temmuz'a düşüyordu — Ağustos'u planlarken Temmuz'a
+ * atılmak. Artık parametre HER ZAMAN bir gündür ve hizalamayı ekran
+ * yapar (bkz. `anchorForScale`).
+ */
+const ANCHOR_PARAM = "t";
+/** Ölçeğin yaşadığı sorgu parametresi. */
+const SCALE_PARAM = "ol";
 /** Kategori filtresinin yaşadığı sorgu parametresi. */
 const CATEGORY_PARAM = "kat";
 /** "Kategorisi olmayanları göster" filtresinin URL'deki karşılığı. */
 const NO_CATEGORY = "yok";
+/** URL'de ölçeğin yazılı biçimleri. */
+const SCALE_WEEK = "hafta";
+const SCALE_MONTH = "ay";
+
+/** Varsayılan ölçek — parametre yoksa bu geçerli ve URL'e yazılmaz. */
+const DEFAULT_SCALE: PlanScale = "month";
 
 export interface PlanlamaSurface {
   /** Bugün — tek yerde hesaplanır, alt ekranlar aynı günü görür. */
   today: DateStr;
   /** Görüntülenen aralığın ilk günü (haftanın Pazartesi'si / ayın 1'i). */
   anchor: DateStr;
+  scale: PlanScale;
   category: CategoryFilter;
   setAnchor: (next: DateStr) => void;
+  setScale: (next: PlanScale) => void;
   setCategory: (next: CategoryFilter) => void;
 }
 
 /**
- * Ay ve Hafta ekranlarının paylaştığı durum: çapa ve kategori filtresi.
+ * Plan yüzeyinin durumu: çapa, ölçek ve kategori filtresi.
+ *
+ * ── Neden ölçek artık URL'de, ayrı bir ROTA değil? ──
+ * Ay ve Hafta eskiden `/planlama/ay` ve `/planlama/hafta` idi ve aynı
+ * `PlanDayRow`'u çiziyorlardı — `PlanWeekGrid`'in kendi yorumu bunu
+ * itiraf ediyordu: "Yerleşim, ölçüler ve davranış birebir aynı."
+ * Aynı görünen iki ekran sessizce farklı davranıyordu: gün numarasına
+ * basmak Ay'da paneli açıyor, Hafta'da hiçbir şey yapmıyordu.
+ *
+ * İkisi ayrı ekran değil, TEK ekranın iki ölçeği. Rota birleşince
+ * davranış da birleşti ve `?ay=`'ın iki anlamı sorunu kökten çözüldü.
  *
  * ── Neden URL, React state DEĞİL? ──
- * Ay ve Hafta ayrı ROTALAR (bkz. PlanlamaTabs). Rota değişince React
- * state zaten kaybolur; "Eylül'e bakıyordum, Hafta dedim, Ağustos'a
- * döndüm" kabul edilemez. Context'e taşımak layout'a bir provider ve
- * "use client" getirirdi. URL ise ücretsiz: paylaşılabilir, geri
- * tuşuyla uyumlu ve yer imine eklenebilir — "Ağustos planım" sayfası
- * gerçekten bir sayfa olur.
+ * Paylaşılabilir, geri tuşuyla uyumlu ve yer imine eklenebilir —
+ * "Ağustos planım" gerçekten bir sayfa olur. Ayrıca Hedefler ve Özet
+ * hâlâ ayrı rotalar; aralarında gezinirken çapanın korunması gerekiyor
+ * ve React state rota değişiminde kaybolurdu.
  *
  * ── Neden `replace`, `push` DEĞİL? ──
  * Ay ilerletmek bir GEZİNME değil, aynı ekranın ayarı. `push` olsaydı
  * altı ay ileri giden kullanıcının geri tuşu onu altı kez geri
  * sürüklerdi; oysa beklenen, bir kez basınca Planlama'dan çıkmak.
- * Sekme değişimi ise gerçek gezinmedir ve `<Link>` ile `push` olarak
- * kalır.
  *
  * ── Neden `scroll: false`? ──
  * Ayı değiştirmek sayfayı başa sarmamalı; kullanıcı ızgaranın ortasına
  * bakıyor olabilir.
  */
-export function usePlanlamaSurface(scale: PlanScale): PlanlamaSurface {
+export function usePlanlamaSurface(): PlanlamaSurface {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
 
   const today = useMemo(() => todayStr(), []);
 
+  const scale: PlanScale =
+    params.get(SCALE_PARAM) === SCALE_WEEK ? "week" : DEFAULT_SCALE;
+
   const rawAnchor = params.get(ANCHOR_PARAM);
 
   /*
-   * URL'den gelen değer DOĞRULANIR ve ölçeğe göre hizalanır.
+   * URL'den gelen değer DOĞRULANIR ve ölçeğe hizalanır.
    *
-   * Kullanıcı adres çubuğuna `?ay=çorba` yazabilir; `isDateStr` guard'ı
+   * Kullanıcı adres çubuğuna `?t=çorba` yazabilir; `isDateStr` guard'ı
    * geçmeyen her şey bugüne düşer. Geçerli bir tarih gelse bile ayın
-   * ortası olabilir (`?ay=2026-08-17`) — çapa ölçeğin İLK GÜNÜ olmak
+   * ortası olabilir (`?t=2026-08-17`) — çapa ölçeğin İLK GÜNÜ olmak
    * zorundadır, yoksa `eachDay(anchor, endOfIsoWeek(anchor))` yedi
    * günden az üretir ve ızgara eksik çizilir.
+   *
+   * Hizalamayı `anchorForScale` yapıyor: o fonksiyon yazılmış ve
+   * testliydi ama HİÇBİR EKRAN ÇAĞIRMIYORDU. Çağrıldığı yer burası.
    */
   const anchor = useMemo(() => {
-    const base =
-      rawAnchor !== null && isDateStr(rawAnchor) ? rawAnchor : today;
-    return scale === "week" ? startOfIsoWeek(base) : startOfMonth(base);
+    const base = rawAnchor !== null && isDateStr(rawAnchor) ? rawAnchor : today;
+    return anchorForScale(base, scale, today);
   }, [rawAnchor, scale, today]);
 
   const rawCategory = params.get(CATEGORY_PARAM);
@@ -84,10 +114,12 @@ export function usePlanlamaSurface(scale: PlanScale): PlanlamaSurface {
    * okunurdur ve doğrudan değiştirmek sessizce çalışmazdı.
    */
   const setParam = useCallback(
-    (key: string, value: string | null) => {
+    (entries: Record<string, string | null>) => {
       const next = new URLSearchParams(params.toString());
-      if (value === null) next.delete(key);
-      else next.set(key, value);
+      for (const [key, value] of Object.entries(entries)) {
+        if (value === null) next.delete(key);
+        else next.set(key, value);
+      }
 
       const query = next.toString();
       router.replace(query.length > 0 ? `${pathname}?${query}` : pathname, {
@@ -100,26 +132,50 @@ export function usePlanlamaSurface(scale: PlanScale): PlanlamaSurface {
   const setAnchor = useCallback(
     (next: DateStr) => {
       /*
-       * Bugünün haftası/ayı ise parametre SİLİNİR, yazılmaz. Böylece
-       * temiz `/planlama/ay` adresi varsayılan görünümü gösterir ve
-       * "bu ay"a dönmek URL'i de sıfırlar — kullanıcı adres çubuğunda
-       * eski bir ay görmez.
+       * Bugünün aralığı ise parametre SİLİNİR, yazılmaz. Böylece temiz
+       * `/planlama` adresi varsayılan görünümü gösterir ve "bu ay"a
+       * dönmek URL'i de sıfırlar — kullanıcı adres çubuğunda eski bir
+       * tarih görmez.
        */
-      const current = scale === "week" ? startOfIsoWeek(today) : startOfMonth(today);
-      setParam(ANCHOR_PARAM, next === current ? null : next);
+      const current = anchorForScale(today, scale, today);
+      setParam({ [ANCHOR_PARAM]: next === current ? null : next });
     },
     [scale, today, setParam],
   );
 
+  const setScale = useCallback(
+    (next: PlanScale) => {
+      /*
+       * Ölçek değişince çapa YENİ ölçeğe hizalanır ve URL'e birlikte
+       * yazılır. İkisini ayrı ayrı yazmak, aradaki karede eski çapayı
+       * yeni ölçekle yorumlayan bir render üretirdi.
+       *
+       * Bakılan dönem KORUNUR: Ağustos'a bakarken Hafta'ya geçmek
+       * Ağustos'un bir haftasını gösterir, bugüne ışınlamaz.
+       */
+      const aligned = anchorForScale(anchor, next, today);
+      const defaultAnchor = anchorForScale(today, next, today);
+
+      setParam({
+        [SCALE_PARAM]: next === DEFAULT_SCALE ? null : SCALE_WEEK,
+        [ANCHOR_PARAM]: aligned === defaultAnchor ? null : aligned,
+      });
+    },
+    [anchor, today, setParam],
+  );
+
   const setCategory = useCallback(
     (next: CategoryFilter) => {
-      setParam(
-        CATEGORY_PARAM,
-        next === null ? null : next === "none" ? NO_CATEGORY : next,
-      );
+      setParam({
+        [CATEGORY_PARAM]:
+          next === null ? null : next === "none" ? NO_CATEGORY : next,
+      });
     },
     [setParam],
   );
 
-  return { today, anchor, category, setAnchor, setCategory };
+  return { today, anchor, scale, category, setAnchor, setScale, setCategory };
 }
+
+/** URL'de ölçeğin yazılı biçimi — sekme bağlantıları için. */
+export { SCALE_PARAM, SCALE_WEEK, SCALE_MONTH, ANCHOR_PARAM, CATEGORY_PARAM };

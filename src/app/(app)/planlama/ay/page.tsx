@@ -1,24 +1,11 @@
-import type { Metadata } from "next";
-import { Suspense } from "react";
-import { PlanlamaMonthScreen } from "@/features/planlama/PlanlamaMonthScreen";
-import { PlanBoot } from "@/features/planlama/PlanBoot";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Aylık plan · Rutin" };
-
-/*
- * `<Suspense>` ZORUNLU: ekran çapayı URL'den okuyor
- * (usePlanlamaSurface → useSearchParams) ve sarmalanmadan bırakılırsa
- * Next derlemeyi durdurur. Layout'taki sarmalayıcı YETMEZ — o yalnızca
- * sekme çubuğunu kapsıyor, `children` onun dışında kalıyor.
+/**
+ * Ay ölçeği artık ayrı bir rota değil — `/planlama`'nın varsayılanı.
  *
- * Fallback ızgara iskeletidir, boş bir kutu değil: sorgu parametreleri
- * çözülene kadar geçen kare boyunca sayfa yüksekliği korunur ve
- * içerik zıplamaz.
+ * Dosya redirect olarak duruyor: adres yer imlerinde ve tarayıcı
+ * geçmişinde olabilir, PWA'da 404 çıkmaz sokaktır.
  */
-export default function Page() {
-  return (
-    <Suspense fallback={<PlanBoot scale="month" />}>
-      <PlanlamaMonthScreen />
-    </Suspense>
-  );
+export default function PlanlamaAyPage() {
+  redirect("/planlama");
 }

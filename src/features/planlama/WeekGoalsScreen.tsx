@@ -30,7 +30,7 @@ import "./planlama.css";
  * sonunda hangi haftada neyin bittiği kayboluyordu.
  *
  * ── Çapa neden Hafta ızgarasıyla paylaşılıyor? ──
- * `usePlanlamaSurface("week")` URL'deki `?ay=` değerini pazartesiye
+ * `usePlanlamaSurface()` URL'deki `?ay=` değerini pazartesiye
  * hizalar — Hafta sekmesinin kullandığı çapanın aynısı. Ağustos'un
  * ikinci haftasının ızgarasına bakarken "Haftalık"a basan kullanıcı o
  * haftanın hedeflerini bulmalı, bu haftanınkileri değil. Parametrenin
@@ -39,7 +39,7 @@ import "./planlama.css";
  */
 export function WeekGoalsScreen() {
   const toast = useToast();
-  const { today, anchor, setAnchor } = usePlanlamaSurface("week");
+  const { today, anchor, setAnchor } = usePlanlamaSurface();
 
   const goalsQuery = useWeekGoals(anchor);
 

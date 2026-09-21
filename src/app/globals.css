@@ -245,27 +245,30 @@
   --stack-gap-sm: 1rem;
   --card-p: 1.25rem; /* 16 → 20 */
   --card-p-sm: 0.875rem;
-  --row-gap: 0.625rem;
+  /* Görev satırları arası. 0.625 → 0.5rem: ayda en çok tekrarlanan
+     değer ve 2px'lik fark 40 satırda 80px kazandırıyor. */
+  --row-gap: 0.5rem;
 
   /* ══ Planlama — ajanda kağıdı ölçüleri ═══════════════════════════
    * Ay ve hafta ölçeği 7 dar sütun yerine geniş yatay gün satırlarına
    * döner. Bütün ölçüler burada ki ayarlamak tek dosyadan olsun. */
-  --plan-gutter: 4rem; /* sol tarih kanalı */
-  --plan-row-min: 3.5rem; /* boş günün ince şeridi */
-  --plan-task-col: 17.5rem; /* çoklu sütun akışının taban ölçüsü */
+  /*
+   * Sol tarih kanalı. 4rem → 3.25rem: kanal her satırda dolu bir
+   * dikey blok çiziyor (kendi zemini + sağ kenarlığı) ve ayda 42 kez
+   * tekrarlanınca ızgaranın en ağır öğesi oluyordu. Tarih + gün adı
+   * 3.25rem'e rahat sığıyor.
+   */
+  --plan-gutter: 3.25rem;
+  /*
+   * Boş günün ince şeridi. 3.5rem → 2.5rem: ayın ~%60'ı boş olabiliyor
+   * ve 25 boş gün × 56px = 1400px sadece boşluk demekti. 40px hâlâ
+   * tıklanabilir bir hedef (dokunma eşiği 44px'e yakın, ama burada
+   * hedef satırın TAMAMI — quick-add alanı dahil).
+   */
+  --plan-row-min: 2.5rem;
   --plan-sheet-max: 72rem; /* kağıdın azami genişliği */
 
-  /*
-   * Hedef listesinin kaydırma EŞİĞİ (≈6 kart). Altında kaydırma hiç
-   * görünmez, üstünde liste kendi içinde kayar. Altı, ekranın yarısını
-   * aşmadan "bu ayın hedefleri" hissini veren sayı; yediden fazlası
-   * zaten hedef değil görev listesidir.
-   *
-   * `vh` DEĞİL `rem`: `vh` mobilde adres çubuğu gizlenince zıplar ve
-   * liste kaydırılırken kutunun yüksekliği değişirdi.
-   */
-  --goal-list-max: 32rem;
-
+  
   /* ══ Zaman ızgarası — orantılı gün/hafta çizelgesi ════════════════
    *
    * Saat satırının yüksekliği ızgaranın TEK ölçü birimidir: blok
@@ -411,7 +414,7 @@
   :root {
     --screen-px: 1.5rem;
     --header-px: 1.5rem;
-    --plan-gutter: 4.5rem;
+    --plan-gutter: 3.75rem;
     --daygrid-hour-h: 60px;
     --daygrid-gutter-w: 3.75rem;
   }

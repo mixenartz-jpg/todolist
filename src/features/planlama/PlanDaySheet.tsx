@@ -6,7 +6,6 @@ import type { DateStr } from "@/lib/date/types";
 import { formatLongDate, WEEKDAYS_LONG } from "@/lib/ui/tr";
 import { splitDaySchedule } from "@/features/tasks/schedule";
 import { TaskItem } from "@/features/tasks/TaskItem";
-import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
 import type { Task } from "@/features/tasks/types";
 import { CategoryDot } from "./CategoryDot";
 import { DayPlanEditor } from "./DayPlanEditor";
@@ -23,12 +22,10 @@ interface PlanDaySheetProps {
   categories: readonly Category[];
   /** Görüntülenen ayın hedefleri — görev satırındaki seçici için. */
   goals: readonly PlanGoal[];
-  addPending: boolean;
   onError?: (message: string) => void;
   onSetCategory: (task: Task, categoryId: string | null) => void;
   onSetGoal: (task: Task, goalId: string | null) => void;
   onClose: () => void;
-  onAdd: (title: string, date: DateStr) => void;
   onToggle: (task: Task) => void;
   onDelete: (task: Task) => void;
   onRename: (task: Task, title: string) => void;
@@ -58,12 +55,10 @@ export function PlanDaySheet({
   tasks,
   categories,
   goals,
-  addPending,
   onError,
   onSetCategory,
   onSetGoal,
   onClose,
-  onAdd,
   onToggle,
   onDelete,
   onRename,
@@ -190,11 +185,13 @@ export function PlanDaySheet({
             </ul>
           )}
 
-          <TaskQuickAdd
-            dueDate={date}
-            pending={addPending}
-            onAdd={(title) => onAdd(title, date)}
-          />
+          {/*
+            Hızlı ekleme BURADA YOK — gün satırının kendi quick-add'i
+            var ve aynı işi yapıyordu. Aynı güne görev eklemenin iki
+            eşdeğer yolu olması, "hangisi neyi yapar" sorusunu
+            doğuruyordu; panelin işi planı YAZMAK ve görevleri
+            SINIFLAMAK (kategori, hedef), liste kurmak değil.
+          */}
         </div>
       </div>
     </dialog>
