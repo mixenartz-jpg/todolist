@@ -317,22 +317,32 @@ function WeekStrip({
                   <div className="h-0.5 w-full rounded-full bg-[var(--color-line)]" />
                 ) : (
                   <div
-                    className="w-full overflow-hidden rounded-md bg-[var(--color-surface-3)]"
+                    /*
+                     * `flex-col justify-end`: dolu kısım sütunun
+                     * TABANINDAN yükseliyor.
+                     *
+                     * Eskiden `marginTop` yüzdesiyle aşağı itiliyordu ve
+                     * bu SESSİZCE yanlıştı: CSS'te yüzdelik dikey
+                     * kenar boşluğu elemanın YÜKSEKLİĞİNE değil,
+                     * kapsayıcının GENİŞLİĞİNE göre hesaplanır. Yedi
+                     * sütuna bölünen dar bir şeritte genişlik
+                     * yükseklikten çok farklı olduğu için dolgu yanlış
+                     * yere oturuyor, kısmen tamamlanmış günler havada
+                     * asılı kalıyordu.
+                     */
+                    className="flex w-full flex-col justify-end overflow-hidden rounded-md bg-[var(--color-surface-3)]"
                     style={{ height: `${Math.max(height, 12)}%` }}
                     title={`${slot.done}/${slot.total} iş`}
                   >
-                    {/* Dolu kısım ALTTAN yükselir: sütunun tabanı gün,
-                        tepesi hedef. */}
                     <div
                       className={cn(
-                        "w-full",
+                        "w-full shrink-0",
                         slot.isFuture
                           ? "bg-[var(--color-line-2)]"
                           : "bg-[var(--color-accent)]",
                       )}
                       style={{
                         height: `${Math.round((slot.done / slot.total) * 100)}%`,
-                        marginTop: `${100 - Math.round((slot.done / slot.total) * 100)}%`,
                       }}
                     />
                   </div>
