@@ -195,21 +195,79 @@ export interface SectionLabelRow {
 }
 
 /**
- * Yanlış satırı.
+ * Deneme oturumu (0018).
  *
- * Bu tabloda `numeric` sütun YOKTUR; yukarıdaki string-coercion uyarısı
- * burada geçerli değildir. `smallint` supabase-js'e number olarak gelir.
+ * NET SÜTUNU YOKTUR ve olmamalıdır: net `dogru - yanlis / 4` ile
+ * ders satırlarından türetilir (bkz. features/deneme/net.ts).
+ * Saklansaydı `dogru` güncellenip net güncellenmediğinde yalan
+ * söyleyebilen ikinci bir gerçek kaynağı olurdu.
+ */
+export interface DenemeRow {
+  id: string;
+  user_id: string;
+  ad: string;
+  /** tyt | ayt | brans | ydt. brans trendde AYRI çizilir. */
+  tur: string;
+  /** say | ea | soz | dil. Yalnız `tur === "ayt"` iken dolu. */
+  alan: string | null;
+  /** Denemenin ÇÖZÜLDÜĞÜ gün; kaydedildiği an değil. */
+  tarih: string;
+  sure_dk: number | null;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Denemenin ders kırılımı (0018).
+ *
+ * DİKKAT: `hedef_net` bir `numeric` sütundur ve dosyanın başındaki
+ * uyarı BURADA GEÇERLİDİR — supabase-js onu STRING olarak getirir ve
+ * sınırda `Number()` ile açılmalıdır. Diğer sayılar `smallint`,
+ * onlar number gelir.
+ *
+ * Değişmez: `dogru + yanlis + bos === soru_sayisi` (veritabanı kısıtı).
+ */
+export interface DenemeDersRow {
+  id: string;
+  user_id: string;
+  deneme_id: string;
+  ders: string;
+  dogru: number;
+  yanlis: number;
+  bos: number;
+  soru_sayisi: number;
+  /** `numeric` → STRING gelir. */
+  hedef_net: number | string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Bir denemede yapılan yanlış (0019).
+ *
+ * 0005'teki `mistakes` tablosunun halefi ama artık DENEMENİN ÇOCUĞU:
+ * `deneme_id` zorunlu, böylece deneme detayı kendi yanlışlarını tek
+ * sorguyla getirir.
+ *
+ * `konu` ve `hata_turu` null olabilir ve bu MEŞRU bir durumdur:
+ * etiketleme ayrı bir oturumun işi ("bu soruyu şimdi çözebiliyor
+ * muyum?"). Kayıt anında zorunlu kılmak uydurma veri üretirdi.
  *
  * `review_stage` tamamlanan tekrar sayısıdır (0..4), "hangi aralık"
  * değil. `next_review_date` null ise yanlış mezun olmuştur ve bir daha
  * tekrar kuyruğunda görünmez.
  */
-export interface MistakeRow {
+export interface DenemeYanlisRow {
   id: string;
   user_id: string;
+  deneme_id: string;
   ders: string;
-  konu: string;
-  date: string;
+  konu: string | null;
+  soru_no: number | null;
+  /** bilgi | islem | dikkat | sure | strateji. null = etiketlenmedi. */
+  hata_turu: string | null;
   note: string | null;
   image_path: string | null;
   image_width: number | null;
