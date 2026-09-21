@@ -19,6 +19,7 @@ import { PlanlamaHeader } from "./PlanlamaHeader";
 import { usePlanGoals } from "./queries";
 import { goalProgress } from "./rollup";
 import { usePlanlamaSurface } from "./usePlanlamaSurface";
+import { WeekGoalsSection } from "./WeekGoalsSection";
 import "./planlama.css";
 
 /**
@@ -30,9 +31,16 @@ import "./planlama.css";
  * sütun demekti; 1024px'de havuz (16rem) + ızgara + hedefler
  * hiçbirine yer bırakmazdı.
  *
- * Çapa Ay/Hafta ekranlarıyla PAYLAŞILIR (URL'deki `?ay=`): Eylül'ün
+ * Çapa Plan yüzeyiyle PAYLAŞILIR (URL'deki `?t=`): Eylül'ün
  * ızgarasına bakarken "Hedefler"e basan kullanıcı Eylül'ün hedeflerini
  * bulmalı, bugünün ayını değil.
+ *
+ * ── Haftalık hedefler neden BURADA? ──
+ * Ayrı bir "Haftalık" sekmesiydi ve aylık hedeflerden habersiz bir
+ * liste çiziyordu. 0014'ün `plan_goal_id` bağı (haftalık hedef = aylık
+ * hedefin dilimi) yalnızca haftalıktan aya doğru okunuyordu; aylık
+ * hedefe bakan kullanıcı dilimlerini göremiyordu. Aynı ekranda bağ iki
+ * yönlü oldu ve sekme çubuğu bir sekme eksildi.
  */
 export function GoalsScreen() {
   const toast = useToast();
@@ -119,7 +127,7 @@ export function GoalsScreen() {
                * odak vermek, ekran okuyucu kullanıcısına hiçbir şey
                * söylemeyen boş bir durak eklemekten ibaret olurdu.
                */
-              <ul className="goalList flex flex-col gap-2">
+              <ul className="goalList">
                 {progresses.map((progress) => (
                   <GoalCard
                     key={progress.goal.id}
@@ -177,6 +185,13 @@ export function GoalsScreen() {
                 </Button>
               </div>
             )}
+
+            <WeekGoalsSection
+              anchor={anchor}
+              today={today}
+              monthGoals={goals}
+              onError={toast.show}
+            />
           </>
         )}
       </ScreenBody>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { addDays } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 
 /*
@@ -50,18 +49,14 @@ function collapseNone(): ReadonlySet<DateStr> {
 }
 
 /**
- * @param anchor  Görüntülenen aralık. Değişince küme yeniden kurulur.
- * @param weekStarts  Bölümlerin başlangıç tarihleri, sırayla.
- *   REFERANS OLARAK SABİT OLMALI (çağıran `useMemo` ile sabitler);
- *   her render'da yeni bir dizi gelirse varsayılan küme yeniden
- *   kurulur ve kullanıcının açtığı hafta anında geri kapanır.
- * @param today  Bugün — açık kalacak haftayı seçer.
+ * @param anchor  Görüntülenen aralık. Değişince küme sıfırlanır.
+ *
+ * Eskiden `weekStarts` ve `today` de alıyordu: varsayılan küme
+ * "bugünün haftası hariç hepsi kapalı" idi ve onu hesaplamak için
+ * ikisi de gerekiyordu. Varsayılan artık boş küme (hepsi açık), yani
+ * hesaplanacak bir şey kalmadı.
  */
-export function useCollapsedWeeks(
-  anchor: DateStr,
-  weekStarts: readonly DateStr[],
-  today: DateStr,
-): CollapsedWeeks {
+export function useCollapsedWeeks(anchor: DateStr): CollapsedWeeks {
   /*
    * `weekStarts` ÇAĞIRAN tarafından `useMemo` ile sabitlenir
    * (`PlanlamaMonthScreen`). Sabit olmasaydı varsayılan küme her

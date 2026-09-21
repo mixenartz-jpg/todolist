@@ -12,7 +12,7 @@ import { ScreenBody } from "@/components/Screen";
 import { Toast, useToast } from "@/components/Toast";
 import { useTasks } from "@/features/tasks/queries";
 import { monthGrid } from "./monthgrid";
-import { buildPlanRange, chunkWeeks } from "./range";
+import { buildPlanRange } from "./range";
 import { CategoryFilterBar } from "./CategoryFilterBar";
 import { daySummaries } from "./dayplan";
 import { useSetTaskCategory, useSetTaskGoal } from "./mutations";
@@ -109,26 +109,7 @@ export function PlanlamaScreen() {
     [range.buckets, planDaysQuery.data],
   );
 
-  /*
-   * Hafta bölümlerinin başlangıç tarihleri.
-   *
-   * `PlanGrid` ile AYNI `chunkWeeks` çağrısı: bölümleme iki yerde ayrı
-   * hesaplansaydı katlama anahtarları ile çizilen bölümler sessizce
-   * ayrışabilirdi.
-   */
-  const weekStarts = useMemo(
-    () =>
-      chunkWeeks(range.buckets)
-        .map((w) => w[0]?.date)
-        .filter((d) => d !== undefined),
-    [range.buckets],
-  );
-
-  const { collapsedWeeks, toggleWeek } = useCollapsedWeeks(
-    anchor,
-    weekStarts,
-    today,
-  );
+  const { collapsedWeeks, toggleWeek } = useCollapsedWeeks(anchor);
 
   /* Ayın hedefleri — gün panelindeki hedef seçici için. */
   const goalsQuery = usePlanGoals(startOfMonth(anchor));

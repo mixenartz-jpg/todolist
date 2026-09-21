@@ -1,4 +1,6 @@
 "use client";
+
+import Link from "next/link";
 import { ScreenBody } from "@/components/Screen";
 
 import { useMemo, useState } from "react";
@@ -10,13 +12,6 @@ import { useTasks } from "@/features/tasks/queries";
 import { SectionHeading } from "@/features/sections/SectionHeading";
 import { CategoryBreakdown } from "./CategoryBreakdown";
 import { CategoryManager } from "./CategoryManager";
-import { GoalCard } from "./GoalCard";
-import {
-  useArchiveGoal,
-  useDeleteGoal,
-  useStepGoalProgress,
-  useUpdateGoal,
-} from "./mutations";
 import { PlanlamaHeader } from "./PlanlamaHeader";
 import { useCategories, usePlanGoals } from "./queries";
 import { buildMonthRollup } from "./rollup";
@@ -42,10 +37,6 @@ export function SummaryScreen() {
   const goalsQuery = usePlanGoals(anchor);
   const categoriesQuery = useCategories();
 
-  const updateGoal = useUpdateGoal(toast.show);
-  const stepProgress = useStepGoalProgress(toast.show);
-  const archiveGoal = useArchiveGoal(toast.show);
-  const deleteGoal = useDeleteGoal(toast.show);
 
   const [managing, setManaging] = useState(false);
 
@@ -137,47 +128,48 @@ export function SummaryScreen() {
                   onError={toast.show}
                 />
 
-                <ul className="flex flex-col gap-2">
+                {/*
+                  Hedefler burada YALNIZCA ÖZETLENİR, düzenlenmez.
+
+                  Önce tam `GoalCard` listesi vardı: aynı kart, aynı
+                  düzenle/±1/arşivle/sil yetkileriyle Hedefler ekranının
+                  birebir kopyası. Aynı hedefi iki sekmede aynı şekilde
+                  düzenlemek "hangisi asıl" sorusunu doğuruyordu ve iki
+                  yerde tutulan bir arayüz zamanla ayrışırdı.
+
+                  Özet GERİYE BAKMA ekranıdır: ne kadarı oldu. Değiştirme
+                  işi Hedefler'e ait ve oraya bir tık uzakta.
+                */}
+                <ul className="flex flex-col gap-1.5">
                   {rollup.goals.map((progress) => (
-                    <GoalCard
+                    <li
                       key={progress.goal.id}
-                      progress={progress}
-                      pending={updateGoal.isPending}
-                      onUpdate={(draft) =>
-                        updateGoal.mutate({
-                          id: progress.goal.id,
-                          month: anchor,
-                          title: draft.title,
-                          note: draft.note,
-                          targetCount: draft.targetCount,
-                          colorSlot: draft.colorSlot,
-                        })
-                      }
-                      onStep={(doneCount) =>
-                        stepProgress.mutate({
-                          id: progress.goal.id,
-                          month: anchor,
-                          doneCount,
-                        })
-                      }
-                      onArchive={(archived) =>
-                        archiveGoal.mutate({
-                          id: progress.goal.id,
-                          month: anchor,
-                          archived,
-                        })
-                      }
-                      onDelete={() =>
-                        deleteGoal.mutate({
-                          id: progress.goal.id,
-                          month: anchor,
-                        })
-                      }
-                    />
+                      className="flex items-baseline justify-between gap-3 rounded-lg bg-[var(--color-surface)] px-3 py-2"
+                    >
+                      <span className="min-w-0 truncate text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
+                        {progress.goal.title}
+                      </span>
+
+                      <span className="tabular shrink-0 text-[length:var(--text-sm)] text-[var(--color-ink-3)]">
+                        {progress.ratio === null
+                          ? "ölçülmüyor"
+                          : formatPercent(progress.ratio)}
+                      </span>
+                    </li>
                   ))}
                 </ul>
+
+                <div className="mt-2">
+                  <Link
+                    href="/planlama/hedefler"
+                    className="text-[length:var(--text-sm)] text-[var(--color-accent)] hover:underline"
+                  >
+                    Hedefleri düzenle
+                  </Link>
+                </div>
               </section>
             )}
+
 
             <section>
               <SectionHeading
