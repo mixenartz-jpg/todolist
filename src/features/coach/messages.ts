@@ -143,7 +143,13 @@ export function trendLine(delta: TrendDelta | null): CoachLine | null {
     return {
       headline: "Aynı tempo",
       detail: `Bu hafta ${formatPercent(delta.current)}, geçen hafta ${formatPercent(delta.previous)}.`,
-      action: null,
+      /*
+       * Eylem VAR: bu bir kutlama değil, durum bildirimi. `action`
+       * yalnızca kutlama anlarında boş kalabilir — "aynı tempo"
+       * dediğinde kullanıcının yapabileceği bir şey hâlâ var ve
+       * çıkmaz sokak yorum yasak.
+       */
+      action: { label: "Bugüne git", href: "/bugun" },
       tone: "neutral",
     };
   }
@@ -272,7 +278,8 @@ export function paceLine(pace: GoalPace, goalTitle: string): CoachLine | null {
   return {
     headline: `${goalTitle} — yolunda`,
     detail: needed ?? `${formatPercent(pace.actual)} tamam.`,
-    action: null,
+    // Kutlama değil durum bildirimi; eylem düşmez (bkz. trendLine).
+    action: { label: "Görev ekle", href: "/bugun" },
     tone: "neutral",
   };
 }

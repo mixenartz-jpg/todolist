@@ -17,7 +17,7 @@ import { preparePage, SHOT_DIR, VIEWPORTS } from "./shot";
 
 test("s1 — gün paneli (mobil)", async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.mobile);
-  await preparePage(page, "/planlama/ay");
+  await preparePage(page, "/planlama");
 
   const day = page.getByRole("button", { name: /Mart/ }).first();
   if ((await day.count()) === 0) {
@@ -30,7 +30,7 @@ test("s1 — gün paneli (mobil)", async ({ page }) => {
 
 test("s2 — gün paneli (masaüstü)", async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
-  await preparePage(page, "/planlama/ay");
+  await preparePage(page, "/planlama");
 
   const day = page.getByRole("button", { name: /Mart/ }).first();
   if ((await day.count()) === 0) {
@@ -43,7 +43,7 @@ test("s2 — gün paneli (masaüstü)", async ({ page }) => {
 
 test("s3 — plan gün paneli", async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
-  await preparePage(page, "/planlama/ay");
+  await preparePage(page, "/planlama");
 
   const day = page.getByRole("button", { name: /günü aç/ }).first();
   if ((await day.count()) === 0) {
@@ -109,6 +109,83 @@ test("s6 — onay diyaloğu", async ({ page }) => {
   await remove.click();
   await page.waitForTimeout(200);
   await page.screenshot({ path: `${SHOT_DIR}/s6-onay-diyalogu.png` });
+
+  await page.keyboard.press("Escape");
+});
+
+/*
+ * Hızlı panel — her sayfada duran widget.
+ *
+ * İki kare: kapalı şerit ve açık liste. Widget `--z-dropdown`'da
+ * oturuyor ve mobilde sekme çubuğunun ÜSTÜNDE durmak zorunda;
+ * çakışma sessizdir (parmak yanlış hedefe değer) ve ancak görüntüyle
+ * yakalanır.
+ */
+test("s7 — hızlı panel kapalı (mobil)", async ({ page }) => {
+  await page.setViewportSize(VIEWPORTS.mobile);
+  await preparePage(page, "/planlama");
+
+  const strip = page.getByRole("button", { name: /iş kaldı|gün tamam/ });
+  if ((await strip.count()) === 0) {
+    test.skip(true, "Bugün için iş yok — widget hiç çizilmiyor.");
+  }
+  await page.screenshot({ path: `${SHOT_DIR}/s7-hizli-panel-kapali.png` });
+});
+
+test("s8 — hızlı panel açık (mobil)", async ({ page }) => {
+  await page.setViewportSize(VIEWPORTS.mobile);
+  await preparePage(page, "/planlama");
+
+  const strip = page.getByRole("button", { name: /iş kaldı|gün tamam/ });
+  if ((await strip.count()) === 0) {
+    test.skip(true, "Bugün için iş yok — widget hiç çizilmiyor.");
+  }
+  await strip.click();
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: `${SHOT_DIR}/s8-hizli-panel-acik.png` });
+});
+
+/*
+ * Zen odak modu — tam ekran katman.
+ *
+ * Rota DEĞİL, bu yüzden doğrudan bir adresle çekilemiyor: odak
+ * kartındaki "Odaklan" düğmesinden giriliyor. Katmanın ekranı
+ * gerçekten kapladığı ve sayacın ışıdığı yalnızca burada görülüyor.
+ */
+test("s9 — Zen odak modu", async ({ page }) => {
+  await page.setViewportSize(VIEWPORTS.desktop);
+  await preparePage(page, "/bugun");
+
+  const enter = page.getByRole("button", { name: "Odaklan" }).first();
+  if ((await enter.count()) === 0) {
+    test.skip(true, "Açık iş yok — odak kartı Zen düğmesi çizmiyor.");
+  }
+  await enter.click();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: `${SHOT_DIR}/s9-zen.png` });
+
+  await page.keyboard.press("Escape");
+});
+
+/*
+ * Akşam rutini sheet'i.
+ *
+ * Saat eşiğine bağlı (20:00 sonrası) ve çekim harness'ı saati
+ * değiştiremez — gündüz çalıştırıldığında düğme hiç çizilmez ve
+ * çekim atlanır. Atlanması bir hata değil: `evening.test.ts` eşiği
+ * zaten doğruluyor, buradaki kare yalnızca görsel doğrulama.
+ */
+test("s10 — akşam rutini", async ({ page }) => {
+  await page.setViewportSize(VIEWPORTS.mobile);
+  await preparePage(page, "/bugun");
+
+  const open = page.getByRole("button", { name: /Günü kapat/ }).first();
+  if ((await open.count()) === 0) {
+    test.skip(true, "Akşam saati değil — davet çizilmiyor.");
+  }
+  await open.click();
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: `${SHOT_DIR}/s10-aksam-rutini.png` });
 
   await page.keyboard.press("Escape");
 });

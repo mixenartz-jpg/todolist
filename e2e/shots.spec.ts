@@ -32,30 +32,34 @@ interface Route {
 const ALL: readonly ViewportName[] = ["mobile", "tablet", "desktop"];
 
 /*
- * Silinen rotaların numaraları BOŞ BIRAKILDI (03, 04, 11, 12):
- * kaydırmak kalan her rotanın slug'ını değiştirir ve `e2e/__shots__`
- * altındaki referansları yetim bırakırdı. Numara okuma kolaylığı
- * içindir, kimlik değil — aynı gerekçe "07b"nin altında da yazılı.
+ * Silinen rotaların numaraları BOŞ BIRAKILDI (03, 04, 05, 06, 07b,
+ * 11, 12): kaydırmak kalan her rotanın slug'ını değiştirir ve
+ * `e2e/__shots__` altındaki referansları yetim bırakırdı. Numara
+ * okuma kolaylığı içindir, kimlik değil.
+ *
+ * Silinenler ve gerekçeleri:
+ *   03, 04     — Defter (Notlar + Yanlışlar), F1'de kaldırıldı
+ *   05, 06     — /planlama/ay ve /hafta, F5'te tek /planlama oldu
+ *   07b        — /planlama/haftalik, Hedefler içine taşındı
+ *   11, 12     — Takvim (Ay + Hafta), F2'de kaldırıldı
+ *
+ * Eklenenler: 00-panel (F8), 13-arsiv (F12). "00" başta duruyor
+ * çünkü Panel artık açılış ekranı.
  */
 const ROUTES: readonly Route[] = [
-  { slug: "01-tablo", path: "/tablo", viewports: ALL },
-  /* Kök artık `/bugun`'e yönlendiriyor; çekim doğrudan hedeften
-     alınır, yönlendirme aşağıda ayrıca doğrulanıyor. */
-  { slug: "02-bugun", path: "/bugun", viewports: ALL },
-  { slug: "05-planlama-ay", path: "/planlama/ay", viewports: ALL },
-  { slug: "06-planlama-hafta", path: "/planlama/hafta", viewports: ALL },
-  { slug: "07-planlama-hedefler", path: "/planlama/hedefler", viewports: ALL },
   /*
-   * Slug "07b": sekme sırasında Hedefler ile Özet ARASINDA duruyor ama
-   * numaralar kaydırılMADI. `08-planlama-ozet`'i 09 yapmak, ondan
-   * sonraki her rotayı da kaydırır ve e2e/__shots__ altındaki tüm
-   * referans görüntüleri yetim bırakırdı — sıra numarası okuma
-   * kolaylığı içindir, kimlik değil.
+   * Panel `narrow` (320px) ölçüsünde de çekiliyor: hafta şeridi yedi
+   * sütunu o genişliğe sığdırmak zorunda ve taşma SESSİZ olurdu.
    */
-  { slug: "07b-planlama-haftalik", path: "/planlama/haftalik", viewports: ALL },
+  { slug: "00-panel", path: "/", viewports: [...ALL, "narrow"] },
+  { slug: "01-tablo", path: "/tablo", viewports: ALL },
+  { slug: "02-bugun", path: "/bugun", viewports: ALL },
+  { slug: "05-planlama", path: "/planlama", viewports: ALL },
+  { slug: "07-planlama-hedefler", path: "/planlama/hedefler", viewports: ALL },
   { slug: "08-planlama-ozet", path: "/planlama/ozet", viewports: ALL },
   { slug: "09-istatistik", path: "/istatistik", viewports: ALL },
   { slug: "10-rutinler", path: "/rutinler", viewports: ALL },
+  { slug: "13-arsiv", path: "/arsiv", viewports: ALL },
 ];
 
 for (const route of ROUTES) {
@@ -82,9 +86,9 @@ for (const route of ROUTES) {
  */
 test("05-planlama-ay @ wide", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
-  await preparePage(page, "/planlama/ay");
+  await preparePage(page, "/planlama");
   await page.screenshot({
-    path: `${SHOT_DIR}/05-planlama-ay--wide.png`,
+    path: `${SHOT_DIR}/05-planlama--wide.png`,
     fullPage: true,
   });
 });
@@ -92,14 +96,29 @@ test("05-planlama-ay @ wide", async ({ page }) => {
 /* Yönlendirme stub'ları — görüntü değil, hedef doğrulanır. */
 test("yönlendirmeler", async ({ page }) => {
   for (const [from, to] of [
-    ["/", "/bugun"],
-    ["/planlama", "/planlama/ay"],
+    /*
+     * Kök ARTIK YÖNLENDİRMİYOR — F8'de kontrol paneli oldu. Onun
+     * yerine eski ölçek rotaları tek `/planlama` yüzeyine düşüyor.
+     */
+    ["/planlama/ay", "/planlama"],
+    /*
+     * Hafta ölçeği çapayı KORUYARAK geçiyor: `?ol=hafta` düşseydi
+     * kullanıcı hafta görünümünü yer imine eklediğinde ay
+     * görünümünde açılırdı. Bu yüzden desen `$` ile bitmiyor.
+     */
+    ["/planlama/hafta", "/planlama\?ol=hafta"],
+    ["/planlama/haftalik", "/planlama/hedefler"],
     /* Takvim sekmesi kaldırıldı ama adresler yer imlerinde olabilir;
        PWA'da 404 çıkmaz sokaktır. */
     ["/takvim", "/planlama"],
-    ["/takvim/plan", "/planlama/ay"],
+    ["/takvim/plan", "/planlama"],
   ]) {
     await page.goto(from);
-    await expect(page).toHaveURL(new RegExp(`${to}$`));
+    /*
+     * `$` YOK: bazı yönlendirmeler sorgu parametresi taşıyor
+     * (bkz. /planlama/hafta) ve sona sabitlemek onları yanlışlıkla
+     * başarısız gösterirdi.
+     */
+    await expect(page).toHaveURL(new RegExp(to));
   }
 });

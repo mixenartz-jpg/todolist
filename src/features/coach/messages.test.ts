@@ -111,6 +111,7 @@ describe("trendLine", () => {
 
     expect(line!.headline).toBe("Aynı tempo");
     expect(line!.tone).toBe("neutral");
+    expect(line!.action).not.toBeNull();
   });
 });
 
@@ -241,10 +242,12 @@ describe("paceLine", () => {
     expect(paceLine(pace({ verdict: "noTarget" }), "Üçgenler")).toBeNull();
   });
 
-  it("yolundayken nötr kalır", () => {
+  it("yolundayken nötr kalır ama EYLEM verir", () => {
     const line = paceLine(pace({ verdict: "onTrack" }), "Üçgenler");
 
     expect(line!.tone).toBe("neutral");
+    // Kutlama değil durum bildirimi: çıkmaz sokak yorum yasak.
+    expect(line!.action).not.toBeNull();
   });
 });
 
