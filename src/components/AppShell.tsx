@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/ui/cn";
 import { createClient } from "@/lib/supabase/client";
+import { QuickPanel } from "@/features/quickpanel/QuickPanel";
 import {
   ChartIcon,
   CheckIcon,
@@ -77,6 +78,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="flex min-w-0 max-w-full flex-1 flex-col overflow-x-clip pb-16 md:pb-0">
         {children}
       </main>
+      {/* Hızlı panel HER sayfada: kullanıcı Planlama'da ay kurarken
+          bugünün bir işini işaretlemek isterse, sekme değiştirip geri
+          dönmek zorunda kalmasın. Kabuk düzeyinde duruyor çünkü
+          hiçbir ekrana ait değil. */}
+      <QuickPanel />
+
       <MobileTabBar />
     </div>
   );

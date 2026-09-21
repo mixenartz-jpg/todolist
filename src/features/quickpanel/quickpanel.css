@@ -1,0 +1,100 @@
+/*
+ * Hızlı panel — her sayfanın sağ alt köşesinde.
+ *
+ * ── Mobilde neden yukarıda duruyor? ──
+ * Alt sekme çubuğu zaten `fixed bottom-0` ve widget'ı `bottom: 0`'a
+ * koymak onu sekmelerin ÜSTÜNE bindirirdi: "Rutinler"e basmak isteyen
+ * parmak widget'a değerdi. Sekme çubuğunun yüksekliği kadar yukarı
+ * itiliyor.
+ *
+ * 56px ölçülmüş bir değer değil, çubuğun kendi düzeninden geliyor:
+ * `py-2.5` (20px) + ikon 16px + `gap-1` (4px) + etiket ~14px ≈ 54px,
+ * yukarı yuvarlandı. `env(safe-area-inset-bottom)` iPhone home
+ * indicator alanı — çubuk onu kendi dolgusunda taşıyor, widget da
+ * aynısını eklemek zorunda yoksa çubuğun içine girerdi.
+ *
+ * ── z-index ──
+ * `--z-dropdown` (20): sekme çubuğunun (`--z-sticky`, 10) üstünde ama
+ * sheet/dialog'un (30/40) altında. Panel açıkken bir sheet açılırsa
+ * sheet kazanmalı — widget modal DEĞİL ve modalin önüne geçemez.
+ */
+
+.quickPanel {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(56px + env(safe-area-inset-bottom) + 0.75rem);
+  z-index: var(--z-dropdown);
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+
+  /*
+   * Panelin kendisi tıklamaları yakalamaz, çocukları yakalar: kapalı
+   * durumda şerit küçük bir kutu ama konteyner sağ kenardan yukarı
+   * uzanıyor ve altındaki içeriği tıklanamaz yapardı.
+   */
+  pointer-events: none;
+}
+
+.quickPanel > * {
+  pointer-events: auto;
+}
+
+/* Masaüstünde sekme çubuğu yok — widget dibe iner. */
+@media (min-width: 768px) {
+  .quickPanel {
+    right: 1.5rem;
+    bottom: 1.5rem;
+  }
+}
+
+.quickPanelSheet {
+  /*
+   * Azami yükseklik: ekranın yarısı. Uzun bir gün listesi widget'ı
+   * tam boy bir panele çevirirdi ve o zaman Bugün ekranından farkı
+   * kalmazdı — widget bir KONTROL, bir ekran değil.
+   */
+  max-height: 50vh;
+  overflow-y: auto;
+
+  /* Dar ekranda kenarlara yapışmasın; geniş ekranda okunur genişlik. */
+  width: min(20rem, calc(100vw - 2rem));
+
+  /*
+   * `overscroll-behavior: contain`: liste dibine gelince kaydırma
+   * ARKADAKİ sayfaya geçmesin. Geçseydi kullanıcı listeyi kaydırırken
+   * altındaki ay ızgarası kayardı ve panel kapandığında nerede
+   * olduğunu kaybederdi.
+   */
+  overscroll-behavior: contain;
+}
+
+/*
+ * Açılış hareketi: aşağıdan yukarı, 160ms.
+ *
+ * Panelin NEREDEN geldiğini gösteriyor — şeritten. Sönümlenerek
+ * belirseydi (yalnızca opacity) kullanıcı onun şeritle ilişkisini
+ * kurmak için bir kare düşünmek zorunda kalırdı.
+ */
+@keyframes quickPanelRise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.quickPanelSheet {
+  animation: quickPanelRise var(--duration-fast) var(--ease-out-expo);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quickPanelSheet {
+    animation: none;
+  }
+}
