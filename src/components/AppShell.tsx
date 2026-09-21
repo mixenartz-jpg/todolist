@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { cn } from "@/lib/ui/cn";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -19,32 +19,40 @@ interface NavItem {
   href: string;
   label: string;
   /**
-   * Alt sekme çubuğu için kısa etiket. Sekmeler 68px sabit genişlikte
-   * (bkz. nav-bar.css) ve uzun adlar oraya sığmaz. Kısaltma
-   * verilmezse `label` kullanılır.
+   * Alt sekme çubuğu için kısa etiket. Sekmeler çubuğu eşit bölüşür
+   * (bkz. nav-bar.css) ve 320px'de sekme başına ~64px düşer; uzun
+   * adlar oraya sığmaz. Kısaltma verilmezse `label` kullanılır.
    */
   shortLabel?: string;
   icon: ReactNode;
 }
 
+/*
+ * Sekme sırası GÜNÜN AKIŞINI izler: önce bugün ne yapacağım, sonra
+ * ileriyi nasıl kuracağım, sonra nasıl gidiyorum.
+ *
+ * Beş sekme üst sınırdır — 320px'de eşit bölüşünce sekme başına 64px
+ * düşer ve dokunma eşiği (44px) rahat geçilir. Altıncı sekme 53px'e
+ * indirir ve "İstat." etiketi kırpılmaya başlar. Yeni bir yüzey
+ * gerektiğinde sekme EKLENMEZ, var olanın içine girer.
+ */
 const NAV: NavItem[] = [
-  { href: "/", label: "Tablo", icon: <GridIcon /> },
   { href: "/bugun", label: "Bugün", icon: <CheckIcon /> },
-  /*
-   * Planlama, Takvim'in HEMEN yanında: ikisi de zamansal yüzeydir ve
-   * komşu durmaları haritayı okunur kılar. Takvim BAKMAK içindir
-   * (ay/hafta görünümü); Planlama KURMAK içindir — hedef koymak,
-   * günü yazmak, kategorilere ayırmak, ay sonunda ölçmek.
-   */
   {
     href: "/planlama",
     label: "Planlama",
-    // "Plan" DEĞİL diye tam ad: eski /takvim/plan ekranının adı
-    // "Plan"dı ve ikisi karışırdı. Kısa etiket yine "Plan" — 68px'e
-    // "Planlama" sığmaz ve kısaltma bağlamda belirsiz değil.
+    // Kısa etiket "Plan": 64px'e "Planlama" sığmaz ve kısaltma
+    // bağlamda belirsiz değil.
     shortLabel: "Plan",
     icon: <TargetIcon />,
   },
+  /*
+   * Tablo (rutin × gün matrisi) eskiden `/` idi ve açılış ekranıydı.
+   * Koçluk ürününde açılış "şimdi ne yapmalıyım" sorusunu cevaplar,
+   * "bu ay nasıl gidiyorum"u değil — o geriye bakmaktır ve sekmede
+   * İstatistik'in komşusu olarak doğru yerde durur.
+   */
+  { href: "/tablo", label: "Tablo", icon: <GridIcon /> },
   {
     href: "/istatistik",
     label: "İstatistik",
@@ -139,38 +147,13 @@ function NavRail() {
 }
 
 /**
- * Mobil alt sekme çubuğu — yatay kaydırılabilir.
+ * Mobil alt sekme çubuğu.
  *
- * Yedi sekme sabit 68px genişlikte durur ve çubuk kayar; sıkıştırma
- * yapılmaz. Gerekçe ve ölçüler nav-bar.css'te.
+ * Beş sekme çubuğu eşit bölüşür; kaydırma YOK, hepsi ilk bakışta
+ * görünür. Ölçüler ve aritmetik nav-bar.css'te.
  */
 function MobileTabBar() {
   const pathname = usePathname();
-  const activeRef = useRef<HTMLAnchorElement>(null);
-
-  /*
-   * Aktif sekmeyi görünüre getir.
-   *
-   * `useEffect`, `useLayoutEffect` DEĞİL: layout effect sunucuda uyarı
-   * basar ve burada boyamadan önce çalışması gerekmiyor — çubuk
-   * ekranın en altında ve ilk karede kaydırılmamış olması fark
-   * edilmez.
-   *
-   * `block: "nearest"` ZORUNLU: varsayılan "start" DİKEY kaydırmayı da
-   * tetikler ve sayfayı yukarı zıplatır. `inline: "center"` sekmeyi
-   * ortalar. `behavior: "auto"` — kullanıcının yapmadığı bir hareketi
-   * ona animasyonla göstermek yanıltıcı olurdu.
-   *
-   * Hydration uyuşmazlığı imkânsız: DOM'a hiçbir şey yazılmıyor,
-   * yalnızca kaydırma konumu değişiyor ve React onu uzlaştırmıyor.
-   */
-  useEffect(() => {
-    activeRef.current?.scrollIntoView({
-      block: "nearest",
-      inline: "center",
-      behavior: "auto",
-    });
-  }, [pathname]);
 
   return (
     <nav
@@ -181,10 +164,9 @@ function MobileTabBar() {
        * flex-basis hesabını bozardı; burada iPhone home indicator
        * alanı sekmelerin altında tek parça boş durur.
        *
-       * `.tabBar`'a tabindex VERİLMEZ: içindeki yedi <Link> zaten
-       * odaklanabilir ve tarayıcı odaklananı kendiliğinden görünüre
-       * kaydırır. Ayrı bir odak durağı, klavye kullanıcısına anlamsız
-       * bir fazladan Tab bastırırdı.
+       * `.tabBar`'a tabindex VERİLMEZ: içindeki beş <Link> zaten
+       * odaklanabilir. Ayrı bir odak durağı, klavye kullanıcısına
+       * anlamsız bir fazladan Tab bastırırdı.
        */
       className="tabBar glassChrome glassChrome--bottom fixed inset-x-0 bottom-0 z-[var(--z-sticky)] pb-[env(safe-area-inset-bottom)] md:hidden"
     >
@@ -195,7 +177,6 @@ function MobileTabBar() {
           <Link
             key={item.href}
             href={item.href}
-            ref={active ? activeRef : undefined}
             aria-current={active ? "page" : undefined}
             className={cn(
               "tabBarItem",
@@ -238,7 +219,12 @@ function SignOutButton() {
   );
 }
 
+/*
+ * `startsWith` yeterli: artık hiçbir sekme `/` değil ve kök yalnızca
+ * bir yönlendirme. Eskiden `/` özel durumu gerekiyordu, çünkü o önek
+ * her yolu eşleştirip tüm sekmeleri aktif gösterirdi.
+ */
 function isActive(pathname: string, href: string): boolean {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+  return pathname.startsWith(href);
 }
 

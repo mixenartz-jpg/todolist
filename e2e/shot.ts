@@ -27,6 +27,12 @@ export const SHOT_DIR = `e2e/__shots__/${SHOT_LABEL}`;
 export const FROZEN_NOW = new Date("2026-03-16T09:00:00");
 
 export const VIEWPORTS = {
+  /*
+   * 320px — desteklenen EN DAR ekran. Alt sekme çubuğu burada beş
+   * sekmeyi eşit bölüşüyor (64px/sekme) ve kaydırma yok; kırpma bu
+   * ölçüde başlarsa başka hiçbir yerde görünmez.
+   */
+  narrow: { width: 320, height: 568 },
   mobile: { width: 390, height: 844 },
   tablet: { width: 834, height: 1112 },
   desktop: { width: 1440, height: 900 },

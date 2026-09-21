@@ -1,6 +1,14 @@
-import { MatrixScreen } from "@/features/matrix/MatrixScreen";
+import { redirect } from "next/navigation";
 
-/** Açılış ekranı: rutin × gün matrisi. */
-export default function Page() {
-  return <MatrixScreen />;
+/**
+ * Kök — şimdilik Bugün'e düşer.
+ *
+ * F8'de burası kontrol paneli olacak: günün durumu, haftanın planı,
+ * hedef ilerlemesi ve koçluk satırı tek ekranda. O gelene kadar
+ * kullanıcıyı boş bir sayfaya değil, günün işine bırakmak doğru.
+ *
+ * Eski açılış (rutin matrisi) `/tablo`'ya taşındı.
+ */
+export default function RootPage() {
+  redirect("/bugun");
 }

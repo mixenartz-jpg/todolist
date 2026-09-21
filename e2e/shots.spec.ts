@@ -31,14 +31,17 @@ interface Route {
 
 const ALL: readonly ViewportName[] = ["mobile", "tablet", "desktop"];
 
+/*
+ * Silinen rotaların numaraları BOŞ BIRAKILDI (03, 04, 11, 12):
+ * kaydırmak kalan her rotanın slug'ını değiştirir ve `e2e/__shots__`
+ * altındaki referansları yetim bırakırdı. Numara okuma kolaylığı
+ * içindir, kimlik değil — aynı gerekçe "07b"nin altında da yazılı.
+ */
 const ROUTES: readonly Route[] = [
-  { slug: "01-tablo", path: "/", viewports: ALL },
+  { slug: "01-tablo", path: "/tablo", viewports: ALL },
+  /* Kök artık `/bugun`'e yönlendiriyor; çekim doğrudan hedeften
+     alınır, yönlendirme aşağıda ayrıca doğrulanıyor. */
   { slug: "02-bugun", path: "/bugun", viewports: ALL },
-  /* "02b": Bugün'ün hafta ölçeği — ayrı rota değil, aynı sayfanın
-     parametresi. Numara kaydırmama kuralı için bkz. "07b". */
-  { slug: "02b-bugun-hafta", path: "/bugun?ol=hafta", viewports: ALL },
-  { slug: "03-takvim-ay", path: "/takvim/ay", viewports: ALL },
-  { slug: "04-takvim-hafta", path: "/takvim/hafta", viewports: ALL },
   { slug: "05-planlama-ay", path: "/planlama/ay", viewports: ALL },
   { slug: "06-planlama-hafta", path: "/planlama/hafta", viewports: ALL },
   { slug: "07-planlama-hedefler", path: "/planlama/hedefler", viewports: ALL },
@@ -53,8 +56,6 @@ const ROUTES: readonly Route[] = [
   { slug: "08-planlama-ozet", path: "/planlama/ozet", viewports: ALL },
   { slug: "09-istatistik", path: "/istatistik", viewports: ALL },
   { slug: "10-rutinler", path: "/rutinler", viewports: ALL },
-  { slug: "11-defter-notlar", path: "/defter/notlar", viewports: ALL },
-  { slug: "12-defter-yanlislar", path: "/defter/yanlislar", viewports: ALL },
 ];
 
 for (const route of ROUTES) {
@@ -91,9 +92,11 @@ test("05-planlama-ay @ wide", async ({ page }) => {
 /* Yönlendirme stub'ları — görüntü değil, hedef doğrulanır. */
 test("yönlendirmeler", async ({ page }) => {
   for (const [from, to] of [
-    ["/takvim", "/takvim/ay"],
+    ["/", "/bugun"],
     ["/planlama", "/planlama/ay"],
-    ["/defter", "/defter/notlar"],
+    /* Takvim sekmesi kaldırıldı ama adresler yer imlerinde olabilir;
+       PWA'da 404 çıkmaz sokaktır. */
+    ["/takvim", "/planlama"],
     ["/takvim/plan", "/planlama/ay"],
   ]) {
     await page.goto(from);
