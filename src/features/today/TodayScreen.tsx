@@ -4,7 +4,7 @@ import { ScreenBody } from "@/components/Screen";
 import { useCallback, useMemo, useState } from "react";
 import { cn } from "@/lib/ui/cn";
 import { formatLongDate, formatPercent, WEEKDAYS_LONG } from "@/lib/ui/tr";
-import { isoWeekday, todayStr } from "@/lib/date/date";
+import { isoWeekday, startOfMonth, todayStr } from "@/lib/date/date";
 import { EmptyState } from "@/components/EmptyState";
 import { CheckIcon } from "@/components/icons";
 import { Toast, useToast } from "@/components/Toast";
@@ -17,6 +17,7 @@ import type { RoutineWithSchedule } from "@/features/routines/types";
 import { dayScore, periodProgress } from "@/features/stats/score";
 import { SectionHeading } from "@/features/sections/SectionHeading";
 import { CategoryDot } from "@/features/planlama/CategoryDot";
+import { usePlanGoals } from "@/features/planlama/queries";
 import { TaskDetails } from "@/features/tasks/TaskDetails";
 import { TaskItem } from "@/features/tasks/TaskItem";
 import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
@@ -35,6 +36,8 @@ import {
 import { tasksForDay, undatedTasks, useTasks } from "@/features/tasks/queries";
 import type { Task } from "@/features/tasks/types";
 import { DayRail } from "./DayRail";
+import { FocusCard } from "./FocusCard";
+import { nextTask, openCount } from "./focus";
 import { TodayRoutineItem } from "./TodayRoutineItem";
 
 export function TodayScreen() {
@@ -132,6 +135,28 @@ export function TodayScreen() {
     [tasksQuery.data],
   );
 
+  /*
+   * Odak kartının gösterdiği iş, listenin İLK açık işiyle aynı olmak
+   * zorunda — `focus.test.ts` bunu bir invariant olarak sabitliyor.
+   * Aynı `dayTasks` kümesinden türetilmesi bunu yapısal kılıyor.
+   */
+  const focus = useMemo(() => nextTask(dayTasks, today), [dayTasks, today]);
+  const openLeft = useMemo(() => openCount(dayTasks), [dayTasks]);
+
+  /*
+   * Hedefler GÖREVİN kendi ayından okunuyor, görüntülenen aydan değil
+   * — bir hedef aya aittir ve o ayın özetinde ölçülür (bkz.
+   * TaskGoalRow). Bugün ekranında bu ikisi ayın son gününde ayrışır.
+   */
+  const focusGoalsQuery = usePlanGoals(
+    startOfMonth(focus?.dueDate ?? today),
+  );
+
+  const focusGoal = useMemo(() => {
+    if (focus?.goalId == null) return null;
+    return (focusGoalsQuery.data ?? []).find((g) => g.id === focus.goalId) ?? null;
+  }, [focus, focusGoalsQuery.data]);
+
   const categoriesQuery = useCategories();
   const categoryById = useMemo(
     () => categoryMap(categoriesQuery.data ?? []),
@@ -204,6 +229,19 @@ export function TodayScreen() {
             )}
           >
             <div className="flex min-w-0 flex-1 flex-col gap-[var(--stack-gap)]">
+              {/* Odak kartı EN ÜSTTE: ekranı açan kişinin ilk gördüğü
+                  şey "şimdi ne yapmalıyım"ın cevabı olmalı. Rutinler
+                  ve liste onun altında, bağlam olarak duruyor. */}
+              <FocusCard
+                task={focus}
+                goal={focusGoal}
+                today={today}
+                openCount={openLeft}
+                onDone={() =>
+                  focus && toggleTask.mutate({ id: focus.id, done: true })
+                }
+              />
+
               <section>
                 {routines.length === 0 ? (
                   <EmptyState
