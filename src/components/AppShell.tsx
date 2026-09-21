@@ -9,7 +9,7 @@ import {
   ChartIcon,
   CheckIcon,
   GridIcon,
-  ListIcon,
+  HomeIcon,
   TargetIcon,
 } from "@/components/icons";
 import "./nav-bar.css";
@@ -37,6 +37,11 @@ interface NavItem {
  * gerektiğinde sekme EKLENMEZ, var olanın içine girer.
  */
 const NAV: NavItem[] = [
+  /*
+   * Panel AÇILIŞ ekranı ve sekmelerin başında duruyor: "neyin nerede
+   * olduğu" sorusunun cevabı, günün işine girmeden ÖNCE gelir.
+   */
+  { href: "/", label: "Panel", icon: <HomeIcon /> },
   { href: "/bugun", label: "Bugün", icon: <CheckIcon /> },
   {
     href: "/planlama",
@@ -61,7 +66,6 @@ const NAV: NavItem[] = [
     shortLabel: "İstat.",
     icon: <ChartIcon />,
   },
-  { href: "/rutinler", label: "Rutinler", icon: <ListIcon /> },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -225,11 +229,19 @@ function SignOutButton() {
 }
 
 /*
- * `startsWith` yeterli: artık hiçbir sekme `/` değil ve kök yalnızca
- * bir yönlendirme. Eskiden `/` özel durumu gerekiyordu, çünkü o önek
- * her yolu eşleştirip tüm sekmeleri aktif gösterirdi.
+ * Kök TAM eşleşme ister, önek değil.
+ *
+ * `/` öneki her yolu eşleştirir ve Panel sekmesi TÜM sayfalarda aktif
+ * görünürdü — aktiflik işareti de hiçbir şey söylemez hâle gelirdi.
+ * Bu özel durum bir ara gereksizleşmişti (kök yalnızca yönlendirmeydi
+ * ve hiçbir sekme `/` değildi); F8'de kök kontrol paneli olunca geri
+ * geldi.
+ *
+ * Diğer sekmelerde önek DOĞRU olan: `/planlama/hedefler` açıkken Plan
+ * sekmesi aktif kalmalı.
  */
 function isActive(pathname: string, href: string): boolean {
+  if (href === "/") return pathname === "/";
   return pathname.startsWith(href);
 }
 

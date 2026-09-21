@@ -210,3 +210,38 @@ export function recentHistory(
     done: isCompleted(entries, routine, date),
   }));
 }
+
+/**
+ * Seri bugüne bakıyor mu?
+ *
+ * ── Neden gerekli? ──
+ * Tolerans kuralı 1 seriyi bugün KIRMIYOR ve bu doğru: gün bitmedi,
+ * sabah 09:00'da "serin sıfırlandı" demek hem yanlış hem demoralize
+ * edici. Ama doğru olmakla yeterli olmak aynı şey değil — kullanıcı
+ * hiç uyarılmıyor ve seri sessizce gece yarısında kırılıyor.
+ *
+ * Bu, koçun tek meşru aciliyet cümlesidir: "12 günlük serin bugüne
+ * bakıyor." Koç "serin gitti" DİYEMEZ, çünkü gitmedi.
+ *
+ * ── `computeStreak` neden değiştirilmedi? ──
+ * İmzası `StreakResult` döndürüyor ve ona bir alan eklemek, onu
+ * çağıran her yeri ve `streak.test.ts`'in eşitlik iddialarını
+ * ilgilendirirdi. Buradaki soru ayrı bir soru: "kırılmış mı" değil,
+ * "bugün kırılabilir mi".
+ *
+ * Esnek rutinde DAİMA `false` döner ve bu bir eksiklik değil: `isDueOn`
+ * esnek rutinlerde daima `false`'tur ("bugün kaçırdım mı?" onlar için
+ * anlamsız bir sorudur, dönem bitmeden kaybedilmiş bir şey yoktur).
+ */
+export function streakAtRisk(
+  entries: EntryMap,
+  routine: RoutineWithSchedule,
+  today: DateStr,
+): boolean {
+  if (!isDueOn(routine, today)) return false;
+  if (isCompleted(entries, routine, today)) return false;
+
+  // Olmayan bir seri risk altında olamaz: "0 günlük serin bugüne
+  // bakıyor" cümlesi boş bir tehdit olurdu.
+  return computeStreak(entries, routine, today).current > 0;
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ScreenHeader } from "@/components/Screen";
 import { Button } from "@/components/Button";
 import { formatMonthYear } from "@/lib/ui/tr";
@@ -24,6 +25,23 @@ export function MonthSwitcher({
       title={formatMonthYear(year, month)}
       actions={
         <>
+          {/*
+            Rutin yönetimine TEK kalıcı giriş.
+
+            `/rutinler` üst çubuktan çıktı: rutin CRUD'u nadir yapılan
+            bir iş ve altı sekme, 320px'te etiketleri kırpma sınırına
+            dayıyordu. Ama rotayı sekmeden almak, ona yalnızca boş
+            durum bağlantılarından ulaşılabilmesi demekti — yani
+            rutini OLAN kullanıcı için hiçbir yerden. Tablo doğru ev:
+            ekranın kendisi zaten rutinlerin listesi.
+          */}
+          <Link
+            href="/rutinler"
+            className="rounded-md px-2 py-1 text-[length:var(--text-sm)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-accent)]"
+          >
+            Rutinleri yönet
+          </Link>
+
           {!isCurrentMonth && (
             <Button size="sm" variant="ghost" onClick={onToday}>
               Bugün

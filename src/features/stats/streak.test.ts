@@ -7,7 +7,7 @@ import {
   noEntries,
   routine,
 } from "@/features/testing/fixtures";
-import { computeStreak, recentHistory } from "./streak";
+import { computeStreak, recentHistory, streakAtRisk } from "./streak";
 
 const d = asDateStr;
 
@@ -276,5 +276,48 @@ describe("recentHistory", () => {
     expect(history[0]).toMatchObject({ due: true, done: true });
     expect(history[1]).toMatchObject({ due: false, done: false });
     expect(history[2]).toMatchObject({ due: true, done: false });
+  });
+});
+
+describe("streakAtRisk — serinin bugüne bakması", () => {
+  it("zorunlu, işaretlenmemiş ve seri varsa RİSKTEDİR", () => {
+    const r = routine({ schedule: { kind: "daily" } });
+    // 16,17,18 tamam; 19 (bugün) boş — seri 3 ve bugüne bakıyor.
+    const e = entries(r, "2026-08-16", "XXX");
+    expect(streakAtRisk(e, r, TODAY)).toBe(true);
+  });
+
+  it("bugün işaretlendiyse risk YOKTUR", () => {
+    const r = routine({ schedule: { kind: "daily" } });
+    const e = entries(r, "2026-08-17", "XXX"); // 19 dahil tamam
+    expect(streakAtRisk(e, r, TODAY)).toBe(false);
+  });
+
+  /*
+   * Boş bir tehdit kurulmamalı: "0 günlük serin bugüne bakıyor"
+   * cümlesi kaybedilecek bir şey olmadığını söylerdi.
+   */
+  it("seri yoksa risk de yoktur", () => {
+    const r = routine({ schedule: { kind: "daily" } });
+    expect(streakAtRisk(noEntries, r, TODAY)).toBe(false);
+  });
+
+  it("bugün zorunlu DEĞİLSE risk yoktur", () => {
+    // 19 Çarşamba; rutin yalnızca Pzt/Cum zorunlu.
+    const r = routine({ schedule: { kind: "weekdays", days: [1, 5] } });
+    const e = entriesOn(r, { "2026-08-14": 1, "2026-08-17": 1 });
+    expect(streakAtRisk(e, r, TODAY)).toBe(false);
+  });
+
+  /*
+   * Esnek rutinde `isDueOn` daima false: "bugün kaçırdım mı?" onlar
+   * için anlamsız bir sorudur, dönem bitmeden kaybedilen bir şey yok.
+   */
+  it("esnek rutinde DAİMA false", () => {
+    const r = routine({
+      schedule: { kind: "flexible", per: "week", count: 3 },
+    });
+    const e = completedRange(r, "2026-08-10", "2026-08-12");
+    expect(streakAtRisk(e, r, TODAY)).toBe(false);
   });
 });

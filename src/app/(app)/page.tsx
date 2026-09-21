@@ -1,14 +1,19 @@
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+import { DashboardScreen } from "@/features/dashboard/DashboardScreen";
+
+export const metadata: Metadata = { title: "Panel · Rutin" };
 
 /**
- * Kök — şimdilik Bugün'e düşer.
+ * Kök — kontrol paneli.
  *
- * F8'de burası kontrol paneli olacak: günün durumu, haftanın planı,
- * hedef ilerlemesi ve koçluk satırı tek ekranda. O gelene kadar
- * kullanıcıyı boş bir sayfaya değil, günün işine bırakmak doğru.
+ * Açılış "şimdi ne yapmalıyım" sorusunu cevaplar. Eskiden burası rutin
+ * matrisiydi ("bu ay nasıl gidiyorum" — geriye bakmak) ve o `/tablo`ya
+ * taşındı; bir süre de `/bugun`'e yönlendiren boş bir dosyaydı.
  *
- * Eski açılış (rutin matrisi) `/tablo`'ya taşındı.
+ * Public landing YOK: uygulama tek kullanıcılı ve girişsiz gelen
+ * zaten `middleware.ts` tarafından `/giris`e yollanıyor. Tanıtım
+ * sayfası, tanıtılacak kimse olmadığı için yazılmadı.
  */
 export default function RootPage() {
-  redirect("/bugun");
+  return <DashboardScreen />;
 }

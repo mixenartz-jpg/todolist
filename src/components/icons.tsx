@@ -24,6 +24,23 @@ function svgProps(size: number) {
   };
 }
 
+/** Kontrol paneli — açılış ekranı. */
+export function HomeIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...svgProps(size)}>
+      {/* Çatı + gövde tek yolda: iki ayrı parça 16px'te birbirinden
+          ayrık görünüp ikonu kırık gösteriyordu. */}
+      <path
+        d="M2.5 6.75L8 2.5l5.5 4.25v6a.75.75 0 0 1-.75.75h-9a.75.75 0 0 1-.75-.75v-6Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 /** Tablo / matris. */
 export function GridIcon({ size = 16 }: IconProps) {
   return (

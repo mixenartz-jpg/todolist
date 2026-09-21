@@ -2,7 +2,12 @@
  *
  * İKİ çubuk ölçülür:
  *  1. Alt gezinme (AppShell) — beş sekme, eşit bölüşüm, kaydırma YOK
- *  2. Planlama alt sekmeleri — beş sekme, sabit dolgu
+ *  2. Planlama alt sekmeleri — ÜÇ sekme, sabit dolgu
+ *
+ * Sekme SAYISI sabit kalsa da kadro değişti: F8'de Panel eklendi ve
+ * Rutinler çubuktan çıkıp Tablo başlığına taşındı. Beşte kalmak
+ * bilinçli — altıncı sekme 320px'te payı 53px'e düşürür ve "İstat."
+ * kırpılma sınırına gelir.
  *
  * İkisinde de taşma SESSİZDİR: alt çubukta sekmeler `truncate` taşıdığı
  * için etiket kırpılır ("Rutinle…") ve hiçbir hata çıkmaz; Planlama
@@ -26,10 +31,10 @@ const css = readdirSync(".next/static/chunks")
 const MIN_WIDTH = 320;
 
 /** AppShell.tsx'teki NAV dizisiyle aynı sırada — kısa etiketler. */
-const NAV_TABS = ["Bugün", "Plan", "Tablo", "İstat.", "Rutinler"];
+const NAV_TABS = ["Panel", "Bugün", "Plan", "Tablo", "İstat."];
 
 /** PlanlamaTabs.tsx'teki TABS dizisiyle aynı sırada. */
-const PLAN_TABS = ["Ay", "Hafta", "Hedefler", "Haftalık", "Özet"];
+const PLAN_TABS = ["Plan", "Hedefler", "Özet"];
 
 const page = (body, extraCss = "") => `<!doctype html><html lang="tr"
 style="--font-inter:Inter"><head><meta charset="utf-8"><style>${css}
