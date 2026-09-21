@@ -4,7 +4,7 @@ import { memo, useRef, useState, type ReactNode } from "react";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { formatShortDate } from "@/lib/ui/tr";
-import { isPendingTask } from "@/features/daygrid/drop";
+import { isPendingTask } from "./pending";
 import { isOverdue } from "./queries";
 import { normalizeTitleInput, shouldPersistTitle, TASK_TITLE_MAX } from "./rename";
 import { DURATION_PRESETS, formatDuration } from "./schedule";

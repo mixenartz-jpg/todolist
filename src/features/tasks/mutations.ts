@@ -9,7 +9,7 @@ import {
   applySortOrders,
   type SortOrderPatch,
 } from "@/features/planlama/reorder";
-import { pendingTaskId } from "@/features/daygrid/drop";
+import { pendingTaskId } from "./pending";
 import { toTask } from "./queries";
 import type { Task, TaskDraft } from "./types";
 
