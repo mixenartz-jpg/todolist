@@ -49,9 +49,6 @@ export interface TaskRow {
   done: boolean;
   note: string | null;
   sort_order: number;
-  /** Postgres `time` supabase-js'e 'HH:MM:SS' STRING olarak gelir. */
-  start_time: string | null;
-  duration_minutes: number | null;
   /** Kategori FK. En fazla BİR tane — çoklu etiket değil (0008). */
   category_id: string | null;
   /** Aylık hedef FK. En fazla BİR tane. */

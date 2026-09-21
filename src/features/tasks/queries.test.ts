@@ -13,8 +13,6 @@ function task(partial: Partial<Task> & { id: string }): Task {
     done: false,
     note: null,
     sortOrder: 0,
-    startTime: null,
-    durationMinutes: null,
     categoryId: null,
     goalId: null,
     colorSlot: null,

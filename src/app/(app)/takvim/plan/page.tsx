@@ -3,6 +3,11 @@ import { redirect } from "next/navigation";
 /**
  * Eski Plan ekranı /planlama'ya taşındı.
  *
+ * Hedef bir ara `/planlama/ay`dı; F5'te o da `/planlama`ya yönlenen
+ * bir ara durak oldu ve zincir iki atlamaya çıkmıştı. Doğrudan son
+ * adrese gidiyor: ara durak ilk yönlendirmeyi yavaşlatmaktan başka
+ * bir iş görmüyordu.
+ *
  * Dosya SİLİNMEDİ, yönlendirmeye çevrildi: uygulama `standalone` PWA
  * olarak da çalışıyor ve orada 404, çıkış yolu olmayan bir çıkmaz
  * sokaktır. Tarayıcı geçmişi ve otomatik tamamlama bu adresi
@@ -18,5 +23,5 @@ import { redirect } from "next/navigation";
  * kendine belgeliyor.
  */
 export default function TakvimPlanPage() {
-  redirect("/planlama/ay");
+  redirect("/planlama");
 }

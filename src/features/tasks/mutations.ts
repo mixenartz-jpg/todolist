@@ -115,8 +115,6 @@ export function useCreateTask(onError?: (message: string) => void) {
          * sırayı istemcide tahmin etmeye çalışmaktı.
          */
         sortOrder: 0,
-        startTime: null,
-        durationMinutes: null,
         categoryId: null,
         goalId: null,
         // Yeni görev rengini KATEGORİDEN devralır ve kategorisi de yok:

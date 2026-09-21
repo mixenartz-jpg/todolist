@@ -115,8 +115,6 @@ interface TaskOptions {
   done?: boolean;
   note?: string | null;
   sortOrder?: number;
-  startTime?: string | null;
-  durationMinutes?: number | null;
   categoryId?: string | null;
   goalId?: string | null;
   colorSlot?: number | null;
@@ -141,8 +139,6 @@ export function task(options: TaskOptions = {}): Task {
     done: options.done ?? false,
     note: options.note ?? null,
     sortOrder: options.sortOrder ?? 0,
-    startTime: options.startTime ?? null,
-    durationMinutes: options.durationMinutes ?? null,
     categoryId: options.categoryId ?? null,
     goalId: options.goalId ?? null,
     colorSlot: options.colorSlot ?? null,

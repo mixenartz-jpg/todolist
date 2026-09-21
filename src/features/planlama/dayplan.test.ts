@@ -27,18 +27,24 @@ describe("hasPlanText", () => {
 });
 
 describe("buildDayPlan", () => {
-  it("saatlileri saate göre, sonra saatsizleri sıralar", () => {
+  /*
+   * Sıra artık SAATE göre değil `sortOrder`'a göre — saat sütunları
+   * düştü. Test bunu doğruluyor çünkü panelin sırası Bugün ekranı ve
+   * plan listesiyle AYNI olmak zorunda (`orderForDay`), ayrışırsa
+   * aynı gün üç ekranda üç farklı sırada görünür.
+   */
+  it("günü sortOrder sırasına dizer", () => {
     const view = buildDayPlan(
       [
-        task({ id: "gec", dueDate: MONDAY, startTime: "14:00" }),
-        task({ id: "saatsiz", dueDate: MONDAY }),
-        task({ id: "erken", dueDate: MONDAY, startTime: "09:00" }),
+        task({ id: "c", dueDate: MONDAY, sortOrder: 2 }),
+        task({ id: "a", dueDate: MONDAY, sortOrder: 0 }),
+        task({ id: "b", dueDate: MONDAY, sortOrder: 1 }),
       ],
       MONDAY,
       null,
     );
 
-    expect(view.ordered.map((t) => t.id)).toEqual(["erken", "gec", "saatsiz"]);
+    expect(view.ordered.map((t) => t.id)).toEqual(["a", "b", "c"]);
   });
 
   it("açık ve bitmiş işleri ayrı sayar", () => {
