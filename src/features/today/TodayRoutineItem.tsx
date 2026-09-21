@@ -45,10 +45,12 @@ export const TodayRoutineItem = memo(function TodayRoutineItem({
     <li
       className={cn(
         "rowEnter relative flex items-center gap-3 rounded-xl border px-3 py-3",
-        "transition-colors duration-[var(--duration-base)] ease-[var(--ease-out-quart)]",
+        "transition-[color,background-color,border-color,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-out-quart)]",
+        /* Görev satırıyla aynı kural: açık olan ısınır, tamamlanan
+           geri plana çekilir (bkz. TaskItem). */
         completed
           ? "border-transparent bg-[var(--color-surface-2)]"
-          : "border-[var(--color-line)] bg-[var(--color-surface)]",
+          : "border-[var(--color-line)] bg-[var(--color-surface)] hover:border-[var(--color-line-2)] hover:shadow-[var(--glow-card-hover)]",
       )}
     >
       {/* Sayısal rutinlerde ilerleme, satırın ALT KENARINDA ince bir

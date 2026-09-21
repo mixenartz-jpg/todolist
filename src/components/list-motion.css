@@ -7,17 +7,43 @@
  * ve aynı oran daha büyük kutuda fazla zıplıyor.
  */
 
+/*
+ * İşaretleme anı: kutucuk büyür ve TEK SEFERLİK ışır.
+ *
+ * Işıma bir ödül ve burada anlık: işin bittiği an turuncu bir
+ * parlamayla bildiriliyor, sonra sönüyor. Kalıcı olsaydı bitmiş her
+ * satır ışırdı ve ışıma "bitti" değil "burası liste" demeye başlardı.
+ *
+ * Parlama ÖLÇEKLE birlikte sönüyor (%60'ta zirve, sonda sıfır):
+ * hareket ile ışık aynı olayın iki yüzü, ayrı zamanlarda olsalardı
+ * iki ayrı şey oluyormuş gibi görünürdü.
+ */
 @keyframes markPop {
   from {
     transform: scale(0.8);
+    box-shadow: 0 0 0 0 oklch(0.7 0.19 48 / 0);
+  }
+  60% {
+    box-shadow: 0 0 14px 2px oklch(0.7 0.19 48 / 0.55);
   }
   to {
     transform: scale(1);
+    box-shadow: 0 0 0 0 oklch(0.7 0.19 48 / 0);
   }
 }
 
 .markPop {
   animation: markPop var(--duration-base) var(--ease-out-expo);
+}
+
+/*
+ * Hareket azaltılmışsa yalnızca ölçek düşer, ışıma da gider: ikisi de
+ * süslemedir, bilgi kutucuğun dolmasında.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .markPop {
+    animation: none;
+  }
 }
 
 /*

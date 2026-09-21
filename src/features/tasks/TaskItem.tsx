@@ -117,10 +117,21 @@ export const TaskItem = memo(function TaskItem({
         // ortasında asılı bırakırdı. Tepeden hizalanınca kutucuk her
         // zaman ilk satırın hizasında durur.
         "items-start gap-3",
-        "transition-colors duration-[var(--duration-base)] ease-[var(--ease-out-quart)]",
+        "transition-[color,background-color,border-color,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-out-quart)]",
+        /*
+         * Üzerine gelince AÇIK satır ısınır.
+         *
+         * `--glow-card-hover` kenarlıkla BİRLİKTE yaşayan tek ışıma
+         * (opaklığı bilerek düşük): satırın kenarı okunur kalıyor,
+         * sıcaklık dışarıdan geliyor. Dolu bir ışıma burada "seçili"
+         * demek olurdu ve satırın seçili diye bir durumu yok.
+         *
+         * BİTMİŞ satırda yok: tamamlanan iş geri plana çekilir ve onu
+         * ısıtmak, dikkati yapılacak işten alınmış işe çevirirdi.
+         */
         task.done
           ? "border-transparent bg-[var(--color-surface-2)]"
-          : "border-[var(--color-line)] bg-[var(--color-surface)]",
+          : "border-[var(--color-line)] bg-[var(--color-surface)] hover:border-[var(--color-line-2)] hover:shadow-[var(--glow-card-hover)]",
       )}
     >
       <button

@@ -132,7 +132,11 @@ export function EveningSheet({
                 return (
                   <li
                     key={task.id}
-                    className="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5"
+                    className={cn(
+                      "rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-2.5",
+                      "transition-[border-color,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-out-quart)]",
+                      "hover:border-[var(--color-line-2)] hover:shadow-[var(--glow-card-hover)]",
+                    )}
                   >
                     <p className="break-words text-[length:var(--text-sm)]">
                       {task.title}

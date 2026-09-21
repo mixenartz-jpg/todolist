@@ -84,7 +84,16 @@ export function GoalCard({
     <li
       className={cn(
         "rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] p-3.5",
-        archived && "opacity-60",
+        "transition-[border-color,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-out-quart)]",
+        /*
+         * Hedef kartı üzerine gelince ısınır — ARŞİVLİ olan hariç.
+         * Arşiv "artık takip etmiyorum" demek ve onu vurgulamak,
+         * bırakılmış bir işi hâlâ canlıymış gibi göstermek olurdu
+         * (aynı gerekçe koçluk satırının orada çizilmemesinde).
+         */
+        archived
+          ? "opacity-60"
+          : "hover:border-[var(--color-line-2)] hover:shadow-[var(--glow-card-hover)]",
       )}
     >
       <div className="flex items-start gap-2.5">

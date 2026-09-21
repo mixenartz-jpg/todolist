@@ -155,9 +155,40 @@
    * 1px kenarlık + geniş yumuşak gölge aynı elemanda "hayalet kart"
    * görüntüsü verir. Işıyan eleman ya kenarlığını kaybeder ya da
    * kenarlığı vurgunun kendisi olur. İkisi birden asla. */
-  --glow-accent-sm: 0 0 12px -2px oklch(0.7 0.19 48 / 0.45);
-  --glow-accent-md: 0 0 24px -4px oklch(0.7 0.19 48 / 0.4);
-  --glow-accent-lg: 0 0 48px -8px oklch(0.7 0.19 48 / 0.32);
+/*
+   * ── Ölçüler neden büyüdü? ──
+   * İlk değerler (12/24/48px) "ışıma bir durum bildirir" kuralına
+   * sadıktı ama görsel olarak neredeyse görünmüyordu: 12px'lik bir
+   * hale koyu zeminde kenarlıktan ayırt edilemiyor. İstenen şey
+   * MERKEZDEN YAYILAN bir ışık havuzu — yani yarıçap büyük, opaklık
+   * düşük olmalı. İkisi birlikte artırılsaydı arayüz "neon" olurdu;
+   * yarıçap iki katına çıkarken opaklık bilerek düşürüldü.
+   *
+   * İki KATMANLI gölge: içteki dar ve yoğun çekirdek, dıştaki geniş
+   * ve seyrek hale. Tek katmanlı bir gölge ya sert bir halka ya da
+   * belirsiz bir bulanıklık olur; ikisi üst üste binince ışık
+   * gerçekten bir KAYNAKTAN çıkıyormuş gibi okunur.
+   */
+  --glow-accent-sm: 0 0 10px -3px oklch(0.7 0.19 48 / 0.5),
+    0 0 24px -6px oklch(0.7 0.19 48 / 0.32);
+  --glow-accent-md: 0 0 18px -4px oklch(0.7 0.19 48 / 0.45),
+    0 0 48px -10px oklch(0.7 0.19 48 / 0.3);
+  --glow-accent-lg: 0 0 32px -6px oklch(0.72 0.19 48 / 0.42),
+    0 0 90px -16px oklch(0.7 0.19 48 / 0.28);
+
+  /*
+   * Kart parlaması — kenarlıkla BİRLİKTE yaşayabilen tek ışıma.
+   *
+   * Yukarıdaki kural "ışıyan eleman kenarlığını kaybeder" diyordu ve
+   * o kural DOLU ışıma için hâlâ geçerli. Bu ayrı bir token çünkü
+   * amacı farklı: kartı vurgulamak değil, ona SICAKLIK vermek.
+   * Opaklık o yüzden çok düşük (0.10-0.18) ve kenarlık okunur kalıyor
+   * — "hayalet kart" eşiğinin altında.
+   */
+  --glow-card: 0 0 0 1px oklch(0.7 0.19 48 / 0.1),
+    0 2px 20px -6px oklch(0.7 0.19 48 / 0.18);
+  --glow-card-hover: 0 0 0 1px oklch(0.7 0.19 48 / 0.22),
+    0 4px 32px -8px oklch(0.7 0.19 48 / 0.3);
   /*
    * Odak halkası + ışıma. `--shadow-focus`'un ÜSTÜNE değil YERİNE
    * kullanılır (iki `box-shadow` zinciri birbirini ezer).
@@ -419,7 +450,56 @@ body {
   }
 
   body {
-    background: var(--color-bg);
+    /*
+     * ── Zemin düz değil: üstten yayılan sıcak bir ışık havuzu ──
+     *
+     * Tek renkli bir koyu zemin teknik olarak doğru ama duygusal
+     * olarak ölü: arayüzün "ürün havası" dediğimiz şeyin büyük kısmı
+     * zeminin kendisinin bir yön ve sıcaklık taşımasından geliyor.
+     *
+     * Kaynak YUKARIDA ve hafifçe solda (%30 50%): ışığın tepeden
+     * gelmesi fiziksel sezgiyle uyumlu ve içeriğin okunduğu üst
+     * bölgeyi ısıtıyor. Tam merkeze konsaydı sayfanın ortasındaki
+     * metin halenin en parlak yerinde kalır ve kontrast düşerdi.
+     *
+     * `ellipse` + %120 genişlik: dairesel bir hale geniş ekranda
+     * belirgin bir DAİRE olarak okunuyordu. Elips, kenarlara kadar
+     * uzanıp sınırını gizliyor.
+     *
+     * Opaklık tavanı 0.16: üstüne binen kartlar `--color-surface`
+     * taşıyor ve zemin bundan daha parlak olursa kartlar zeminden
+     * AÇIK değil KOYU görünmeye başlar, yani derinlik terse döner.
+     *
+     * `fixed`: kaydırmada ışık kaynağı yerinde kalır. Kaydırılsaydı
+     * hale içerikle birlikte akar ve bir "kaynak" değil, sayfanın
+     * üstüne çizilmiş bir leke gibi görünürdü.
+     */
+    background-color: var(--color-bg);
+    /*
+     * İKİ kaynak: üstte geniş ve sıcak, altta dar ve derin.
+     *
+     * Tek gradyanla denendi ve zayıf kaldı: %16 opaklık koyu zeminde
+     * neredeyse görünmüyor, ama tek katmanda artırmak tepeyi turuncu
+     * bir şeride çeviriyordu. İki kaynak yükü paylaşıyor — üstteki
+     * okuma alanını ısıtıyor, alttaki çerçeveyi kapatıyor ve ikisinin
+     * arasında kalan orta bölge doğal olarak en koyu yer oluyor.
+     */
+    background-image:
+      radial-gradient(
+        ellipse 95% 65% at 50% -10%,
+        oklch(0.75 0.2 48 / 0.55) 0%,
+        oklch(0.7 0.19 46 / 0.28) 22%,
+        oklch(0.64 0.16 44 / 0.1) 45%,
+        transparent 68%
+      ),
+      radial-gradient(
+        ellipse 80% 55% at 85% 105%,
+        oklch(0.7 0.18 38 / 0.26) 0%,
+        oklch(0.64 0.15 38 / 0.1) 35%,
+        transparent 62%
+      );
+    background-attachment: fixed;
+    background-repeat: no-repeat;
     color: var(--color-ink);
     font-family: var(--font-sans);
     font-size: var(--text-base);
