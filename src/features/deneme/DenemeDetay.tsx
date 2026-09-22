@@ -17,6 +17,7 @@ import { hesaplaNet, toplamNet, yanlisBosOrani } from "./net";
 import {
   useCreateYanlis,
   useDeleteDeneme,
+  useDeleteDenemeDers,
   useDeleteYanlis,
   useUpdateDeneme,
   useUpdateDenemeDers,
@@ -59,6 +60,7 @@ export function DenemeDetay({ denemeId }: { denemeId: string }) {
   const updateYanlis = useUpdateYanlis(toast.show);
   const updateDeneme = useUpdateDeneme(toast.show);
   const updateDers = useUpdateDenemeDers(toast.show);
+  const deleteDers = useDeleteDenemeDers(toast.show);
   const deleteDeneme = useDeleteDeneme(toast.show);
 
   const [formAcik, setFormAcik] = useState(false);
@@ -144,6 +146,9 @@ export function DenemeDetay({ denemeId }: { denemeId: string }) {
               denemeId: deneme.id,
               patch,
             })
+          }
+          onSil={(ders) =>
+            deleteDers.mutate({ id: ders.id, denemeId: deneme.id })
           }
         />
 
@@ -272,16 +277,47 @@ function DenemeBasligi({
 
 /* ── Ders tablosu ─────────────────────────────────────────────── */
 
+/**
+ * Aynı anda açık olabilecek TEK hücrenin kimliği.
+ *
+ * `<ders id>:<alan>` — iki hücre birden açılamasın diye.
+ */
+type AcikHucre = string | null;
+
 function DersTablosu({
   dersler,
   onEdit,
+  onSil,
 }: {
   dersler: readonly DenemeDers[];
   onEdit: (
     ders: DenemeDers,
     patch: { dogru: number; yanlis: number; bos: number },
   ) => void;
+  onSil: (ders: DenemeDers) => void;
 }) {
+  /*
+   * Aynı satırın iki hücresi AYNI ANDA açılamaz.
+   *
+   * ── Neden? ──
+   * "Doğru"yu düzenlerken kaydetme, kardeş alanı (`yanlış`) props'tan
+   * okuyor. İkisi birden açıkken ikisi de kendi render anındaki
+   * değeri kapatır ve arka arkaya kaydedilirse ikincisi birincinin
+   * yazdığını görmeden üzerine yazabilir. Veritabanının
+   * `dogru + yanlis + bos = soru_sayisi` kısıtı bunu yakalar ama
+   * kullanıcıya anlaşılmaz bir hata olarak döner.
+   *
+   * Tek hücre kuralı sorunu KAYNAĞINDA kesiyor. Sıra şöyle işliyor:
+   * ikinci hücreye tıklandığında tarayıcı ÖNCE açık input'u blur
+   * eder (o da `kaydet`i çağırır ve mutation'ın `onMutate`'i
+   * önbelleği anında yamalar), SONRA tıklama işlenir. Yani ikinci
+   * hücre açıldığında kardeş değer çoktan tazelenmiş oluyor.
+   *
+   * `useState` burada, hücrenin içinde DEĞİL: "hangisi açık" sorusu
+   * tablonun bilgisi, tek bir hücrenin değil.
+   */
+  const [acik, setAcik] = useState<AcikHucre>(null);
+
   if (dersler.length === 0) return null;
 
   const toplam = dersler.reduce(
@@ -324,6 +360,9 @@ function DersTablosu({
             <th scope="col" className="pb-1.5 text-right font-normal">
               Net
             </th>
+            {/* Sil sütunu — başlıksız: ikon zaten kendini anlatıyor
+                ve "Sil" yazmak tabloya gürültü katardı. */}
+            <th scope="col" className="w-7" />
           </tr>
         </thead>
 
@@ -343,6 +382,9 @@ function DersTablosu({
                 <SayiHucresi
                   deger={d.dogru}
                   etiket={`${d.ders} doğru sayısı`}
+                  acik={acik === `${d.id}:dogru`}
+                  onAc={() => setAcik(`${d.id}:dogru`)}
+                  onKapat={() => setAcik(null)}
                   onKaydet={(text) => {
                     const sonuc = cozumleDuzenleme(
                       text,
@@ -358,6 +400,9 @@ function DersTablosu({
                 <SayiHucresi
                   deger={d.yanlis}
                   etiket={`${d.ders} yanlış sayısı`}
+                  acik={acik === `${d.id}:yanlis`}
+                  onAc={() => setAcik(`${d.id}:yanlis`)}
+                  onKapat={() => setAcik(null)}
                   onKaydet={(text) => {
                     const sonuc = cozumleDuzenleme(
                       String(d.dogru),
@@ -374,6 +419,27 @@ function DersTablosu({
               </td>
               <td className="tabular py-2 text-right font-medium">
                 {formatNet(hesaplaNet(d.dogru, d.yanlis))}
+              </td>
+              <td className="py-2 text-right">
+                {/*
+                  Ders satırını siler. Onay kutusu YOK: silinen şey üç
+                  sayı ve yeniden girmek saniyeler sürüyor — denemenin
+                  kendisini silmekten (fotoğraflar da gider) farklı bir
+                  ağırlıkta. Onay her yere konduğunda kullanıcı onu
+                  okumadan geçmeyi öğrenir.
+                */}
+                <button
+                  type="button"
+                  onClick={() => onSil(d)}
+                  aria-label={`${d.ders} satırını sil`}
+                  className={cn(
+                    "grid size-6 place-items-center rounded text-[length:var(--text-sm)] leading-none",
+                    "text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)]",
+                    "hover:bg-[var(--color-surface-2)] hover:text-[var(--color-danger)]",
+                  )}
+                >
+                  ×
+                </button>
               </td>
             </tr>
           ))}
@@ -717,13 +783,19 @@ function DuzenlenebilirAd({
 function SayiHucresi({
   deger,
   etiket,
+  acik,
+  onAc,
+  onKapat,
   onKaydet,
 }: {
   deger: number;
   etiket: string;
+  /** Açık mı? Karar TABLONUN — aynı anda tek hücre açılabilir. */
+  acik: boolean;
+  onAc: () => void;
+  onKapat: () => void;
   onKaydet: (text: string) => boolean;
 }) {
-  const [duzenleniyor, setDuzenleniyor] = useState(false);
   const [taslak, setTaslak] = useState(String(deger));
   const [hatali, setHatali] = useState(false);
 
@@ -749,26 +821,28 @@ function SayiHucresi({
     }
 
     if (taslak === String(deger)) {
-      setDuzenleniyor(false);
+      onKapat();
       setHatali(false);
       return;
     }
 
     if (onKaydet(taslak)) {
-      setDuzenleniyor(false);
+      onKapat();
       setHatali(false);
     } else {
+      // Geçersizse hücre AÇIK KALIR ve kırmızıya döner. Kapanıp
+      // değişikliği yutmak "kaydedildi" yalanı söylerdi.
       setHatali(true);
     }
   }
 
-  if (!duzenleniyor) {
+  if (!acik) {
     return (
       <button
         type="button"
         onClick={() => {
           setTaslak(String(deger));
-          setDuzenleniyor(true);
+          onAc();
         }}
         aria-label={`${etiket}: ${deger}. Düzenlemek için bas.`}
         className={cn(
@@ -803,7 +877,7 @@ function SayiHucresi({
           iptal.current = true;
           setTaslak(String(deger));
           setHatali(false);
-          setDuzenleniyor(false);
+          onKapat();
         }
       }}
       aria-label={etiket}
