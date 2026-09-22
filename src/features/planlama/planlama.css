@@ -54,99 +54,7 @@
   clip-path: inset(0 round var(--r-xl));
 }
 
-/* ── Hafta bölümü ─────────────────────────────────────────────────
- * Hafta başlığı yapışkan VE cam: ay artık dikey bir akış ve
- * tutamaksız bir listede hangi haftaya bakıldığı kaybolur. Altından
- * gün satırları geçtiği için malzeme burada gerçekten hak edilmiş —
- * kabuk değil, içerik de değil, tam ortada duran bir yer işareti.
- */
-.planWeekLabel {
-  position: sticky;
-  /*
-   * Ekran başlığının ALTINDAN tutunur, `top: 0`'dan DEĞİL.
-   *
-   * `ScreenHeader` de yapışkan ve aynı kaydırma kökünde; ikisi de
-   * `top: 0` deseydi hafta etiketi başlığın arkasına girer ve
-   * kaydırırken okunmaz olurdu — yani var olma sebebi ortadan kalkardı.
-   * `--header-h` başlığın kendi ölçtüğü gerçek yükseklik (bkz.
-   * Screen.tsx); filtre çubuğu sardığında da doğru kalır.
-   *
-   * Yedek değer: `--header-h` henüz yayımlanmamışsa (ilk boyama)
-   * makul bir tahminle başlar.
-   */
-  top: var(--header-h, 4rem);
-  /*
-   * Ekran başlığından bir kat AŞAĞIDA: aynı z katmanında olsalardı
-   * boyama sırası kazanır ve etiket başlığın ÜSTÜNE binerdi.
-   */
-  z-index: calc(var(--z-sticky) - 1);
-
-  margin: 0;
-  /* Dolgu artık DÜĞMEDE: hedef başlığın tamamı olmalı, içine
-   * gömülmüş küçük bir alan değil. */
-  padding: 0;
-  font-size: var(--text-xs);
-  font-weight: 500;
-  line-height: var(--leading-snug);
-  letter-spacing: 0.01em;
-  color: var(--color-ink-3);
-}
-
-/*
- * Hafta başlığının tamamı katlama düğmesi.
- *
- * Ayrı bir ok düğmesi, tıklanabilir bir başlığın yanında ikinci ve
- * daha küçük bir hedef üretirdi. Tam genişlik: nişan almak gerekmez.
- */
-.planWeekToggle {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-
-  padding: 0.625rem var(--card-p);
-  text-align: left;
-  color: inherit;
-  cursor: pointer;
-
-  transition:
-    background-color var(--duration-fast) var(--ease-out-quart),
-    color var(--duration-fast) var(--ease-out-quart);
-}
-
 @media (hover: hover) and (pointer: fine) {
-  .planWeekToggle:hover {
-    background: color-mix(in oklch, var(--color-ink) 5%, transparent);
-    color: var(--color-ink-2);
-  }
-}
-
-.planWeekRange {
-  min-width: 0;
-}
-
-/* Sayı sağa yaslanır: tarih solda, ağırlık sağda — göz iki ucu
- * ayrı ayrı tarar. */
-.planWeekCount {
-  margin-left: auto;
-  color: var(--color-ink-4);
-}
-
-/* Kapalı haftada sayı bir tık öne çıkar: o an tek bilgi taşıyan
- * işaret odur. */
-.planWeekSection:has(.planWeekToggle[aria-expanded="false"]) .planWeekCount {
-  color: var(--color-ink-3);
-}
-
-/*
- * Bölümler arası kıl çizgi.
- *
- * Haftalar artık varsayılan KAPALI ve kapalı bir hafta tek satırlık
- * bir şerit. Çizgisiz olsalardı arka arkaya gelen dört şerit tek bir
- * blok gibi okunur, hangisinin nerede bittiği belli olmazdı.
- */
-.planWeekSection + .planWeekSection .planWeekLabel {
-  border-top: 1px solid var(--color-line);
 }
 
 /* ── Gün satırı ───────────────────────────────────────────────────
@@ -225,11 +133,6 @@
   .planDayRow:not(.planDayRowCollapsed) .planDayField {
     padding-left: 1.75rem;
   }
-}
-
-/* İlk satırın üst çizgisi kağıdın kendi kenarıyla çakışırdı. */
-.planWeekLabel + .planDayRow {
-  border-top: none;
 }
 
 /* ── Tarih kanalı ─────────────────────────────────────────────────
@@ -531,64 +434,6 @@
 }
 
 /*
- * KAPALI haftanın bırakma şeridi.
- *
- * Önce yerleştirme modu bütün kapalı haftaları zorla açıyordu
- * (`forceOpen`) ve ekran 42 satıra patlıyordu. Şimdi kapalı hafta
- * kapalı kalır ve başlığının altında tek bir hedef belirir: görev
- * haftanın ilk gününe düşer, gün seçmek isteyen haftayı açar.
- *
- * Gün şeridinden daha dar dolgulu ve kağıdın kenarına hizalı — hafta
- * başlığının altındaki bir uzantı gibi okunmalı, ayrı bir satır gibi
- * değil.
- */
-.planWeekDrop {
-  padding: 0.5rem var(--card-p);
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
-}
-
-/*
- * Haftanın hedefleri — başlığın altında ince bir rozet şeridi.
- *
- * Gün satırlarından GÖRSEL OLARAK AYRI durmalı: bunlar o haftada
- * yapılacak işler değil, o haftanın NEYE hizmet ettiği. Küçük punto ve
- * sönük mürekkep bu ayrımı taşıyor; kutu ya da kenarlık eklemek
- * hedefleri gün satırlarıyla eşit ağırlığa çıkarırdı.
- */
-.planWeekGoals {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-  padding: 0 var(--card-p) 0.5rem;
-  margin: 0;
-  list-style: none;
-}
-
-.planWeekGoal {
-  padding: 0.125rem 0.5rem;
-  border-radius: var(--r-xs);
-  background: var(--color-surface-2);
-
-  font-size: var(--text-2xs);
-  line-height: var(--leading-snug);
-  color: var(--color-ink-2);
-}
-
-/*
- * Tamamlanmış hedef: üstü çizili ve daha sönük.
- *
- * Listeden ÇIKARILMAZ — "bu hafta şunu hedeflemiştim ve yaptım"
- * bilgisi, hiç hedef koymamış bir haftadan farklıdır.
- */
-.planWeekGoal--done {
-  color: var(--color-ink-3);
-  text-decoration: line-through;
-  text-decoration-color: var(--color-ink-4);
-}
-
-/*
  * Boş gün: ince şerit.
  *
  * Ayın ~%60'ı boş olabiliyor. Hepsi tam yükseklikte dursa ay beş ekran
@@ -699,7 +544,6 @@
   flex-direction: column;
   gap: var(--row-gap);
 }
-
 
 /*
  * `scroll()` zaman çizelgesini desteklemeyen tarayıcı (bu yazının

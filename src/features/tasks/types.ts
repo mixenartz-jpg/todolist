@@ -60,4 +60,19 @@ export interface TaskDraft {
   title: string;
   dueDate: DateStr | null;
   note: string | null;
+  /**
+   * Doğduğu anda bağlı olduğu aylık hedef; null → bağımsız görev.
+   *
+   * ── Neden DOĞUŞTA, sonradan değil? ──
+   * Bağlama akışı zaten vardı (gün panelindeki hedef seçici) ama
+   * pratikte kullanılmıyordu: görevi yazarken hedefi düşünmek için
+   * bir sebep yoktu, sonradan dönüp bağlamak ise ayrı bir iş.
+   * Hedef şeridindeki `[+]` sırayı tersine çeviriyor — kullanıcı
+   * ÖNCE hedefi seçiyor, görev o bağlamda doğuyor.
+   *
+   * Opsiyonel: çağıranların çoğu (havuz, gün satırı, Bugün ekranı)
+   * hedefsiz görev üretiyor ve her birine `goalId: null` yazdırmak
+   * gürültü olurdu.
+   */
+  goalId?: string | null;
 }

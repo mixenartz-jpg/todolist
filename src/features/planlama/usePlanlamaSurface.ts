@@ -24,12 +24,31 @@ const SCALE_PARAM = "ol";
 const CATEGORY_PARAM = "kat";
 /** "Kategorisi olmayanları göster" filtresinin URL'deki karşılığı. */
 const NO_CATEGORY = "yok";
-/** URL'de ölçeğin yazılı biçimleri. */
-const SCALE_WEEK = "hafta";
+/**
+ * URL'de ölçeğin yazılı biçimi.
+ *
+ * Yalnızca "ay" var: hafta VARSAYILAN ölçek ve varsayılan URL'e
+ * yazılmıyor. Bir `SCALE_WEEK = "hafta"` sabiti burada dursaydı,
+ * okuyan kişiye URL'in `?ol=hafta` taşıyabileceğini söylerdi —
+ * taşımıyor, o adres `hafta/page.tsx` ile `/planlama`'ya düşüyor.
+ */
 const SCALE_MONTH = "ay";
 
-/** Varsayılan ölçek — parametre yoksa bu geçerli ve URL'e yazılmaz. */
-const DEFAULT_SCALE: PlanScale = "month";
+/**
+ * Varsayılan ölçek — parametre yoksa bu geçerli ve URL'e yazılmaz.
+ *
+ * ── Neden HAFTA, ay değil? ──
+ * Ay ızgarası 42 gün satırı çiziyordu ve kullanıcının gerçekte
+ * planladığı birim hafta. Kırk iki satırın otuz beşi "bugün değil"
+ * diye sönük duruyor, aradaki yedi satır kayboluyordu. Hafta
+ * varsayılan olunca ekran açıldığı anda üzerinde çalışılacak yedi
+ * gün görünüyor.
+ *
+ * Ay kaybolmuyor: ölçek anahtarıyla erişilebilir ve artık gün hücresi
+ * değil HAFTA HARİTASI çiziyor (bkz. PlanMonthMap) — "hangi hafta ne
+ * kadar dolu" sorusunun cevabı, kırk iki satırlık bir liste değil.
+ */
+const DEFAULT_SCALE: PlanScale = "week";
 
 export interface PlanlamaSurface {
   /** Bugün — tek yerde hesaplanır, alt ekranlar aynı günü görür. */
@@ -40,6 +59,17 @@ export interface PlanlamaSurface {
   category: CategoryFilter;
   setAnchor: (next: DateStr) => void;
   setScale: (next: PlanScale) => void;
+  /**
+   * Belirli bir haftaya git: çapayı oraya taşı VE ölçeği haftaya çevir.
+   *
+   * ── Neden `setAnchor` + `setScale` ardışık ÇAĞRILAMAZ? ──
+   * İkisi de aynı `params` anlık görüntüsünü kapatıyor ve her biri
+   * URL'in tamamını yeniden yazıyor. Arka arkaya çağrılsalardı
+   * ikincisi birincinin yazdığını görmeden üzerine yazardı — çapa
+   * kaybolur, kullanıcı bastığı haftaya değil bulunduğu ayın ilk
+   * haftasına düşerdi. Tek yazma, tek sonuç.
+   */
+  goToWeek: (weekStart: DateStr) => void;
   setCategory: (next: CategoryFilter) => void;
 }
 
@@ -79,7 +109,7 @@ export function usePlanlamaSurface(): PlanlamaSurface {
   const today = useMemo(() => todayStr(), []);
 
   const scale: PlanScale =
-    params.get(SCALE_PARAM) === SCALE_WEEK ? "week" : DEFAULT_SCALE;
+    params.get(SCALE_PARAM) === SCALE_MONTH ? "month" : DEFAULT_SCALE;
 
   const rawAnchor = params.get(ANCHOR_PARAM);
 
@@ -157,11 +187,38 @@ export function usePlanlamaSurface(): PlanlamaSurface {
       const defaultAnchor = anchorForScale(today, next, today);
 
       setParam({
-        [SCALE_PARAM]: next === DEFAULT_SCALE ? null : SCALE_WEEK,
+        /*
+         * Varsayılan ölçek URL'e YAZILMAZ: temiz `/planlama` adresi
+         * varsayılanı gösterir. Varsayılan hafta olduğu için artık
+         * URL'e yazılan `ay` — bu satır `DEFAULT_SCALE` çevrildiğinde
+         * onunla birlikte ters dönmek ZORUNDAYDI, yoksa "hafta" hem
+         * varsayılan hem de URL'e yazılan değer olurdu ve ay ölçeği
+         * adres çubuğunda hiç temsil edilemezdi.
+         */
+        [SCALE_PARAM]: next === DEFAULT_SCALE ? null : SCALE_MONTH,
         [ANCHOR_PARAM]: aligned === defaultAnchor ? null : aligned,
       });
     },
     [anchor, today, setParam],
+  );
+
+  const goToWeek = useCallback(
+    (weekStart: DateStr) => {
+      /*
+       * Çapa ZATEN bir Pazartesi (harita `weekStart` veriyor), yine
+       * de hizalanıyor: çağıranın sözleşmeye uyduğunu varsaymak,
+       * ileride başka bir yerden ayın ortası bir günle çağrıldığında
+       * ızgaranın eksik çizilmesi demekti.
+       */
+      const aligned = anchorForScale(weekStart, "week", today);
+      const defaultAnchor = anchorForScale(today, "week", today);
+
+      setParam({
+        [SCALE_PARAM]: null, // hafta VARSAYILAN, URL'e yazılmaz
+        [ANCHOR_PARAM]: aligned === defaultAnchor ? null : aligned,
+      });
+    },
+    [today, setParam],
   );
 
   const setCategory = useCallback(
@@ -174,8 +231,17 @@ export function usePlanlamaSurface(): PlanlamaSurface {
     [setParam],
   );
 
-  return { today, anchor, scale, category, setAnchor, setScale, setCategory };
+  return {
+    today,
+    anchor,
+    scale,
+    category,
+    setAnchor,
+    setScale,
+    goToWeek,
+    setCategory,
+  };
 }
 
 /** URL'de ölçeğin yazılı biçimi — sekme bağlantıları için. */
-export { SCALE_PARAM, SCALE_WEEK, SCALE_MONTH, ANCHOR_PARAM, CATEGORY_PARAM };
+export { SCALE_PARAM, SCALE_MONTH, ANCHOR_PARAM, CATEGORY_PARAM };

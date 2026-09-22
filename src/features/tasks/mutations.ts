@@ -108,6 +108,10 @@ export function useCreateTask(onError?: (message: string) => void) {
           title: draft.title.trim(),
           due_date: draft.dueDate,
           note: draft.note,
+          // Verilmediyse null — sütunun varsayılanı da bu, ama açıkça
+          // yazmak `goalId` eklendiğinde bu satırın atlanmadığını
+          // gösteriyor.
+          goal_id: draft.goalId ?? null,
         })
         .select()
         .single();
@@ -138,7 +142,12 @@ export function useCreateTask(onError?: (message: string) => void) {
         // Yeni görev bitmemiş doğar; damga da yok.
         completedAt: null,
         categoryId: null,
-        goalId: null,
+        /*
+         * İyimser satır da hedefi TAŞIR: hedef şeridinden eklenen bir
+         * iş, sunucu cevabı gelene kadar hedefsiz görünseydi o hedefin
+         * ilerleme sayacı bir an için eksik sayardı ve sonra zıplardı.
+         */
+        goalId: draft.goalId ?? null,
         // Yeni görev rengini KATEGORİDEN devralır ve kategorisi de yok:
         // nötr çizilir. Renk sonradan verilen ikinci bir harekettir.
         colorSlot: null,

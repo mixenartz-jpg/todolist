@@ -26,6 +26,14 @@ import { planReorder } from "./reorder";
 export interface PlanTaskActions {
   addPending: boolean;
   onAdd: (title: string, date: DateStr) => void;
+  /**
+   * Hedefe BAĞLI doğan görev — hedef şeridinin `[+]`'ı.
+   *
+   * `onAdd`'den ayrı: oradaki çağıranlar (gün satırı, panel) hedefi
+   * bilmiyor ve hepsine dördüncü bir parametre eklemek, kullanmayan
+   * yerlerde `null` gürültüsü olurdu.
+   */
+  onAddForGoal: (title: string, date: DateStr, goalId: string) => void;
   onToggle: (task: Task) => void;
   onDelete: (task: Task) => void;
   onRename: (task: Task, title: string) => void;
@@ -59,6 +67,8 @@ export function usePlanTaskActions(
     addPending: createTask.isPending,
     onAdd: (title, date) =>
       createTask.mutate({ title, dueDate: date, note: null }),
+    onAddForGoal: (title, date, goalId) =>
+      createTask.mutate({ title, dueDate: date, note: null, goalId }),
     onToggle: (task) => toggleTask.mutate({ id: task.id, done: !task.done }),
     onDelete: (task) => deleteTask.mutate(task.id),
     onRename: (task, title) => renameTask.mutate({ id: task.id, title }),

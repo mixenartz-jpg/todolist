@@ -127,44 +127,6 @@ export function useWeekGoals(weekStart: DateStr) {
   });
 }
 
-/**
- * Bir ARALIĞIN haftalık hedefleri — ay ölçeğindeki plan yüzeyi için.
- *
- * ── Neden ayrı sorgu, `useWeekGoals`'u altı kez çağırmak değil? ──
- * Ay ızgarası 4-6 hafta bölümü çiziyor ve her bölüm kendi hedeflerini
- * göstermeli. Hafta başına ayrı sorgu altı ağ turu demekti; aralık
- * sorgusu tek tur. Hook sayısı da render'a göre değişemezdi zaten
- * (React hook kuralı).
- *
- * `week_goals_user_week_idx` (user_id, week_start) bu aralığı doğrudan
- * karşılıyor — yeni index gerekmiyor.
- */
-export function useWeekGoalsRange(from: DateStr, to: DateStr) {
-  return useQuery({
-    queryKey: qk.weekGoalsRange(from, to),
-    queryFn: () => fetchWeekGoalsRange(from, to),
-  });
-}
-
-async function fetchWeekGoalsRange(
-  from: DateStr,
-  to: DateStr,
-): Promise<WeekGoal[]> {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from("week_goals")
-    .select("*")
-    .gte("week_start", from)
-    .lte("week_start", to)
-    .order("week_start", { ascending: true })
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return (data ?? []).map(toWeekGoal);
-}
-
 async function fetchWeekGoals(weekStart: DateStr): Promise<WeekGoal[]> {
   const supabase = createClient();
 

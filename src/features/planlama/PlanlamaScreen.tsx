@@ -13,17 +13,17 @@ import { Toast, useToast } from "@/components/Toast";
 import { useTasks } from "@/features/tasks/queries";
 import { monthGrid } from "./monthgrid";
 import { buildPlanRange } from "./range";
+import { goalProgress } from "./rollup";
 import { CategoryFilterBar } from "./CategoryFilterBar";
 import { daySummaries } from "./dayplan";
 import { useSetTaskCategory, useSetTaskGoal } from "./mutations";
-import {
-  useMonthPlanDays,
-  usePlanGoals,
-  useWeekGoalsRange,
-} from "./queries";
+import { useMonthPlanDays, usePlanGoals } from "./queries";
 import { PlanBacklog } from "./PlanBacklog";
+import { PlanGoalStrip } from "./PlanGoalStrip";
+import { PlanDayRow } from "./PlanDayRow";
 import { PlanDaySheet } from "./PlanDaySheet";
-import { PlanGrid } from "./PlanGrid";
+import { PlanMonthMap } from "./PlanMonthMap";
+import { PlanSheet } from "./PlanSheet";
 import { PlanlamaHeader } from "./PlanlamaHeader";
 import { PlanOverdue } from "./PlanOverdue";
 import { PlanScaleToggle } from "./PlanScaleToggle";
@@ -31,7 +31,7 @@ import { PlanSkeleton } from "./PlanSkeleton";
 import { usePlanlamaSurface } from "./usePlanlamaSurface";
 import { usePlanCategories } from "./usePlanCategories";
 import { useCollapsedDays } from "./useCollapsedDays";
-import { useCollapsedWeeks } from "./useCollapsedWeeks";
+import { weekSummaries } from "./weekmap";
 import { usePlanTaskActions } from "./usePlanTaskActions";
 import { eachDay } from "@/lib/date/date";
 import "./planlama.css";
@@ -51,8 +51,16 @@ import "./planlama.css";
  */
 export function PlanlamaScreen() {
   const toast = useToast();
-  const { today, anchor, scale, category, setAnchor, setScale, setCategory } =
-    usePlanlamaSurface();
+  const {
+    today,
+    anchor,
+    scale,
+    category,
+    setAnchor,
+    setScale,
+    goToWeek,
+    setCategory,
+  } = usePlanlamaSurface();
   const actions = usePlanTaskActions(toast.show);
   const { collapsedDays, toggleCollapsed } = useCollapsedDays(anchor);
 
@@ -109,49 +117,36 @@ export function PlanlamaScreen() {
     [range.buckets, planDaysQuery.data],
   );
 
-  const { collapsedWeeks, toggleWeek } = useCollapsedWeeks(anchor);
+  /*
+   * Ay ölçeğinin hafta satırları.
+   *
+   * HER ZAMAN hesaplanır, `scale === "month"` iken değil: React
+   * hook kuralı `useMemo`'nun koşullu çağrılmasına izin vermiyor.
+   * Hafta ölçeğinde sonuç kullanılmıyor ve maliyeti yedi kovanın
+   * toplanması — ölçülebilir değil.
+   */
+  const haftalar = useMemo(
+    () => weekSummaries(range.buckets, today),
+    [range.buckets, today],
+  );
 
   /* Ayın hedefleri — gün panelindeki hedef seçici için. */
   const goalsQuery = usePlanGoals(startOfMonth(anchor));
 
   /*
-   * Görünen aralığın haftalık hedefleri.
+   * Hedef şeridinin satırları — ilerlemeleriyle.
    *
-   * Ay ölçeğinde her hafta başlığı kendi hedeflerini gösterir —
-   * "aylık planda haftalığı görebilmeli" ihtiyacı tam olarak bu.
-   * Önce bu bağ (0014'ün `plan_goal_id`'si) Planlama'nın HİÇBİR
-   * ekranında görünmüyordu; yalnızca Bugün ekranının yan rayında
-   * çiziliyordu.
-   *
-   * Aralık `weekStarts`'tan değil `dates`'ten türetilir: `weekStarts`
-   * `range.buckets`'a bağlı ve o da filtreye göre değişiyor; hedefler
-   * kategori filtresinden ETKİLENMEMELİ.
+   * İlerleme `goalProgress`'ten geliyor ve o bağlı GÖREVLERE bakıyor;
+   * bu yüzden filtrelenmiş `categories.visible` değil TÜM görevler
+   * geçiliyor. Filtrelenmiş liste verilseydi kategori süzgeci açıkken
+   * hedefin ilerlemesi düşer ve kullanıcı "hedefim geriledi" sanırdı —
+   * halbuki yalnızca bakış daralmış olurdu.
    */
-  const weekGoalsQuery = useWeekGoalsRange(
-    dates[0] ?? anchor,
-    dates[dates.length - 1] ?? anchor,
+  const goalRows = useMemo(
+    () => (goalsQuery.data ?? []).map((g) => goalProgress(g, tasksQuery.data ?? [])),
+    [goalsQuery.data, tasksQuery.data],
   );
 
-  /** Hafta başlangıcından o haftanın hedef rozetlerine. */
-  const weekGoalsByWeek = useMemo(() => {
-    const out = new Map<
-      DateStr,
-      { id: string; title: string; done: boolean }[]
-    >();
-
-    for (const goal of weekGoalsQuery.data ?? []) {
-      const bucket = out.get(goal.weekStart);
-      const badge = {
-        id: goal.id,
-        title: goal.title,
-        done: goal.completedAt !== null,
-      };
-      if (bucket === undefined) out.set(goal.weekStart, [badge]);
-      else bucket.push(badge);
-    }
-
-    return out;
-  }, [weekGoalsQuery.data]);
 
   const placing = placingId !== null;
 
@@ -203,6 +198,22 @@ export function PlanlamaScreen() {
           <PlanSkeleton scale={scale} />
         ) : (
           <>
+            {/*
+              * Hedefler EN ÜSTTE: planı yaparken "neden" gözün
+              * önünde olmalı. Gecikenler ve ızgara "ne" — onlar
+              * hedefin altında geliyor.
+              */}
+            <PlanGoalStrip
+              goals={goalRows}
+              /* Türetilen iş ÇAPAYA düşer: hafta ölçeğinde haftanın
+                 Pazartesi'si, ay ölçeğinde ayın 1'i. Kullanıcının
+                 baktığı dönemin başı, bugün DEĞİL — geçmiş bir aya
+                 bakarken bugüne iş düşmesi şaşırtıcı olurdu. */
+              defaultDate={anchor}
+              addPending={actions.addPending}
+              onAddTask={actions.onAddForGoal}
+            />
+
             <PlanOverdue
               tasks={range.overdue}
               today={today}
@@ -215,31 +226,52 @@ export function PlanlamaScreen() {
                 DOM sırası: kağıt ÖNCE. Havuz görsel olarak sağda ama
                 okuma ve klavye sırasında ikincil — asıl yüzey kağıt. */}
             <div className="planLayout">
-              <PlanGrid
-                scale={scale}
-                buckets={range.buckets}
-                today={today}
-                summaries={summaries}
-                categoryById={categories.categoryById}
-                placing={placing}
-                addPending={actions.addPending}
-                collapsedDays={collapsedDays}
-                onToggleCollapsed={toggleCollapsed}
-                collapsedWeeks={collapsedWeeks}
-                onToggleWeek={toggleWeek}
-                weekGoals={weekGoalsByWeek}
-                onPlace={handlePlace}
-                // Gün numarası yerleştirme modunda da paneli açar:
-                // yerleştirmenin kendi düğmesi var, aynı hedefin anlamı
-                // moda göre değişmemeli.
-                onOpenDay={setOpenDay}
-                onAdd={actions.onAdd}
-                onToggle={actions.onToggle}
-                onDelete={actions.onDelete}
-                onRename={actions.onRename}
-                onUnschedule={actions.onUnschedule}
-                onReorder={actions.onReorder}
-              />
+              {/*
+                * Ölçek artık AYNI satırı iki aralıkta değil, İKİ
+                * FARKLI ŞEYİ çiziyor — `PlanGrid`'in emekli olma
+                * sebebi buydu. Hafta günleri gösterir (iş yapılan
+                * yüzey), ay haftaları (gezinilen harita).
+                */}
+              {scale === "week" ? (
+                <PlanSheet>
+                  {range.buckets.map((bucket) => (
+                    <PlanDayRow
+                      key={bucket.date}
+                      bucket={bucket}
+                      today={today}
+                      hasPlan={summaries.get(bucket.date)?.hasPlan ?? false}
+                      categoryById={categories.categoryById}
+                      placing={placing}
+                      addPending={actions.addPending}
+                      inScope={bucket.inScope}
+                      collapsed={collapsedDays.has(bucket.date)}
+                      onToggleCollapsed={toggleCollapsed}
+                      // Gün numarası yerleştirme modunda da paneli
+                      // açar: yerleştirmenin kendi düğmesi var, aynı
+                      // hedefin anlamı moda göre değişmemeli.
+                      onOpenDay={setOpenDay}
+                      onPlace={handlePlace}
+                      onAdd={actions.onAdd}
+                      onToggle={actions.onToggle}
+                      onDelete={actions.onDelete}
+                      onRename={actions.onRename}
+                      onUnschedule={actions.onUnschedule}
+                      onReorder={actions.onReorder}
+                    />
+                  ))}
+                </PlanSheet>
+              ) : (
+                <PlanMonthMap
+                  haftalar={haftalar}
+                  /*
+                   * TEK çağrı: çapa ve ölçek birlikte yazılır.
+                   * `setAnchor` ile `setScale`'i ardışık çağırmak,
+                   * ikisi de aynı URL anlık görüntüsünü kapattığı
+                   * için çapayı düşürürdü (gerekçe `goToWeek`'te).
+                   */
+                  onSelectWeek={goToWeek}
+                />
+              )}
 
               <PlanBacklog
                 tasks={range.backlog}

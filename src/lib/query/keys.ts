@@ -91,16 +91,7 @@ export const qk = {
    * hedefler yıllar boyunca birikir ama ekran hep tek hafta okur.
    */
   weekGoals: () => ["week-goals"] as const,
-  /*
-   * Bir ARALIĞIN haftalık hedefleri — ay ölçeğindeki plan yüzeyi için.
-   *
-   * `weekGoalsWeek` önekinin ALTINDA: bir haftalık hedef yazıldığında
-   * hem o haftanın anahtarı hem onu kapsayan aralık tazelenmeli,
-   * yoksa ay görünümündeki hafta başlığı eski sayıyı gösterirdi.
-   */
   weekGoalsWeek: (weekStart: DateStr) => ["week-goals", weekStart] as const,
-  weekGoalsRange: (from: DateStr, to: DateStr) =>
-    ["week-goals", "range", from, to] as const,
 
   /*
    * Alınacaklar (0015).
