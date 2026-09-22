@@ -30,7 +30,16 @@ import "./planlama.css";
  */
 export function SummaryScreen() {
   const toast = useToast();
-  const { today, anchor, setAnchor } = usePlanlamaSurface();
+  /*
+   * `monthAnchor` — ham `anchor` DEĞİL.
+   *
+   * Bu ekran ay birimiyle çalışıyor (`usePlanGoals` ayın 1'ini
+   * bekliyor, hedefler `month` sütunuyla saklanıyor). Varsayılan
+   * ölçek haftaya çevrildiğinde `anchor` bir Pazartesi olmaya
+   * başladı; ham hâliyle kullanılsaydı sorgular yanlış anahtara
+   * gider ve yeni hedefler de o yanlış anahtarla YAZILIRDI.
+   */
+  const { today, monthAnchor: anchor, setAnchor } = usePlanlamaSurface();
 
   const tasksQuery = useTasks();
   const goalsQuery = usePlanGoals(anchor);

@@ -82,62 +82,81 @@ export function CategoryFilterMenu({
 
   return (
     <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-haspopup="true"
+      {/*
+        * İki KARDEŞ düğme, iç içe DEĞİL.
+        *
+        * Önce temizleme `×`'i açma düğmesinin İÇİNDE bir
+        * `role="button"` span'di ve `stopPropagation` ile çalışıyordu.
+        * İşlevsel olarak doğruydu ama etkileşimli bir öğeyi gerçek bir
+        * `<button>`'ın içine koymak geçersiz HTML: tarayıcılar iç
+        * öğeyi erişilebilirlik ağacından düşürebiliyor (klavye
+        * kullanıcısı `×`'e hiç ulaşamaz) ve dış düğmenin erişilebilir
+        * adı iç metinle kirleniyor ("Süz × Filtreyi kaldır").
+        *
+        * Sarmalayıcı bir `<div>` ve yan yana iki düğme aynı görünümü
+        * veriyor — ortak kenarlık `div`'e taşındı, düğmeler
+        * kenarlıksız.
+        */}
+      <div
         className={cn(
-          "flex h-8 items-center gap-1.5 rounded-lg border px-2.5",
-          "text-[length:var(--text-xs)]",
+          "flex h-8 items-center rounded-lg border",
           "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-quart)]",
           /*
-           * Filtre AÇIKKEN düğme accent taşır. Bu dekorasyon değil
+           * Filtre AÇIKKEN şerit accent taşır. Bu dekorasyon değil
            * durum bildirimi: süzülmüş bir listeye bakarken bunu
-           * söyleyen tek işaret bu düğme.
+           * söyleyen tek işaret bu kontrol.
            */
           secili !== null
             ? "border-[var(--color-accent)] bg-[color-mix(in_oklch,var(--color-accent)_14%,transparent)] text-[var(--color-ink)]"
-            : "border-[var(--color-line-2)] bg-[var(--color-surface-2)] text-[var(--color-ink-2)] hover:text-[var(--color-ink)]",
+            : "border-[var(--color-line-2)] bg-[var(--color-surface-2)] text-[var(--color-ink-2)]",
         )}
       >
-        {secili?.renk != null && (
-          <span
-            aria-hidden
-            className="size-2 shrink-0 rounded-full"
-            style={{ background: secili.renk }}
-          />
-        )}
-        <span className="max-w-28 truncate">{secili?.ad ?? "Süz"}</span>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-haspopup="true"
+          className={cn(
+            "flex h-full items-center gap-1.5 rounded-l-lg px-2.5",
+            "text-[length:var(--text-xs)]",
+            "transition-colors duration-[var(--duration-fast)]",
+            secili === null && "hover:text-[var(--color-ink)]",
+            // Tek düğme kaldığında sağ köşe de yuvarlanmalı.
+            secili === null && "rounded-r-lg",
+          )}
+        >
+          {secili?.renk != null && (
+            <span
+              aria-hidden
+              className="size-2 shrink-0 rounded-full"
+              style={{ background: secili.renk }}
+            />
+          )}
+          <span className="max-w-28 truncate">{secili?.ad ?? "Süz"}</span>
+        </button>
 
         {/*
-         * Filtre açıkken temizleme düğmesi. AYRI bir `<button>` değil
-         * (iç içe düğme geçersiz HTML) — menüyü açıp "Hepsi"ye basmak
-         * da çalışıyor, bu yalnızca bir adım kısaltıyor.
-         */}
+          * Temizleme yalnızca filtre açıkken. Menüyü açıp "Hepsi"ye
+          * basmak da çalışıyor; bu bir adım kısaltıyor.
+          */}
         {secili !== null && (
-          <span
-            role="button"
-            tabIndex={0}
+          <button
+            type="button"
             aria-label="Filtreyi kaldır"
-            onClick={(e) => {
-              e.stopPropagation();
+            onClick={() => {
               onChange(null);
               setOpen(false);
             }}
-            onKeyDown={(e) => {
-              if (e.key !== "Enter" && e.key !== " ") return;
-              e.preventDefault();
-              e.stopPropagation();
-              onChange(null);
-              setOpen(false);
-            }}
-            className="grid size-4 shrink-0 place-items-center rounded text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
+            /* 28×32: WCAG 2.2'nin 24px asgarisinin üstünde. Şeridin
+               tamamı 8 birim yüksek olduğu için 44px'e çıkarmak
+               kontrolü orantısız büyütürdü — `tap-check.mjs`'in
+               "asgari 24px" ölçütü burada geçerli ölçüt. */
+            className="grid h-full w-7 shrink-0 place-items-center rounded-r-lg text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-ink)]"
           >
             ×
-          </span>
+          </button>
         )}
-      </button>
+      </div>
 
       {open && (
         <div

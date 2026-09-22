@@ -50,7 +50,16 @@ export function GoalsScreen() {
    * ama "yolunda mıyım" sorusu her zaman BUGÜNE göre cevaplanır —
    * geçmiş bir ayın hedefinde `goalPace` beklenen oranı 1'e kırpıyor.
    */
-  const { today, anchor, setAnchor } = usePlanlamaSurface();
+  /*
+   * `monthAnchor` — ham `anchor` DEĞİL.
+   *
+   * Bu ekran ay birimiyle çalışıyor (`usePlanGoals` ayın 1'ini
+   * bekliyor, hedefler `month` sütunuyla saklanıyor). Varsayılan
+   * ölçek haftaya çevrildiğinde `anchor` bir Pazartesi olmaya
+   * başladı; ham hâliyle kullanılsaydı sorgular yanlış anahtara
+   * gider ve yeni hedefler de o yanlış anahtarla YAZILIRDI.
+   */
+  const { today, monthAnchor: anchor, setAnchor } = usePlanlamaSurface();
 
   const goalsQuery = usePlanGoals(anchor);
   const tasksQuery = useTasks();

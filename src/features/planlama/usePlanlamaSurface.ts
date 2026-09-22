@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { isDateStr, todayStr } from "@/lib/date/date";
+import { isDateStr, startOfMonth, todayStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import {
   anchorForScale,
@@ -36,6 +36,21 @@ export interface PlanlamaSurface {
   today: DateStr;
   /** Görüntülenen aralığın ilk günü (haftanın Pazartesi'si / ayın 1'i). */
   anchor: DateStr;
+  /**
+   * Çapanın içinde bulunduğu AYIN 1'i — ölçekten bağımsız.
+   *
+   * ── Neden ayrı bir alan? ──
+   * Hedefler ve Özet ekranları ay birimiyle çalışıyor: `usePlanGoals`
+   * ayın 1'ini bekliyor ve hedefler `month` sütunuyla saklanıyor.
+   * Varsayılan ölçek haftaya çevrilince `anchor` bir Pazartesi olmaya
+   * başladı ve o ekranlar sessizce yanlış anahtarla sorgu atar,
+   * üstelik YENİ HEDEFLERİ de o yanlış anahtarla yazardı.
+   *
+   * Çağıranların `startOfMonth(anchor)` yazması da çalışırdı ama üç
+   * ekranda tekrarlanan bir dönüşüm, dördüncüsünde unutulacak bir
+   * dönüşümdür. Tek yerde türetiliyor.
+   */
+  monthAnchor: DateStr;
   scale: PlanScale;
   category: CategoryFilter;
   setAnchor: (next: DateStr) => void;
@@ -110,6 +125,8 @@ export function usePlanlamaSurface(): PlanlamaSurface {
     return anchorForScale(base, scale, today);
   }, [rawAnchor, scale, today]);
 
+  const monthAnchor = useMemo(() => startOfMonth(anchor), [anchor]);
+
   const rawCategory = params.get(CATEGORY_PARAM);
   const category: CategoryFilter =
     rawCategory === null
@@ -143,12 +160,24 @@ export function usePlanlamaSurface(): PlanlamaSurface {
     (next: DateStr) => {
       /*
        * Bugünün aralığı ise parametre SİLİNİR, yazılmaz. Böylece temiz
-       * `/planlama` adresi varsayılan görünümü gösterir ve "bu ay"a
+       * `/planlama` adresi varsayılan görünümü gösterir ve "bu hafta"ya
        * dönmek URL'i de sıfırlar — kullanıcı adres çubuğunda eski bir
        * tarih görmez.
+       *
+       * ── Karşılaştırma İKİ ölçeğe de bakar ──
+       * Yüzeyin ölçeği (`scale`) hafta ama Hedefler ve Özet ekranları
+       * AY birimiyle çalışıyor ve aynı `setAnchor`'ı çağırıyorlar
+       * (bkz. `monthAnchor`). Yalnız yüzey ölçeğine bakılsaydı, o
+       * ekranlarda "bu ay"a dönmek parametreyi temizlemez ve adres
+       * çubuğunda bugünün ayını gösteren gereksiz bir `?t=` kalırdı.
+       * İkisinden birine eşitse silmek, her iki çağıran için de
+       * doğru davranış.
        */
-      const current = anchorForScale(today, scale, today);
-      setParam({ [ANCHOR_PARAM]: next === current ? null : next });
+      const currentForScale = anchorForScale(today, scale, today);
+      const currentMonth = startOfMonth(today);
+      const isCurrent = next === currentForScale || next === currentMonth;
+
+      setParam({ [ANCHOR_PARAM]: isCurrent ? null : next });
     },
     [scale, today, setParam],
   );
@@ -206,6 +235,7 @@ export function usePlanlamaSurface(): PlanlamaSurface {
   return {
     today,
     anchor,
+    monthAnchor,
     scale,
     category,
     setAnchor,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asDateStr, eachDay, startOfIsoWeek } from "@/lib/date/date";
+import { asDateStr, eachDay, startOfIsoWeek, startOfMonth } from "@/lib/date/date";
 import { monthGrid } from "./monthgrid";
 import { task } from "@/features/testing/fixtures";
 import {
@@ -376,5 +376,37 @@ describe("ölçek ⇄ URL sözleşmesi", () => {
     // Redirect'ler (`ay/page.tsx`) bu dizeyi elle yazıyor; değişirse
     // yer imleri sessizce yanlış ekrana açılır.
     expect(scaleToParam("month")).toBe("ay");
+  });
+});
+
+describe("ay birimli ekranların çapası", () => {
+  /*
+   * Hedefler ve Özet ekranları AY birimiyle çalışıyor: `usePlanGoals`
+   * ayın 1'ini bekliyor ve hedefler `month` sütunuyla saklanıyor.
+   *
+   * Varsayılan ölçek haftaya çevrildiğinde `anchor` bir Pazartesi
+   * olmaya başladı; o ekranlar ham `anchor`'ı kullansaydı yanlış
+   * anahtarla sorgu atar ve YENİ HEDEFLERİ de o yanlış anahtarla
+   * yazarlardı. Sessiz bir bozulmaydı — tip sistemi ikisini de
+   * `DateStr` gördüğü için hiçbir şey söylemezdi.
+   *
+   * `usePlanlamaSurface` bu yüzden `monthAnchor` türetiyor. Aşağıdaki
+   * iddia o türetmenin dayandığı değişmezi sabitliyor.
+   */
+  it("hafta çapasından ay çapası türetmek ayın 1'ini verir", () => {
+    // 3 Ağustos 2026 Pazartesi — hafta ölçeğinde tipik bir çapa.
+    expect(startOfMonth(MON)).toBe(asDateStr("2026-08-01"));
+  });
+
+  it("ay sınırını aşan haftada çapa haftanın BAŞLADIĞI aya düşer", () => {
+    /*
+     * 27 Temmuz Pazartesi, haftası 2 Ağustos'ta bitiyor. `startOfMonth`
+     * Temmuz veriyor ve bu doğru: kullanıcı o haftaya baktığında
+     * ekranın üstündeki ay başlığı da Temmuz olmalı, hedefleri de.
+     * Alternatifi ("haftanın çoğunluğu hangi ayda") kullanıcının
+     * göremediği bir kural olurdu.
+     */
+    const sinirHaftasi = asDateStr("2026-07-27");
+    expect(startOfMonth(sinirHaftasi)).toBe(asDateStr("2026-07-01"));
   });
 });
