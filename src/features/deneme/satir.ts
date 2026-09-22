@@ -17,6 +17,21 @@ import { DERS_AD_MAX, type DenemeDersDraft } from "./types";
 
 /** Formdaki tek ders satırı — sayılar METİN olarak tutulur. */
 export interface DersSatiri {
+  /**
+   * React anahtarı — satırın ÖMÜR BOYU sabit kimliği.
+   *
+   * ── Neden dizi indeksi YETMEZ? ──
+   * Satırlar ortadan silinebiliyor (`satirSil`). İndeks anahtar
+   * olsaydı, üçüncü satır silindiğinde dördüncü satır üçüncünün
+   * DOM düğümünü devralırdı: imleç, odak ve kırmızı hata kenarlığı
+   * yanlış satıra sıçrar. Kullanıcı dört sayı yazarken bu görünür
+   * bir bozulma.
+   *
+   * `sortOrder` de yetmez — o kaydedilecek SIRAYI taşıyor ve satır
+   * eklenip silindikçe yeniden veriliyor. Kimlik ile sıra iki ayrı
+   * şeydir.
+   */
+  id: string;
   ders: string;
   /*
    * Neden string, number değil?
@@ -133,17 +148,43 @@ export function baslangicSatirlari(
    * Tamamen boş bir tablo "buraya ne yazacağım" sorusu doğururdu;
    * tek boş satır hem yeri gösterir hem de dayatma değildir.
    */
-  if (sablon.length === 0) {
-    return [{ ders: "", dogru: "", yanlis: "", soruSayisi: "", sortOrder: 0 }];
-  }
+  if (sablon.length === 0) return [bosSatir(0)];
 
   return sablon.map((s) => ({
+    id: satirKimligi(),
     ders: s.ders,
     dogru: "",
     yanlis: "",
     soruSayisi: String(s.soruSayisi),
     sortOrder: s.sortOrder,
   }));
+}
+
+/** Boş bir satır — form açılışında ve "+ Ders ekle" ile. */
+export function bosSatir(sortOrder: number): DersSatiri {
+  return {
+    id: satirKimligi(),
+    ders: "",
+    dogru: "",
+    yanlis: "",
+    soruSayisi: "",
+    sortOrder,
+  };
+}
+
+let satirSayaci = 0;
+
+/**
+ * Satır kimliği üretir.
+ *
+ * `crypto.randomUUID` DEĞİL, artan sayaç: bu kimlik hiçbir zaman
+ * veritabanına gitmiyor, ağdan geçmiyor ve tahmin edilmesinin bir
+ * sonucu yok — tek işi React'in reconciliation'ında satırı ayırt
+ * etmek. Sayaç hem ucuz hem güvenli bağlam (HTTPS) gerektirmiyor.
+ */
+function satirKimligi(): string {
+  satirSayaci += 1;
+  return `satir-${satirSayaci}`;
 }
 
 /**

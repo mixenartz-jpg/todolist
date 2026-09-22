@@ -26,6 +26,12 @@ export default defineConfig({
         // Mantık içermez ve node ortamında çalıştırılamaz; kapsama
         // dahil edilirse eşiği hak etmeden aşağı çeker.
         "**/compress.ts",
+        // Storage sarmalayıcısı (Supabase upload/imzalı URL/silme) —
+        // `compress.ts` ile AYNI gerekçe: ağ ve tarayıcı sınırında
+        // duruyor, karar vermiyor. İçindeki tek gerçek kural (yolun
+        // `<user_id>/<uuid>.webp` olması) `image.ts`'teki saf
+        // `imagePath` fonksiyonunda ve ORASI test ediliyor.
+        "**/gorsel.ts",
       ],
       thresholds: { lines: 80, functions: 80, branches: 75 },
     },

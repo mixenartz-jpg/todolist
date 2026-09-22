@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   baslangicSatirlari,
+  bosSatir,
   cozumleSatir,
   kaydedilecekDersler,
   satirlarGecerli,
@@ -18,6 +19,7 @@ import {
 
 function satir(patch: Partial<DersSatiri> = {}): DersSatiri {
   return {
+    id: "test-satir",
     ders: "Türkçe",
     dogru: "",
     yanlis: "",
@@ -127,6 +129,22 @@ describe("baslangicSatirlari", () => {
   it("alansız AYT'de de tek boş satır açar", () => {
     // Alan seçilmeden hangi 80 sorunun cevaplandığı bilinemez.
     expect(baslangicSatirlari("ayt", null)).toHaveLength(1);
+  });
+
+  it("her satıra BENZERSİZ kimlik verir", () => {
+    /*
+     * Kimlik React anahtarı olarak kullanılıyor. Çakışsaydı ortadan
+     * bir satır silindiğinde imleç ve hata kenarlığı yanlış satıra
+     * sıçrardı — gerekçe `DersSatiri.id` üzerinde yazılı.
+     */
+    const satirlar = [
+      ...baslangicSatirlari("tyt", null),
+      bosSatir(4),
+      bosSatir(5),
+    ];
+    const kimlikler = satirlar.map((s) => s.id);
+
+    expect(new Set(kimlikler).size).toBe(satirlar.length);
   });
 
   it("AYT-SAY iki dersi getirir", () => {

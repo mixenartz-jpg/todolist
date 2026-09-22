@@ -10,6 +10,7 @@ import { formatNet, parseSayi } from "./format";
 import { hesaplaNet, toplamNet } from "./net";
 import {
   baslangicSatirlari,
+  bosSatir,
   cozumleSatir,
   kaydedilecekDersler,
   satirlarGecerli,
@@ -109,16 +110,7 @@ export function DenemeForm({ pending, onSubmit, onCancel }: DenemeFormProps) {
   }
 
   function satirEkle() {
-    setSatirlar((list) => [
-      ...list,
-      {
-        ders: "",
-        dogru: "",
-        yanlis: "",
-        soruSayisi: "",
-        sortOrder: list.length,
-      },
-    ]);
+    setSatirlar((list) => [...list, bosSatir(list.length)]);
   }
 
   function satirSil(index: number) {
@@ -341,7 +333,9 @@ function DersTablosu({
 
       {satirlar.map((satir, i) => (
         <DersSatiriInput
-          key={i}
+          /* Anahtar İNDEKS DEĞİL satırın kendi kimliği — gerekçe
+             `satir.ts`'te `DersSatiri.id` üzerinde yazılı. */
+          key={satir.id}
           satir={satir}
           cozum={cozumler[i]}
           silinebilir={satirlar.length > 1}

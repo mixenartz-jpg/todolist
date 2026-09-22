@@ -14,8 +14,12 @@ import { formatNet, formatSure } from "./format";
 import { HATA_TURLERI, type HataTuru } from "./hatasepeti";
 import { HataSepetiKarti } from "./HataSepetiKarti";
 import { hesaplaNet, toplamNet, yanlisBosOrani } from "./net";
-import { useDeleteDeneme } from "./mutations";
-import { useCreateYanlis, useDeleteYanlis, useUpdateYanlis } from "./mutations";
+import {
+  useCreateYanlis,
+  useDeleteDeneme,
+  useDeleteYanlis,
+  useUpdateYanlis,
+} from "./mutations";
 import { useDeneme, useDenemeYanlislari } from "./queries";
 import type { DenemeTur } from "./sinav";
 import type { DenemeDers, DenemeDetayli, DenemeYanlis } from "./types";
