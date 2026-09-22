@@ -3,6 +3,7 @@ import {
   POMODORO_PROFILES,
   ROUNDS_BEFORE_LONG_BREAK,
   elapsedSeconds,
+  filledDots,
   formatElapsed,
   netSeconds,
   nextPhase,
@@ -218,6 +219,35 @@ describe("nextPhase", () => {
       "longBreak",
       "focus",
     ]);
+  });
+});
+
+describe("filledDots", () => {
+  it("hiç tur yapılmamışken boş", () => {
+    expect(filledDots(0)).toBe(0);
+  });
+
+  it("döngü içinde tur sayısını verir", () => {
+    expect(filledDots(1)).toBe(1);
+    expect(filledDots(2)).toBe(2);
+    expect(filledDots(3)).toBe(3);
+  });
+
+  /*
+   * Dördüncü tur bitti ama uzun mola HENÜZ verilmedi: noktalar dolu
+   * kalmalı. `rounds % 4` sıfır verdiği için ham kalan sayı burada
+   * yanlış olurdu — kullanıcı dört turu bitirdiği anda göstergeyi
+   * boşalmış görürdü.
+   */
+  it("döngü tamamlandığında TÜMÜ dolu", () => {
+    expect(filledDots(ROUNDS_BEFORE_LONG_BREAK)).toBe(ROUNDS_BEFORE_LONG_BREAK);
+    expect(filledDots(8)).toBe(ROUNDS_BEFORE_LONG_BREAK);
+  });
+
+  it("yeni döngüde baştan sayar", () => {
+    expect(filledDots(5)).toBe(1);
+    expect(filledDots(6)).toBe(2);
+    expect(filledDots(9)).toBe(1);
   });
 });
 

@@ -187,6 +187,21 @@ export function nextPhase(phase: Phase, completedFocusRounds: number): Phase {
 }
 
 /**
+ * Tur göstergesinde kaç nokta dolu çizilir.
+ *
+ * Ham `rounds % 4` YETMİYOR: dördüncü tur bittiğinde kalan sıfır
+ * oluyor ve gösterge, kullanıcı tam da döngüyü tamamladığı anda
+ * boşalmış görünürdü. Tamamlanan döngü DOLU çiziliyor; sıfıra yeni
+ * döngünün ilk turu başlayınca dönüyor.
+ */
+export function filledDots(completedRounds: number): number {
+  const inCycle = completedRounds % ROUNDS_BEFORE_LONG_BREAK;
+
+  if (inCycle === 0 && completedRounds > 0) return ROUNDS_BEFORE_LONG_BREAK;
+  return inCycle;
+}
+
+/**
  * Geri sayımda kalan saniye.
  *
  * Sıfırın altına DÜŞMEZ: sekme arka planda kalıp tikler atlandığında

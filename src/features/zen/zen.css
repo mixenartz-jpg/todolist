@@ -61,3 +61,29 @@
     animation: none;
   }
 }
+
+/*
+ * Duraklatılmış sayaç: ışıma SÖNER ve renk soluklaşır.
+ *
+ * Durmuş bir sayacın nefes alması yalan söyler — nabız "zaman
+ * geçiyor" diyor, oysa geçmiyor. Işımanın izinli olduğu dört yerden
+ * biri bu sayaç ve duraklatıldığında o izin düşüyor.
+ */
+.zenTimer--paused {
+  animation: none;
+  text-shadow: none;
+  color: var(--color-ink-3);
+}
+
+/*
+ * Mola aşaması: ekran SAKİNLEŞİR.
+ *
+ * Renk değişimi TEK bildirim — ses ve tarayıcı bildirimi bilerek yok.
+ * İzin akışı, odak ekranına ait olmayan bir kesinti olurdu ve
+ * reddedilen bir izin, sessizce çalışmayan bir özellik bırakırdı.
+ */
+.zenScreen--break .zenTimer {
+  color: var(--color-ink-2);
+  animation: none;
+  text-shadow: none;
+}
