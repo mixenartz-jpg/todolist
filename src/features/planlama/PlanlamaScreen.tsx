@@ -14,7 +14,7 @@ import { useTasks } from "@/features/tasks/queries";
 import { monthGrid } from "./monthgrid";
 import { buildPlanRange } from "./range";
 import { goalProgress } from "./rollup";
-import { CategoryFilterBar } from "./CategoryFilterBar";
+import { CategoryFilterMenu } from "./CategoryFilterMenu";
 import { daySummaries } from "./dayplan";
 import { useSetTaskCategory, useSetTaskGoal } from "./mutations";
 import { useMonthPlanDays, usePlanGoals } from "./queries";
@@ -183,7 +183,7 @@ export function PlanlamaScreen() {
       >
         <div className="flex flex-wrap items-center gap-2">
           <PlanScaleToggle value={scale} onChange={setScale} />
-          <CategoryFilterBar
+          <CategoryFilterMenu
             categories={categories.active}
             value={category}
             onChange={setCategory}

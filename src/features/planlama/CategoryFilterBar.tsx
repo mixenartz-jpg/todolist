@@ -15,7 +15,7 @@ interface CategoryFilterBarProps {
 }
 
 /**
- * Kategori filtre çipleri.
+ * Kategori filtre çipleri — `CategoryFilterMenu`'nün panel içeriği.
  *
  * Hiç kategori yoksa HİÇ ÇİZİLMEZ: boş bir filtre çubuğu, kullanıcıya
  * kullanamayacağı bir kontrol göstermek olurdu.
@@ -41,7 +41,11 @@ export function CategoryFilterBar({
     <div
       role="group"
       aria-label="Kategoriye göre süz"
-      className="mt-2 flex flex-wrap items-center gap-1.5"
+      /* Dış boşluk YOK: bu bileşen artık `CategoryFilterMenu`'nün
+         açılır panelinin içinde ve konumlandırma orada yapılıyor.
+         Eskiden başlık şeridinde açıkta durduğu için `mt-2` taşıyordu
+         — panelde o boşluk üstte fazladan bir bant olurdu. */
+      className="flex flex-wrap items-center gap-1.5"
     >
       <FilterChip
         label="Hepsi"
