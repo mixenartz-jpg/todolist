@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   baslangicSatirlari,
   bosSatir,
+  cozumleDuzenleme,
   cozumleSatir,
   kaydedilecekDersler,
   satirlarGecerli,
@@ -199,5 +200,47 @@ describe("kaydedilecekDersler", () => {
     ];
 
     expect(kaydedilecekDersler(cozumler)[0].ders).toBe("Türkçe");
+  });
+});
+
+describe("cozumleDuzenleme", () => {
+  it("geçerli düzenlemede boşu yeniden türetir", () => {
+    expect(cozumleDuzenleme("30", "6", 40)).toEqual({
+      dogru: 30,
+      yanlis: 6,
+      bos: 4,
+    });
+  });
+
+  it("boş alanı 0 sayar — kayıtlı satırda 'girilmemiş' hâli YOK", () => {
+    /*
+     * `cozumleSatir`'dan ayrıldığı yer burası: form satırında boş
+     * alan "dokunulmadı" demekti ve satır atlanıyordu. Kayıtlı bir
+     * satır zaten veritabanında; boşaltmak "atla" değil "sıfırla".
+     */
+    expect(cozumleDuzenleme("", "8", 40)).toEqual({
+      dogru: 0,
+      yanlis: 8,
+      bos: 32,
+    });
+  });
+
+  it("taşmayı reddeder", () => {
+    // 30 + 15 = 45 > 40 → 0018'in deneme_ders_toplam kısıtı ihlali.
+    expect(cozumleDuzenleme("30", "15", 40)).toBeNull();
+  });
+
+  it("rakam olmayan girdiyi reddeder", () => {
+    expect(cozumleDuzenleme("abc", "5", 40)).toBeNull();
+    expect(cozumleDuzenleme("30", "1.5", 40)).toBeNull();
+  });
+
+  it("hepsi boş bırakılmış ders geçerlidir", () => {
+    // 0 doğru 0 yanlış: "bu dersi hiç yapamadım" meşru bir sonuç.
+    expect(cozumleDuzenleme("0", "0", 40)).toEqual({
+      dogru: 0,
+      yanlis: 0,
+      bos: 40,
+    });
   });
 });

@@ -18,11 +18,14 @@ import {
   useCreateYanlis,
   useDeleteDeneme,
   useDeleteYanlis,
+  useUpdateDeneme,
+  useUpdateDenemeDers,
   useUpdateYanlis,
 } from "./mutations";
 import { useDeneme, useDenemeYanlislari } from "./queries";
+import { cozumleDuzenleme } from "./satir";
 import type { DenemeTur } from "./sinav";
-import type { DenemeDers, DenemeDetayli, DenemeYanlis } from "./types";
+import { DENEME_AD_MAX, type DenemeDers, type DenemeDetayli, type DenemeYanlis } from "./types";
 import { YanlisEkleForm } from "./YanlisEkleForm";
 import { YanlisGorseli } from "./YanlisGorseli";
 
@@ -54,6 +57,8 @@ export function DenemeDetay({ denemeId }: { denemeId: string }) {
   const createYanlis = useCreateYanlis(toast.show);
   const deleteYanlis = useDeleteYanlis(toast.show);
   const updateYanlis = useUpdateYanlis(toast.show);
+  const updateDeneme = useUpdateDeneme(toast.show);
+  const updateDers = useUpdateDenemeDers(toast.show);
   const deleteDeneme = useDeleteDeneme(toast.show);
 
   const [formAcik, setFormAcik] = useState(false);
@@ -123,9 +128,24 @@ export function DenemeDetay({ denemeId }: { denemeId: string }) {
       />
 
       <ScreenBody width="2xl">
-        <DenemeBasligi deneme={deneme} net={net} />
+        <DenemeBasligi
+          deneme={deneme}
+          net={net}
+          onRename={(ad) =>
+            updateDeneme.mutate({ id: deneme.id, patch: { ad } })
+          }
+        />
 
-        <DersTablosu dersler={deneme.dersler} />
+        <DersTablosu
+          dersler={deneme.dersler}
+          onEdit={(ders, patch) =>
+            updateDers.mutate({
+              id: ders.id,
+              denemeId: deneme.id,
+              patch,
+            })
+          }
+        />
 
         {/*
          * Hata sepeti ders tablosundan SONRA, yanlış ızgarasından
@@ -209,9 +229,11 @@ export function DenemeDetay({ denemeId }: { denemeId: string }) {
 function DenemeBasligi({
   deneme,
   net,
+  onRename,
 }: {
   deneme: DenemeDetayli;
   net: number;
+  onRename: (ad: string) => void;
 }) {
   return (
     <section className="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] p-5">
@@ -220,9 +242,7 @@ function DenemeBasligi({
        * `text-balance`: iki satıra taşan uzun adlarda satırlar
        * dengeli bölünür, tek kelimelik bir ikinci satır oluşmaz.
        */}
-      <h2 className="font-hand text-balance text-[length:var(--text-3xl)] leading-tight">
-        {deneme.ad}
-      </h2>
+      <DuzenlenebilirAd ad={deneme.ad} onRename={onRename} />
 
       <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[length:var(--text-sm)] text-[var(--color-ink-3)]">
         <span className="rounded bg-[var(--color-surface-2)] px-1.5 py-0.5 text-[length:var(--text-xs)] font-medium text-[var(--color-ink-2)]">
@@ -252,7 +272,16 @@ function DenemeBasligi({
 
 /* ── Ders tablosu ─────────────────────────────────────────────── */
 
-function DersTablosu({ dersler }: { dersler: readonly DenemeDers[] }) {
+function DersTablosu({
+  dersler,
+  onEdit,
+}: {
+  dersler: readonly DenemeDers[];
+  onEdit: (
+    ders: DenemeDers,
+    patch: { dogru: number; yanlis: number; bos: number },
+  ) => void;
+}) {
   if (dersler.length === 0) return null;
 
   const toplam = dersler.reduce(
@@ -310,11 +339,35 @@ function DersTablosu({ dersler }: { dersler: readonly DenemeDers[] }) {
               >
                 {d.ders}
               </th>
-              <td className="tabular py-2 text-right text-[var(--color-ink-2)]">
-                {d.dogru}
+              <td className="py-1 text-right">
+                <SayiHucresi
+                  deger={d.dogru}
+                  etiket={`${d.ders} doğru sayısı`}
+                  onKaydet={(text) => {
+                    const sonuc = cozumleDuzenleme(
+                      text,
+                      String(d.yanlis),
+                      d.soruSayisi,
+                    );
+                    if (sonuc) onEdit(d, sonuc);
+                    return sonuc !== null;
+                  }}
+                />
               </td>
-              <td className="tabular py-2 text-right text-[var(--color-ink-2)]">
-                {d.yanlis}
+              <td className="py-1 text-right">
+                <SayiHucresi
+                  deger={d.yanlis}
+                  etiket={`${d.ders} yanlış sayısı`}
+                  onKaydet={(text) => {
+                    const sonuc = cozumleDuzenleme(
+                      String(d.dogru),
+                      text,
+                      d.soruSayisi,
+                    );
+                    if (sonuc) onEdit(d, sonuc);
+                    return sonuc !== null;
+                  }}
+                />
               </td>
               <td className="tabular py-2 text-right text-[var(--color-ink-3)]">
                 {d.bos}
@@ -561,3 +614,177 @@ const KISA_AD: Record<HataTuru, string> = {
   sure: "Süre",
   strateji: "Strateji",
 };
+
+/* ── Yerinde düzenleme ────────────────────────────────────────── */
+
+/**
+ * Deneme adı — tıklayınca düzenlenir.
+ *
+ * ── Neden ayrı bir "düzenle" ekranı DEĞİL? ──
+ * Bir deneme kaydedildikten sonra değişmesi gereken tek şey genelde
+ * yanlış yazılmış bir sayı ya da addır. Bunun için ayrı bir form
+ * açmak, kullanıcıyı ekranı terk edip geri dönmeye zorlardı. Yerinde
+ * düzenleme aynı işi tek tıkla bitiriyor.
+ *
+ * Kaydetme `blur` ve `Enter` ile; `Escape` değişikliği ATAR. Üçü de
+ * kullanıcının beklediği davranış ve hiçbiri ayrı bir düğme
+ * gerektirmiyor.
+ */
+function DuzenlenebilirAd({
+  ad,
+  onRename,
+}: {
+  ad: string;
+  onRename: (ad: string) => void;
+}) {
+  const [duzenleniyor, setDuzenleniyor] = useState(false);
+  const [taslak, setTaslak] = useState(ad);
+
+  function kaydet() {
+    const temiz = taslak.trim();
+    setDuzenleniyor(false);
+
+    // Boş ad 0018'in check kısıtını ihlal ederdi; değişmediyse de
+    // ağ turu atmaya gerek yok.
+    if (temiz === "" || temiz === ad) {
+      setTaslak(ad);
+      return;
+    }
+    onRename(temiz);
+  }
+
+  if (!duzenleniyor) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setTaslak(ad);
+          setDuzenleniyor(true);
+        }}
+        aria-label={`Deneme adını düzenle: ${ad}`}
+        className={cn(
+          "font-hand text-balance block w-full text-left text-[length:var(--text-3xl)] leading-tight",
+          "rounded transition-colors duration-[var(--duration-fast)]",
+          "hover:text-[var(--color-accent)]",
+        )}
+      >
+        {ad}
+      </button>
+    );
+  }
+
+  return (
+    <input
+      autoFocus
+      value={taslak}
+      maxLength={DENEME_AD_MAX}
+      onChange={(e) => setTaslak(e.target.value)}
+      onBlur={kaydet}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.currentTarget.blur();
+        }
+        if (e.key === "Escape") {
+          // Önce taslağı geri al, SONRA kapat: `blur` tetiklenirse
+          // `kaydet` değişmemiş değeri görür ve yazma yapmaz.
+          setTaslak(ad);
+          setDuzenleniyor(false);
+        }
+      }}
+      aria-label="Deneme adı"
+      className={cn(
+        "font-hand w-full rounded bg-transparent text-[length:var(--text-3xl)] leading-tight",
+        "border-b border-[var(--color-accent)] outline-none",
+      )}
+    />
+  );
+}
+
+/**
+ * Tablo içinde düzenlenebilir sayı hücresi.
+ *
+ * `onKaydet` geçerliyse `true` döner. Geçersizse hücre DÜZENLEME
+ * MODUNDA KALIR ve kırmızıya döner — kapanıp değişikliği sessizce
+ * yutmak, kullanıcıya "kaydedildi" yalanı söylerdi.
+ */
+function SayiHucresi({
+  deger,
+  etiket,
+  onKaydet,
+}: {
+  deger: number;
+  etiket: string;
+  onKaydet: (text: string) => boolean;
+}) {
+  const [duzenleniyor, setDuzenleniyor] = useState(false);
+  const [taslak, setTaslak] = useState(String(deger));
+  const [hatali, setHatali] = useState(false);
+
+  function kaydet() {
+    if (taslak === String(deger)) {
+      setDuzenleniyor(false);
+      setHatali(false);
+      return;
+    }
+
+    if (onKaydet(taslak)) {
+      setDuzenleniyor(false);
+      setHatali(false);
+    } else {
+      setHatali(true);
+    }
+  }
+
+  if (!duzenleniyor) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setTaslak(String(deger));
+          setDuzenleniyor(true);
+        }}
+        aria-label={`${etiket}: ${deger}. Düzenlemek için bas.`}
+        className={cn(
+          "tabular w-10 rounded px-1 py-0.5 text-right text-[var(--color-ink-2)]",
+          "transition-colors duration-[var(--duration-fast)]",
+          "hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink)]",
+        )}
+      >
+        {deger}
+      </button>
+    );
+  }
+
+  return (
+    <input
+      autoFocus
+      inputMode="numeric"
+      value={taslak}
+      onChange={(e) => {
+        setTaslak(e.target.value);
+        setHatali(false);
+      }}
+      onBlur={kaydet}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          kaydet();
+        }
+        if (e.key === "Escape") {
+          setTaslak(String(deger));
+          setHatali(false);
+          setDuzenleniyor(false);
+        }
+      }}
+      aria-label={etiket}
+      aria-invalid={hatali || undefined}
+      className={cn(
+        "tabular w-10 rounded border bg-[var(--color-surface-2)] px-1 py-0.5 text-right outline-none",
+        hatali
+          ? "border-[var(--color-danger)]"
+          : "border-[var(--color-accent)]",
+      )}
+    />
+  );
+}

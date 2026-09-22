@@ -218,3 +218,41 @@ export function kaydedilecekDersler(
      */
     .map((c, i) => ({ ...c.deger!, sortOrder: i }));
 }
+
+/**
+ * KAYITLI bir ders satırının düzenlenmiş hâlini doğrular.
+ *
+ * ── Neden `cozumleSatir`'dan ayrı? ──
+ * O fonksiyon FORM satırını çözüyor ve "boş" diye üçüncü bir hâli
+ * var: dokunulmamış satır kaydetmeyi engellemez, atlanır. Kayıtlı bir
+ * satırda o hâl YOKTUR — satır zaten veritabanında ve boşaltılması
+ * "atla" değil "sıfırla" demek olurdu. İkisini tek fonksiyona
+ * sığdırmak, çağıranın hangi anlamı istediğini bir bayrakla
+ * söylemesini gerektirirdi.
+ *
+ * `null` → girdi bozuk, kaydetme. Aksi hâlde yazılacak üçlü.
+ */
+export function cozumleDuzenleme(
+  dogruText: string,
+  yanlisText: string,
+  soruSayisi: number,
+): { dogru: number; yanlis: number; bos: number } | null {
+  const dogru = parseSayi(dogruText, SORU_MAX);
+  const yanlis = parseSayi(yanlisText, SORU_MAX);
+
+  // Bozuk girdi (`undefined`) reddedilir; BOŞ ise 0 sayılır —
+  // kullanıcı alanı temizleyip "0 doğru" demek istemiş olabilir ve
+  // kayıtlı satırda "girilmemiş" diye bir hâl yok.
+  if (dogru === undefined || yanlis === undefined) return null;
+
+  const d = dogru ?? 0;
+  const y = yanlis ?? 0;
+  const bos = soruSayisi - d - y;
+
+  // 0018'in `deneme_ders_toplam` kısıtı: üç kova soru sayısını
+  // vermeli. Sunucuya varmadan yakalamak gerekiyor — oradan dönen
+  // hata hangi satırın bozuk olduğunu söylemez.
+  if (bos < 0) return null;
+
+  return { dogru: d, yanlis: y, bos };
+}
