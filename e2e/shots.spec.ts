@@ -100,13 +100,14 @@ test("yönlendirmeler", async ({ page }) => {
      * Kök ARTIK YÖNLENDİRMİYOR — F8'de kontrol paneli oldu. Onun
      * yerine eski ölçek rotaları tek `/planlama` yüzeyine düşüyor.
      */
-    ["/planlama/ay", "/planlama"],
     /*
-     * Hafta ölçeği çapayı KORUYARAK geçiyor: `?ol=hafta` düşseydi
-     * kullanıcı hafta görünümünü yer imine eklediğinde ay
-     * görünümünde açılırdı. Bu yüzden desen `$` ile bitmiyor.
+     * ÖLÇEK YÖNÜ TERS DÖNDÜ (Faz 7): hafta artık varsayılan ve URL'e
+     * yazılmıyor, ay ise `?ol=ay` taşıyor. Bu iki satır
+     * `DEFAULT_SCALE` ile birlikte değişmek zorundaydı — eski hâlleri
+     * yer imlerini sessizce yanlış ölçeğe açardı.
      */
-    ["/planlama/hafta", "/planlama\?ol=hafta"],
+    ["/planlama/ay", "/planlama\?ol=ay"],
+    ["/planlama/hafta", "/planlama"],
     ["/planlama/haftalik", "/planlama/hedefler"],
     /* Takvim sekmesi kaldırıldı ama adresler yer imlerinde olabilir;
        PWA'da 404 çıkmaz sokaktır. */
@@ -116,7 +117,7 @@ test("yönlendirmeler", async ({ page }) => {
     await page.goto(from);
     /*
      * `$` YOK: bazı yönlendirmeler sorgu parametresi taşıyor
-     * (bkz. /planlama/hafta) ve sona sabitlemek onları yanlışlıkla
+     * (bkz. /planlama/ay) ve sona sabitlemek onları yanlışlıkla
      * başarısız gösterirdi.
      */
     await expect(page).toHaveURL(new RegExp(to));
