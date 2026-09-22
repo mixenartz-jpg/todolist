@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/Button";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Screen, ScreenBody, ScreenHeader } from "@/components/Screen";
@@ -639,8 +639,15 @@ function DuzenlenebilirAd({
 }) {
   const [duzenleniyor, setDuzenleniyor] = useState(false);
   const [taslak, setTaslak] = useState(ad);
+  /* Escape koruması — gerekçe `SayiHucresi`'nde. */
+  const iptal = useRef(false);
 
   function kaydet() {
+    if (iptal.current) {
+      iptal.current = false;
+      return;
+    }
+
     const temiz = taslak.trim();
     setDuzenleniyor(false);
 
@@ -686,8 +693,7 @@ function DuzenlenebilirAd({
           e.currentTarget.blur();
         }
         if (e.key === "Escape") {
-          // Önce taslağı geri al, SONRA kapat: `blur` tetiklenirse
-          // `kaydet` değişmemiş değeri görür ve yazma yapmaz.
+          iptal.current = true;
           setTaslak(ad);
           setDuzenleniyor(false);
         }
@@ -721,7 +727,27 @@ function SayiHucresi({
   const [taslak, setTaslak] = useState(String(deger));
   const [hatali, setHatali] = useState(false);
 
+  /*
+   * Escape ile iptal edildi mi?
+   *
+   * ── Neden state DEĞİL ref? ──
+   * `blur`, Escape'in tetiklediği render'dan ÖNCE çalışabilir ve o
+   * anda `kaydet` bir state güncellemesini henüz görmezdi — iptal
+   * edilen değeri yine de yazardı. Ref senkron okunur: bayrak
+   * `keydown` içinde set edilir, `blur` aynı turda onu görür.
+   *
+   * React unmount'ta blur'u çağırmıyor olabilir ama buna GÜVENMEK,
+   * davranışı React sürümüne bağlı bir varsayıma bağlamak olurdu.
+   * Bayrak doğruluğu koşuldan bağımsız kılıyor.
+   */
+  const iptal = useRef(false);
+
   function kaydet() {
+    if (iptal.current) {
+      iptal.current = false;
+      return;
+    }
+
     if (taslak === String(deger)) {
       setDuzenleniyor(false);
       setHatali(false);
@@ -772,6 +798,9 @@ function SayiHucresi({
           kaydet();
         }
         if (e.key === "Escape") {
+          // Bayrak ÖNCE: ardından gelen `blur` bunu görüp yazmayı
+          // atlamalı.
+          iptal.current = true;
           setTaslak(String(deger));
           setHatali(false);
           setDuzenleniyor(false);
