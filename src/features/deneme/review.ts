@@ -1,55 +1,36 @@
 import { addDays, compareDates } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
+import type { DenemeYanlis } from "./types";
 
 /**
- * Aralıklı tekrar merdiveni.
+ * Aralıklı tekrar merdiveni, gün cinsinden.
  *
- * ── Bu dosya bir DİRİLİŞ ──
- * `src/features/mistakes/review.ts` olarak yazılmış, testleriyle
- * birlikte çalışıyordu ve 0016 sadeleştirmesinde silindi. Mantık
- * aynen korundu; değişen tek şey artık yanlışların DENEMEYE bağlı
- * olması, ki bu merdiveni hiç ilgilendirmiyor — bu yüzden fonksiyonlar
- * satır tipine değil, taşıdığı iki alana bağlı (bkz. `TekrarDurumu`).
+ * ── Bu modül 0005'ten DİRİLTİLDİ ──
+ * Eski `mistakes` özelliğiyle birlikte silinmişti (0016). Mantığı
+ * aynen geçerli; değişen tek şey uyguladığı TİP: artık serbest bir
+ * yanlış çetelesi değil, DENEMENİN yanlışı (`DenemeYanlis`). Merdiven
+ * sayıları, mezuniyet kuralı ve "vade tekrarın yapıldığı günden"
+ * kararı olduğu gibi korundu — hepsi testli ve hepsinin gerekçesi
+ * aşağıda yazılı.
  *
- * ── `asama` neden TAMAMLANAN tekrar sayısı, "hangi aralık" değil? ──
- * Bu kodlama sayesinde sonraki vade `tekrarGünü + ARALIKLAR[asama]`
- * biçiminde TOTAL bir fonksiyondur ve "mezun" yalnızca
- * `asama === MEZUN_ASAMA` demektir. Alternatifte (hangi aralıktayım)
- * son adımın ötesi tanımsız kalır ve her çağıran kendi sınır
- * kontrolünü yazmak zorundadır.
+ * `review_stage` TAMAMLANAN tekrar sayısıdır, "hangi aralık" değil.
+ * Böylece sonraki vade `tekrarGünü + REVIEW_INTERVALS[stage]` şeklinde
+ * temiz bir total fonksiyondur ve "mezun" sadece `stage === 4` demektir.
  */
-
-/**
- * Merdiven, gün cinsinden: 1 → 3 → 7 → 21.
- *
- * Türkçe YKS kaynaklarında standart olan dizi 1-3-7-15-30; buradaki
- * dört adımlık sürüm bilinçli olarak daha kısa. Gerekçe: beş adımlık
- * merdiven bir yanlışı iki ay boyunca kuyrukta tutuyor ve kuyruk
- * dolduğunda kullanıcı tamamını görmezden gelmeye başlıyor —
- * aralıklı tekrar özelliklerini öldüren başarısızlık modu tam olarak
- * budur. Dört adım, yanlışı üç haftada mezun eder.
- */
-export const TEKRAR_ARALIKLARI = [1, 3, 7, 21] as const;
+export const REVIEW_INTERVALS = [1, 3, 7, 21] as const;
 
 /** Bu aşamaya gelen yanlış bir daha tekrar kuyruğunda görünmez. */
-export const MEZUN_ASAMA = TEKRAR_ARALIKLARI.length;
+export const GRADUATED_STAGE = REVIEW_INTERVALS.length;
 
-export interface TekrarDurumu {
-  /** Tamamlanan tekrar sayısı (0..4). */
-  asama: number;
-  /** null ⇔ `asama === MEZUN_ASAMA` */
-  sonrakiTekrar: DateStr | null;
+export interface ReviewState {
+  stage: number;
+  /** null ⇔ stage === GRADUATED_STAGE */
+  nextReviewDate: DateStr | null;
 }
 
-/**
- * Yeni kaydedilen bir yanlışın ilk tekrar durumu: ertesi gün.
- *
- * Veritabanı bunu zaten damgalıyor (0019 trigger'ı) — bu fonksiyon
- * iyimser güncelleme (optimistic update) için var: satır sunucudan
- * dönmeden önce ekranda doğru vadeyi göstermek gerekiyor.
- */
-export function ilkTekrarDurumu(tarih: DateStr): TekrarDurumu {
-  return { asama: 0, sonrakiTekrar: addDays(tarih, TEKRAR_ARALIKLARI[0]) };
+/** Yeni kaydedilen bir yanlışın ilk tekrar durumu: ertesi gün. */
+export function initialReviewState(date: DateStr): ReviewState {
+  return { stage: 0, nextReviewDate: addDays(date, REVIEW_INTERVALS[0]) };
 }
 
 /**
@@ -57,90 +38,74 @@ export function ilkTekrarDurumu(tarih: DateStr): TekrarDurumu {
  *
  * ── Vade TEKRARIN YAPILDIĞI GÜNDEN hesaplanır ──
  * Orijinal tarihten değil. 1'inde kaydedip 20'sine kadar uygulamayı
- * açmayan biri birikmiş tekrarları yaptığında hepsi anında yeniden
- * vadesi gelmiş olmamalıdır: asama 0 için sonraki vade 23'ü olmalı,
- * 4'ü değil. Aksi hâlde uzun bir aradan dönen kullanıcı, kuyruğu ne
- * kadar çalışırsa çalışsın boşalmadığını görür.
+ * açmayan biri birikmiş tekrarları yaptığında, hepsi anında yeniden
+ * vadesi gelmiş olmamalıdır: stage 0 için sonraki vade 23'ü olmalı,
+ * 4'ü değil.
  *
  * ── Mezuniyet ──
- * Son aralık (21 gün) işaretlenince yanlış mezun olur. Mezun olanlar
- * çetelede ve deneme detayında TAM GÖRÜNÜR kalır; yalnızca dürtmeyi
- * bırakırlar.
+ * Son aralık (21 gün) işaretlenince yanlış mezun olur ve Bugün
+ * ekranında bir daha görünmez. Sonsuza dek tekrar, iki ay içinde o
+ * ekranı çöplüğe çevirirdi — aralıklı tekrar özelliklerini öldüren
+ * başarısızlık modu budur. Mezun yanlışlar çetelede ve listede tam
+ * görünür kalır; sadece dürtmeyi bırakırlar.
  *
  * Mezun durumdan ilerletmek idempotenttir: hata atmaz, 0'a sarmaz.
  */
-export function tekrariIlerlet(
-  durum: TekrarDurumu,
-  tekrarGunu: DateStr,
-): TekrarDurumu {
-  if (mezunMu(durum)) return durum;
+export function advanceReview(
+  state: ReviewState,
+  reviewedOn: DateStr,
+): ReviewState {
+  if (isGraduated(state)) return state;
 
-  const sonraki = durum.asama + 1;
-  if (sonraki >= MEZUN_ASAMA) {
-    return { asama: MEZUN_ASAMA, sonrakiTekrar: null };
+  const nextStage = state.stage + 1;
+  if (nextStage >= GRADUATED_STAGE) {
+    return { stage: GRADUATED_STAGE, nextReviewDate: null };
   }
 
   return {
-    asama: sonraki,
-    sonrakiTekrar: addDays(tekrarGunu, TEKRAR_ARALIKLARI[sonraki]),
+    stage: nextStage,
+    nextReviewDate: addDays(reviewedOn, REVIEW_INTERVALS[nextStage]),
   };
 }
 
-export function mezunMu(durum: TekrarDurumu): boolean {
-  return durum.sonrakiTekrar === null;
+export function isGraduated(state: ReviewState): boolean {
+  return state.nextReviewDate === null;
 }
 
 /**
  * Vadesi geldi mi?
  *
- * Geçmiş vadeler de dahildir: kaçırılan bir tekrar KAYBOLMAMALI,
- * beklemeli. Yalnızca "bugün" eşleşseydi, bir gün uygulamayı açmayan
- * kullanıcının o günkü tekrarları sessizce düşerdi.
+ * Geçmiş vadeler de dahildir: kaçırılan bir tekrar kaybolmamalı,
+ * beklemeli.
  */
-export function vadesiGeldiMi(durum: TekrarDurumu, bugun: DateStr): boolean {
-  if (durum.sonrakiTekrar === null) return false;
-  return compareDates(durum.sonrakiTekrar, bugun) <= 0;
-}
-
-/** Tekrar durumunu taşıyan her satır bu şekle uyar. */
-export interface TekrarTasiyan {
-  id: string;
-  reviewStage: number;
-  nextReviewDate: DateStr | null;
-}
-
-/** Satırdan tekrar durumunu çıkarır. */
-export function tekrarDurumu(satir: TekrarTasiyan): TekrarDurumu {
-  return { asama: satir.reviewStage, sonrakiTekrar: satir.nextReviewDate };
+export function isDue(state: ReviewState, today: DateStr): boolean {
+  if (state.nextReviewDate === null) return false;
+  return compareDates(state.nextReviewDate, today) <= 0;
 }
 
 /**
- * Vadesi gelmiş kayıtlar, EN ESKİ VADE ÖNCE.
+ * Vadesi gelmiş yanlışlar, en eski vade önce.
  *
- * En çok bekleyen en üstte olmalı. Beraberlik `id` ile bozulur ki
- * sıra yeniden çizimlerde kararlı kalsın — aksi hâlde aynı güne
- * düşen iki yanlış her render'da yer değiştirir ve liste titrer.
- *
- * Jenerik: satır tipini bilmez, yalnızca `TekrarTasiyan` sözleşmesini
- * ister. Böylece `DenemeYanlis` dışında bir tür de (ileride konu
- * tekrarı) aynı kuyruğu kullanabilir.
+ * En çok bekleyen en üstte olmalı. Beraberlik `id` ile bozulur ki sıra
+ * yeniden çizimlerde kararlı kalsın.
  */
-export function vadesiGelenler<T extends TekrarTasiyan>(
-  kayitlar: readonly T[],
-  bugun: DateStr,
-): T[] {
-  return kayitlar
-    .filter((k) => vadesiGeldiMi(tekrarDurumu(k), bugun))
+export function vadesiGelenler(
+  yanlislar: readonly DenemeYanlis[],
+  today: DateStr,
+): DenemeYanlis[] {
+  return yanlislar
+    .filter((m) => isDue(toReviewState(m), today))
     .sort((a, b) => {
-      // `nextReviewDate` burada null OLAMAZ: filtre onu zaten eledi.
-      // Yine de `!` yerine açık kontrol — tip daraltması filtreden
-      // taşımıyor ve sessiz bir null karşılaştırması sırayı bozardı.
-      const av = a.nextReviewDate;
-      const bv = b.nextReviewDate;
-      if (av === null || bv === null) return 0;
-
-      const cmp = compareDates(av, bv);
+      const cmp = compareDates(a.nextReviewDate!, b.nextReviewDate!);
       if (cmp !== 0) return cmp;
       return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
     });
+}
+
+/** Yanlış satırından tekrar durumunu çıkarır. */
+export function toReviewState(yanlis: DenemeYanlis): ReviewState {
+  return {
+    stage: yanlis.reviewStage,
+    nextReviewDate: yanlis.nextReviewDate,
+  };
 }

@@ -10,6 +10,7 @@ import type { RoutineWithSchedule, Schedule, ScheduleVersion } from "@/features/
 import { entryKey, type EntryMap } from "@/features/entries/entry-map";
 import type { Category, PlanGoal } from "@/features/planlama/types";
 import type { Task } from "@/features/tasks/types";
+import type { DenemeYanlis } from "@/features/deneme/types";
 
 let counter = 0;
 
@@ -215,3 +216,47 @@ export function completedRange(
   return map;
 }
 
+
+interface DenemeYanlisOptions {
+  id?: string;
+  denemeId?: string;
+  ders?: string;
+  konu?: string | null;
+  hataTuru?: DenemeYanlis["hataTuru"];
+  reviewStage?: number;
+  /** `undefined` → stage'e göre türetilir; `null` → mezun. */
+  nextReviewDate?: string | null;
+}
+
+/**
+ * Test için deneme yanlışı üretir.
+ *
+ * Varsayılan: etiketlenmemiş, ilk tekrarı bekleyen yeni bir yanlış —
+ * gerçek hayattaki en yaygın hâli (deneme biter, fotoğraf çekilir,
+ * etiketleme sonraki oturuma kalır).
+ */
+export function denemeYanlis(
+  options: DenemeYanlisOptions = {},
+): DenemeYanlis {
+  const reviewStage = options.reviewStage ?? 0;
+
+  return {
+    id: options.id ?? `y${++counter}`,
+    denemeId: options.denemeId ?? "d1",
+    ders: options.ders ?? "Matematik",
+    konu: options.konu ?? null,
+    soruNo: null,
+    hataTuru: options.hataTuru ?? null,
+    note: null,
+    imagePath: null,
+    imageWidth: null,
+    imageHeight: null,
+    reviewStage,
+    nextReviewDate:
+      options.nextReviewDate === undefined
+        ? asDateStr("2026-09-02")
+        : options.nextReviewDate === null
+          ? null
+          : asDateStr(options.nextReviewDate),
+  };
+}

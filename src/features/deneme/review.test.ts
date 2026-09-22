@@ -1,170 +1,130 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, test } from "vitest";
 import { asDateStr } from "@/lib/date/date";
+import { denemeYanlis } from "@/features/testing/fixtures";
 import {
-  MEZUN_ASAMA,
-  type TekrarDurumu,
-  type TekrarTasiyan,
-  ilkTekrarDurumu,
-  mezunMu,
-  tekrariIlerlet,
+  advanceReview,
   vadesiGelenler,
-  vadesiGeldiMi,
+  GRADUATED_STAGE,
+  initialReviewState,
+  isDue,
+  isGraduated,
+  type ReviewState,
 } from "./review";
-
-/*
- * Tekrar merdiveni testleri — silinen `mistakes/review.test.ts`'ten
- * uyarlandı. En kritik iki vaka aynen korundu: vadenin TEKRARIN
- * yapıldığı günden hesaplanması ve mezun durumun idempotentliği.
- */
 
 const d = asDateStr;
 
-/** Test için kısa satır kurucusu. */
-function satir(
-  id: string,
-  asama: number,
-  vade: string | null,
-): TekrarTasiyan {
-  return {
-    id,
-    reviewStage: asama,
-    nextReviewDate: vade === null ? null : d(vade),
-  };
-}
-
-describe("ilkTekrarDurumu", () => {
-  it("ilk vade ertesi gündür", () => {
-    expect(ilkTekrarDurumu(d("2026-08-01"))).toEqual({
-      asama: 0,
-      sonrakiTekrar: "2026-08-02",
+describe("initialReviewState", () => {
+  test("ilk vade ertesi gündür", () => {
+    expect(initialReviewState(d("2026-08-01"))).toEqual({
+      stage: 0,
+      nextReviewDate: "2026-08-02",
     });
   });
+});
 
-  it("ay sınırını doğru geçer", () => {
-    expect(ilkTekrarDurumu(d("2026-08-31")).sonrakiTekrar).toBe("2026-09-01");
+describe("advanceReview", () => {
+  test("merdiven 1 → 3 → 7 → 21 gün üretir", () => {
+    // Her adımda aynı gün tekrar edildiği varsayımıyla ilerlet.
+    let state = initialReviewState(d("2026-08-01"));
+    expect(state.nextReviewDate).toBe("2026-08-02");
+
+    state = advanceReview(state, d("2026-08-02"));
+    expect(state).toEqual({ stage: 1, nextReviewDate: "2026-08-05" }); // +3
+
+    state = advanceReview(state, d("2026-08-05"));
+    expect(state).toEqual({ stage: 2, nextReviewDate: "2026-08-12" }); // +7
+
+    state = advanceReview(state, d("2026-08-12"));
+    expect(state).toEqual({ stage: 3, nextReviewDate: "2026-09-02" }); // +21
+
+    state = advanceReview(state, d("2026-09-02"));
+    expect(state).toEqual({ stage: GRADUATED_STAGE, nextReviewDate: null });
+  });
+
+  test("vade TEKRARIN yapıldığı günden hesaplanır, orijinal tarihten değil", () => {
+    // Asıl tuzak: 1'inde kaydedip 20'sine kadar açmayan biri stage 0'ı
+    // işaretlediğinde sonraki vade 23'ü olmalı — 4'ü olsaydı anında
+    // yeniden vadesi gelirdi.
+    const state = initialReviewState(d("2026-08-01"));
+    const next = advanceReview(state, d("2026-08-20"));
+
+    expect(next.nextReviewDate).toBe("2026-08-23");
+    expect(next.nextReviewDate).not.toBe("2026-08-04");
+  });
+
+  test("mezun durumdan ilerletmek idempotenttir", () => {
+    const graduated: ReviewState = {
+      stage: GRADUATED_STAGE,
+      nextReviewDate: null,
+    };
+
+    const next = advanceReview(graduated, d("2026-09-10"));
+
+    expect(next).toEqual(graduated);
+    expect(next.stage).not.toBe(0); // 0'a sarmaz
   });
 });
 
-describe("tekrariIlerlet", () => {
-  it("merdiven 1 → 3 → 7 → 21 gün üretir, sonra mezun eder", () => {
-    let durum = ilkTekrarDurumu(d("2026-08-01"));
-    expect(durum.sonrakiTekrar).toBe("2026-08-02");
-
-    durum = tekrariIlerlet(durum, d("2026-08-02"));
-    expect(durum).toEqual({ asama: 1, sonrakiTekrar: "2026-08-05" }); // +3
-
-    durum = tekrariIlerlet(durum, d("2026-08-05"));
-    expect(durum).toEqual({ asama: 2, sonrakiTekrar: "2026-08-12" }); // +7
-
-    durum = tekrariIlerlet(durum, d("2026-08-12"));
-    expect(durum).toEqual({ asama: 3, sonrakiTekrar: "2026-09-02" }); // +21
-
-    durum = tekrariIlerlet(durum, d("2026-09-02"));
-    expect(durum).toEqual({ asama: MEZUN_ASAMA, sonrakiTekrar: null });
-  });
-
-  it("vade TEKRARIN yapıldığı günden hesaplanır, orijinal tarihten değil", () => {
-    /*
-     * Asıl tuzak: 1'inde kaydedip 20'sine kadar uygulamayı açmayan
-     * biri, birikmiş tekrarı 20'sinde yaptığında sonraki vade 23'ü
-     * olmalı — 4'ü değil. Orijinal tarihten hesaplasaydık, uzun bir
-     * aradan dönen kullanıcının kuyruğu ne kadar çalışırsa çalışsın
-     * boşalmazdı.
-     */
-    const durum = ilkTekrarDurumu(d("2026-08-01")); // vade 08-02
-    const sonraki = tekrariIlerlet(durum, d("2026-08-20"));
-
-    expect(sonraki.sonrakiTekrar).toBe("2026-08-23"); // 20 + 3
-  });
-
-  it("mezun durumdan ilerletmek IDEMPOTENT", () => {
-    // Çift tıklama ya da tekrar gönderim 0'a sarmamalı.
-    const mezun: TekrarDurumu = { asama: MEZUN_ASAMA, sonrakiTekrar: null };
-    expect(tekrariIlerlet(mezun, d("2026-09-10"))).toEqual(mezun);
-  });
-
-  it("girdi nesnesini DEĞİŞTİRMEZ", () => {
-    const durum = ilkTekrarDurumu(d("2026-08-01"));
-    const kopya = { ...durum };
-    tekrariIlerlet(durum, d("2026-08-02"));
-    expect(durum).toEqual(kopya);
+describe("isGraduated", () => {
+  test("null vade mezun demektir", () => {
+    expect(isGraduated({ stage: 4, nextReviewDate: null })).toBe(true);
+    expect(isGraduated({ stage: 2, nextReviewDate: d("2026-08-10") })).toBe(false);
   });
 });
 
-describe("vadesiGeldiMi", () => {
-  it("bugün vadesi olan gelmiştir", () => {
-    expect(vadesiGeldiMi({ asama: 0, sonrakiTekrar: d("2026-08-10") }, d("2026-08-10"))).toBe(true);
+describe("isDue", () => {
+  const today = d("2026-08-10");
+
+  test("bugün vadesi gelen due'dur", () => {
+    expect(isDue({ stage: 1, nextReviewDate: d("2026-08-10") }, today)).toBe(true);
   });
 
-  it("GEÇMİŞ vadeler de gelmiştir — kaçırılan tekrar kaybolmaz", () => {
-    expect(vadesiGeldiMi({ asama: 1, sonrakiTekrar: d("2026-08-01") }, d("2026-08-20"))).toBe(true);
+  test("geçmiş vade de due'dur — kaçırılan tekrar kaybolmaz", () => {
+    expect(isDue({ stage: 1, nextReviewDate: d("2026-07-20") }, today)).toBe(true);
   });
 
-  it("gelecek vade henüz gelmemiştir", () => {
-    expect(vadesiGeldiMi({ asama: 0, sonrakiTekrar: d("2026-08-20") }, d("2026-08-10"))).toBe(false);
+  test("gelecek vade due değildir", () => {
+    expect(isDue({ stage: 1, nextReviewDate: d("2026-08-11") }, today)).toBe(false);
   });
 
-  it("mezun olan bir daha vadesi gelmez", () => {
-    expect(vadesiGeldiMi({ asama: MEZUN_ASAMA, sonrakiTekrar: null }, d("2030-01-01"))).toBe(false);
-  });
-});
-
-describe("mezunMu", () => {
-  it("vade null ise mezundur", () => {
-    expect(mezunMu({ asama: MEZUN_ASAMA, sonrakiTekrar: null })).toBe(true);
-    expect(mezunMu({ asama: 2, sonrakiTekrar: d("2026-08-10") })).toBe(false);
+  test("mezun asla due değildir", () => {
+    expect(isDue({ stage: 4, nextReviewDate: null }, today)).toBe(false);
   });
 });
 
 describe("vadesiGelenler", () => {
-  it("en eski vade önce gelir", () => {
-    const kayitlar = [
-      satir("b", 1, "2026-08-10"),
-      satir("a", 0, "2026-08-05"),
-      satir("c", 2, "2026-08-08"),
+  const today = d("2026-08-10");
+
+  test("en eski vade önce sıralanır", () => {
+    const list = [
+      denemeYanlis({ id: "b", nextReviewDate: "2026-08-09" }),
+      denemeYanlis({ id: "a", nextReviewDate: "2026-08-01" }),
+      denemeYanlis({ id: "c", nextReviewDate: "2026-08-10" }),
     ];
 
-    expect(vadesiGelenler(kayitlar, d("2026-08-15")).map((k) => k.id)).toEqual([
-      "a",
-      "c",
-      "b",
-    ]);
+    expect(vadesiGelenler(list, today).map((m) => m.id)).toEqual(["a", "b", "c"]);
   });
 
-  it("aynı vadede sıra KARARLI — id ile bozulur", () => {
-    // Aksi hâlde aynı güne düşen iki yanlış her render'da yer
-    // değiştirir ve liste titrer.
-    const kayitlar = [
-      satir("z", 0, "2026-08-05"),
-      satir("a", 0, "2026-08-05"),
+  test("mezun ve vadesi gelmemişler hariç tutulur", () => {
+    const list = [
+      denemeYanlis({ id: "due", nextReviewDate: "2026-08-10" }),
+      denemeYanlis({ id: "mezun", reviewStage: 4, nextReviewDate: null }),
+      denemeYanlis({ id: "sonra", nextReviewDate: "2026-08-20" }),
     ];
 
-    expect(vadesiGelenler(kayitlar, d("2026-08-15")).map((k) => k.id)).toEqual(["a", "z"]);
+    expect(vadesiGelenler(list, today).map((m) => m.id)).toEqual(["due"]);
   });
 
-  it("vadesi gelmeyenleri ve mezunları eler", () => {
-    const kayitlar = [
-      satir("gelecek", 0, "2026-09-01"),
-      satir("mezun", MEZUN_ASAMA, null),
-      satir("vadesi", 1, "2026-08-01"),
+  test("eşit vadede sıra id ile kararlıdır", () => {
+    const list = [
+      denemeYanlis({ id: "z", nextReviewDate: "2026-08-09" }),
+      denemeYanlis({ id: "a", nextReviewDate: "2026-08-09" }),
     ];
 
-    expect(vadesiGelenler(kayitlar, d("2026-08-15")).map((k) => k.id)).toEqual(["vadesi"]);
+    expect(vadesiGelenler(list, today).map((m) => m.id)).toEqual(["a", "z"]);
   });
 
-  it("girdi dizisini DEĞİŞTİRMEZ", () => {
-    const kayitlar = [
-      satir("b", 0, "2026-08-10"),
-      satir("a", 0, "2026-08-05"),
-    ];
-    const once = kayitlar.map((k) => k.id);
-
-    vadesiGelenler(kayitlar, d("2026-08-15"));
-
-    expect(kayitlar.map((k) => k.id)).toEqual(once);
-  });
-
-  it("boş listede boş döner", () => {
-    expect(vadesiGelenler([], d("2026-08-15"))).toEqual([]);
+  test("boş girdi boş döner", () => {
+    expect(vadesiGelenler([], today)).toEqual([]);
   });
 });

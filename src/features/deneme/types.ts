@@ -123,6 +123,20 @@ export interface DenemeDersDraft {
   sortOrder: number;
 }
 
+/**
+ * Sıkıştırılmış ama henüz YÜKLENMEMİŞ görsel.
+ *
+ * Ölçüler blob ile birlikte taşınır: yükleme bittikten sonra
+ * görselden tekrar okunsaydı ikinci bir decode gerekir, üstelik
+ * `image_width`/`image_height` satıra yazılamadan önce ekran
+ * görseli ölçüsüz çizmek zorunda kalır — yani layout shift.
+ */
+export interface PendingImage {
+  blob: Blob;
+  width: number;
+  height: number;
+}
+
 /** Yeni yanlış kaydı. Görsel ve etiketler sonradan eklenir. */
 export interface DenemeYanlisDraft {
   denemeId: string;

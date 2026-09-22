@@ -1,16 +1,26 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { DenemeDersRow, DenemeRow } from "@/lib/db/database.types";
+import type {
+  DenemeDersRow,
+  DenemeRow,
+  DenemeYanlisRow,
+} from "@/lib/db/database.types";
+import type { DateStr } from "@/lib/date/types";
 import { qk } from "@/lib/query/keys";
 import { createClient } from "@/lib/supabase/client";
-import { toDeneme, toDenemeDers } from "./queries";
+import { silGorsel, yukleGorsel } from "./gorsel";
+import { toDeneme, toDenemeDers, toDenemeYanlis } from "./queries";
+import { advanceReview, toReviewState } from "./review";
 import type {
   Deneme,
   DenemeDers,
   DenemeDersDraft,
   DenemeDetayli,
   DenemeDraft,
+  DenemeYanlis,
+  DenemeYanlisDraft,
+  PendingImage,
 } from "./types";
 
 /**
@@ -403,4 +413,223 @@ function errorText(error: unknown): string {
   return error instanceof Error
     ? error.message
     : "Kaydedilemedi, tekrar deneyin";
+}
+
+/* ── Yanlışlar (0019) ─────────────────────────────────────────── */
+
+/**
+ * Denemeye yanlış ekler — görsel önce yüklenir, sonra satır yazılır.
+ *
+ * ── Neden bu sıra? ──
+ * Ters sırada (önce satır, sonra görsel) yükleme başarısız olursa
+ * ekranda görselsiz bir yanlış kalırdı ve kullanıcı onu silip
+ * yeniden eklemek zorunda olurdu. Bu sırada ise yükleme başarısız
+ * olduğunda hiçbir şey olmamış gibi kalır; başarılıysa yetim bir
+ * dosya riski var ama o dosya özel bucket'ta erişilemez ve yalnızca
+ * yer kaplar.
+ *
+ * `next_review_date` YAZILMAZ: 0019'un `schedule_first_review`
+ * trigger'ı onu ertesi güne kuruyor. İstemciden yazmak, iki ayrı
+ * yerde duran aynı kuralın (REVIEW_INTERVALS[0]) ayrışması demekti.
+ */
+export function useCreateYanlis(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      draft,
+      image,
+    }: {
+      draft: DenemeYanlisDraft;
+      image: PendingImage | null;
+    }) => {
+      const supabase = createClient();
+
+      const imagePath = image ? await yukleGorsel(image) : null;
+
+      const { data, error } = await supabase
+        .from("deneme_yanlislari")
+        .insert({
+          deneme_id: draft.denemeId,
+          ders: draft.ders.trim(),
+          konu: draft.konu?.trim() || null,
+          soru_no: draft.soruNo,
+          hata_turu: draft.hataTuru,
+          note: draft.note,
+          image_path: imagePath,
+          image_width: image?.width ?? null,
+          image_height: image?.height ?? null,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        /*
+         * Satır yazılamadıysa yüklenen dosya YETİM kalır. Temizliği
+         * deniyoruz ama hatasını yutuyoruz: kullanıcıya gösterilecek
+         * doğru hata satır hatasıdır, silme hatası değil (deneme
+         * geri almasıyla aynı gerekçe).
+         */
+        if (imagePath) {
+          await silGorsel(imagePath).catch(() => undefined);
+        }
+        throw error;
+      }
+
+      return toDenemeYanlis(data as DenemeYanlisRow);
+    },
+
+    onSuccess: (_yanlis, vars) =>
+      qc.invalidateQueries({
+        queryKey: qk.denemeYanlislariFor(vars.draft.denemeId),
+      }),
+    onError: (error) => onError?.(errorText(error)),
+  });
+}
+
+/**
+ * Yanlışın etiketlerini günceller (konu, hata türü, not) — optimistic.
+ *
+ * Etiketleme AYRI bir oturumun işi ve hızlı olmalı: kullanıcı on beş
+ * yanlışı arka arkaya etiketliyor. Her birinde sunucu yanıtı
+ * beklenseydi iş angaryaya dönerdi.
+ */
+export function useUpdateYanlis(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      patch,
+    }: {
+      id: string;
+      denemeId: string;
+      patch: Partial<Pick<DenemeYanlis, "ders" | "konu" | "soruNo" | "hataTuru" | "note">>;
+    }) => {
+      const supabase = createClient();
+
+      const { error } = await supabase
+        .from("deneme_yanlislari")
+        .update({
+          ...(patch.ders !== undefined && { ders: patch.ders.trim() }),
+          ...(patch.konu !== undefined && {
+            konu: patch.konu?.trim() || null,
+          }),
+          ...(patch.soruNo !== undefined && { soru_no: patch.soruNo }),
+          ...(patch.hataTuru !== undefined && { hata_turu: patch.hataTuru }),
+          ...(patch.note !== undefined && { note: patch.note }),
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+
+    onMutate: async (vars) => {
+      const key = qk.denemeYanlislariFor(vars.denemeId);
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<DenemeYanlis[]>(key);
+
+      qc.setQueryData<DenemeYanlis[]>(key, (list) =>
+        list?.map((y) => (y.id === vars.id ? { ...y, ...vars.patch } : y)),
+      );
+
+      return { previous, key };
+    },
+
+    onError: (error, _vars, context) => {
+      if (context) qc.setQueryData(context.key, context.previous);
+      onError?.(errorText(error));
+    },
+
+    onSettled: (_d, _e, vars) =>
+      qc.invalidateQueries({ queryKey: qk.denemeYanlislariFor(vars.denemeId) }),
+  });
+}
+
+/**
+ * Yanlışı siler — satır ve varsa görseli.
+ *
+ * Optimistic DEĞİL: silme geri alınamaz bir iş ve iyimser bir kaldırma,
+ * sunucu reddettiğinde satırı geri getirirdi — kullanıcı "sildim
+ * sanmıştım" der. Tek satırlık bekleme görünür bile olmuyor.
+ */
+export function useDeleteYanlis(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      imagePath,
+    }: {
+      id: string;
+      denemeId: string;
+      imagePath: string | null;
+    }) => {
+      const supabase = createClient();
+
+      const { error } = await supabase
+        .from("deneme_yanlislari")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      /*
+       * Görsel satırdan SONRA silinir. Ters sırada dosya gider ama
+       * satır kalırsa, ekranda kalıcı olarak "görsel yüklenemedi"
+       * diyen bir kayıt olurdu — yetim dosyadan çok daha kötü.
+       */
+      if (imagePath) {
+        await silGorsel(imagePath).catch(() => undefined);
+      }
+    },
+
+    onSuccess: (_d, vars) =>
+      qc.invalidateQueries({ queryKey: qk.denemeYanlislariFor(vars.denemeId) }),
+    onError: (error) => onError?.(errorText(error)),
+  });
+}
+
+/**
+ * Tekrarı tamamlandı olarak işaretler — merdiveni bir basamak ilerletir.
+ *
+ * Sonraki durum İSTEMCİDE hesaplanır (`advanceReview`): kural saf bir
+ * fonksiyonda ve testli. Veritabanı trigger'ı ile yapılsaydı aynı
+ * merdiven iki yerde tanımlı olurdu ve biri değişip diğeri
+ * kalabilirdi.
+ */
+export function useIlerletTekrar(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      yanlis,
+      bugun,
+    }: {
+      yanlis: DenemeYanlis;
+      bugun: DateStr;
+    }) => {
+      const sonraki = advanceReview(toReviewState(yanlis), bugun);
+
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("deneme_yanlislari")
+        .update({
+          review_stage: sonraki.stage,
+          next_review_date: sonraki.nextReviewDate,
+        })
+        .eq("id", yanlis.id);
+
+      if (error) throw error;
+    },
+
+    /*
+     * TÜM yanlış anahtarları tazelenir (`qk.denemeYanlislari()`
+     * öneki): bir tekrarı işaretlemek hem o denemenin listesini hem
+     * Bugün'ün kuyruğunu etkiler ve ikisi ayrı anahtarlarda.
+     */
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: qk.denemeYanlislari() }),
+    onError: (error) => onError?.(errorText(error)),
+  });
 }
