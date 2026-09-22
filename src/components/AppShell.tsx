@@ -9,9 +9,9 @@ import { createClient } from "@/lib/supabase/client";
 import { QuickPanel } from "@/features/quickpanel/QuickPanel";
 import { ZenProvider } from "@/features/zen/ZenProvider";
 import {
+  ArchiveIcon,
   ChartIcon,
   CheckIcon,
-  GridIcon,
   HomeIcon,
   TargetIcon,
 } from "@/components/icons";
@@ -55,12 +55,20 @@ const NAV: NavItem[] = [
     icon: <TargetIcon />,
   },
   /*
-   * Tablo (rutin × gün matrisi) eskiden `/` idi ve açılış ekranıydı.
-   * Koçluk ürününde açılış "şimdi ne yapmalıyım" sorusunu cevaplar,
-   * "bu ay nasıl gidiyorum"u değil — o geriye bakmaktır ve sekmede
-   * İstatistik'in komşusu olarak doğru yerde durur.
+   * Arşiv — "ne yaptım", gün gün.
+   *
+   * ── Burada eskiden Tablo (rutin × gün matrisi) vardı ──
+   * İkisi de geriye bakma yüzeyi ve beş sekme sınırı ikisini birden
+   * taşımıyor (altıncı sekme 320px'te 53px'e düşer ve "İstat."
+   * kırpılır). Seçim KULLANIM SIKLIĞINA göre yapıldı: arşiv
+   * "dün ne yaptım, bu hafta ne bitirdim" diye günlük açılan bir
+   * yüzey; matris ise ayda birkaç kez bakılan bir genel görünüm.
+   *
+   * Tablo kaybolmadı: İstatistik'in alt sekmesi oldu ve Panel'deki
+   * kısayolu da duruyor. Sekmeden çıkarmak SİLMEK değil, sıklığa
+   * göre bir kat aşağı indirmek.
    */
-  { href: "/tablo", label: "Tablo", icon: <GridIcon /> },
+  { href: "/arsiv", label: "Arşiv", icon: <ArchiveIcon /> },
   {
     href: "/istatistik",
     label: "İstatistik",

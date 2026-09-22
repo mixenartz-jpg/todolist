@@ -4,11 +4,12 @@ import { ArchiveScreen } from "@/features/archive/ArchiveScreen";
 export const metadata: Metadata = { title: "Arşiv · Kero YKS" };
 
 /**
- * Arşiv — sekme DEĞİL, bağlantıyla ulaşılan ekran.
+ * Arşiv — "ne yaptım", gün gün. ANA SEKME.
  *
- * Üst çubukta beş sekme var ve altıncısı 320px'te etiketleri kırpma
- * sınırına dayıyor (bkz. nav-bar.css aritmetiği). Arşiv geçmişe bakma
- * işi: İstatistik ekranından ve Bugün'ün gün kapanışından ulaşılıyor.
+ * Yerini Tablo'dan aldı: beş sekme sınırı (320px'te altıncısı
+ * etiketleri kırpar) ikisini birden taşımıyor ve seçim kullanım
+ * sıklığına göre yapıldı — arşiv günlük açılıyor, matris ayda
+ * birkaç kez. Gerekçenin tamamı `AppShell.tsx`'te.
  */
 
 export default function ArsivPage() {

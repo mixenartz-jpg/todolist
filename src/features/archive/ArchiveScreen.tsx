@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/ui/cn";
 import { todayStr } from "@/lib/date/date";
 import { formatLongDate } from "@/lib/ui/tr";
-import { ScreenBody } from "@/components/Screen";
+import { ScreenBody, ScreenHeader } from "@/components/Screen";
 import { EmptyState } from "@/components/EmptyState";
 import { CheckIcon } from "@/components/icons";
 import { Toast, useToast } from "@/components/Toast";
@@ -17,11 +17,12 @@ import { groupByCompletedDay } from "./archive";
 /**
  * Arşiv — "ne yaptım" ekranı.
  *
- * ── Neden sekme değil? ──
- * Üst çubukta beş sekme var ve altıncısı 320px'te etiketleri kırpma
- * sınırına dayıyor (bkz. `nav-bar.css`). Arşiv geçmişe bakma işi ve
- * günlük akışın parçası değil: İstatistik'ten ve Bugün'ün gün
- * kapanışından ulaşılıyor.
+ * ── Artık ANA SEKME ──
+ * Önce İstatistik'in köşesindeki küçük bir bağlantıydı ve gün
+ * kapanışından ulaşılıyordu; ikisi de kolay bulunmuyordu. Yerini
+ * Tablo'dan aldı (gerekçe `AppShell.tsx`'te): ikisi de geriye bakma
+ * yüzeyi ama arşiv "dün ne yaptım" diye günlük açılıyor, matris ayda
+ * birkaç kez. Beş sekme sınırı ikisini birden taşımıyor.
  *
  * ── Saat değil, GÜNLÜK ──
  * Bitmiş her görevin altına serbest not yazılabiliyor ("50 soru
@@ -50,16 +51,18 @@ export function ArchiveScreen() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <header className="border-b border-[var(--color-line)] px-4 py-4 md:px-6">
-        <div className="mx-auto w-full max-w-2xl">
-          <h1 className="text-[length:var(--text-xl)] font-semibold tracking-[-0.015em]">
-            Arşiv
-          </h1>
-          <p className="mt-0.5 text-[length:var(--text-sm)] text-[var(--color-ink-3)]">
-            Bitirdiğin işler, gün gün
-          </p>
-        </div>
-      </header>
+      {/*
+        Elle yazılmış `<header>` yerine `ScreenHeader`: arşiv artık
+        ANA SEKME ve kabuğun geri kalanıyla aynı görünmeli — yapışkan
+        cam şerit, aynı ölçüler. Kendi başlığını çizdiği sürece
+        diğer ekranlardan bir tık farklı duruyordu ve sekme olunca o
+        fark göze çarpardı.
+      */}
+      <ScreenHeader
+        title="Arşiv"
+        subtitle="Bitirdiğin işler, gün gün"
+        width="2xl"
+      />
 
       <ScreenBody width="2xl">
         {isLoading ? (

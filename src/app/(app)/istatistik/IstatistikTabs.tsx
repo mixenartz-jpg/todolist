@@ -7,11 +7,22 @@ import { cn } from "@/lib/ui/cn";
 const TABS = [
   /*
    * Sıra ÖLÇEKTEN ÖLÇEKE gider: rutinler günlük disiplin (her gün
-   * işaretlenen), denemeler haftalık ölçüm (arada bir girilen).
-   * Günlük olan önce gelir çünkü daha sık bakılır.
+   * işaretlenen), denemeler haftalık ölçüm (arada bir girilen),
+   * tablo aylık genel görünüm. Sık bakılan önce.
    */
   { href: "/istatistik", label: "Rutinler" },
   { href: "/istatistik/denemeler", label: "Denemeler" },
+  /*
+   * Tablo (rutin × gün matrisi) buraya ana sekmeden indi — yeri
+   * Arşiv'e verildi (gerekçe `AppShell.tsx`'te). Kendi rotası
+   * `/tablo` olarak duruyor; burası ona giden sekme.
+   *
+   * `/istatistik/tablo` DEĞİL `/tablo`: matris kendi tam genişlikli
+   * kaydırıcısını kuruyor ve İstatistik'in `3xl` gövdesine
+   * sığmıyor. Sekme başka bir rotaya götürebilir — `aria-current`
+   * doğru kaldığı sürece kullanıcı için fark yok.
+   */
+  { href: "/tablo", label: "Tablo" },
 ] as const;
 
 /**

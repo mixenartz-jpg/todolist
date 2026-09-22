@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { IstatistikTabs } from "@/app/(app)/istatistik/IstatistikTabs";
 import { ScreenHeader } from "@/components/Screen";
 import { Button } from "@/components/Button";
 import { formatMonthYear } from "@/lib/ui/tr";
@@ -69,7 +70,16 @@ export function MonthSwitcher({
           </div>
         </>
       }
-    />
+    >
+      {/*
+        Tablo artık ANA SEKME DEĞİL, İstatistik'in alt sekmesi
+        (gerekçe `AppShell.tsx`'te: yeri Arşiv'e verildi). Sekme
+        çubuğu burada da çizilmeli — yoksa kullanıcı Tablo'ya
+        geldiğinde hangi yüzeyde olduğunu ve nasıl geri döneceğini
+        gösteren hiçbir işaret kalmazdı.
+      */}
+      <IstatistikTabs />
+    </ScreenHeader>
   );
 }
 

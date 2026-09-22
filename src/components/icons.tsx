@@ -55,6 +55,41 @@ export function GridIcon({ size = 16 }: IconProps) {
   );
 }
 
+/**
+ * Arşiv — geriye bakmak.
+ *
+ * Kutu değil GÜNLÜK: üstte kapak çizgisi, altında gün satırları.
+ * Klasik "kutu" arşiv ikonu depolama çağrıştırıyor; burada saklanan
+ * bir şey değil, GEÇMİŞİN KENDİSİ okunuyor — satırlar o yüzden.
+ */
+export function ArchiveIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...svgProps(size)}>
+      {/* Kapak: gövdeden hafif taşar, böylece 16px'te ikisi
+          birbirine yapışmaz. */}
+      <path
+        d="M2 4.25h12"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M3 4.25h10v8a.75.75 0 0 1-.75.75h-8.5a.75.75 0 0 1-.75-.75v-8Z"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+      {/* İki gün satırı — üçüncüsü 16px'te lapa oluyor. */}
+      <path
+        d="M5.75 7.5h4.5M5.75 10h3"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 /** Bugün / tamamlandı. */
 export function CheckIcon({ size = 16 }: IconProps) {
   return (

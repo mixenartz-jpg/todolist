@@ -43,8 +43,10 @@ export function DayCloseCard({
 
       <DayNoteCard date={date} onError={onError} />
 
-      {/* Arşiv sekme değil, buradan ulaşılıyor: günü kapatan kişi
-          "daha önce ne yaptım"a en yakın olan kişidir. */}
+      {/* Arşiv artık ana sekme ama bu kısayol KALIYOR: günü kapatan
+          kişi "daha önce ne yaptım"a en yakın olan kişidir ve o anda
+          alt çubuğa gitmesini beklemek bağlamı koparırdı. Sekme bir
+          yer, bu bir akış. */}
       <Link
         href="/arsiv"
         className="text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-accent)]"
