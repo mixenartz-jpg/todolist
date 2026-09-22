@@ -118,4 +118,62 @@ export const qk = {
    * turu demek olurdu.
    */
   shoppingItems: () => ["shopping-items"] as const,
+
+  /*
+   * Denemeler (0018).
+   *
+   * Anahtar "denemeler": TİRELİ değil ama TEK PARÇA — `plan-goals` ve
+   * `week-goals`'ın çakışma gerekçesi burada yapısal olarak yok, çünkü
+   * "deneme" tek kelime ve altına yalnızca BU ailenin anahtarları
+   * giriyor.
+   *
+   * Liste TEK sorgudur, ay/hafta başına bölünmez. `planGoalsMonth`'un
+   * bölünme gerekçesi ("yıllar boyunca birikir, hep tek ay okunur")
+   * burada TERSİNE işliyor: deneme trendi tam olarak uzun seriyi
+   * görmek için var. Ölçeğe bölünse trend çizgisi her ölçek
+   * değişiminde yeni bir ağ turu isterdi ve yılın tamamını çizmek
+   * on iki sorgu olurdu. Hacim de küçük: haftada bir-iki deneme,
+   * yılda ~100 satır.
+   *
+   * Ders satırları AYRI anahtar DEĞİL — listeyle birlikte tek
+   * sorguda gömülü gelirler (bkz. fetchDenemeler). Net onlardan
+   * türetildiği için derssiz bir deneme satırı ekranda hiçbir işe
+   * yaramaz; ayrı anahtar, her satır için ikinci bir bekleme demekti.
+   */
+  denemeler: () => ["denemeler"] as const,
+  /*
+   * Tek denemenin detayı.
+   *
+   * Listenin ALTINDA: bir denemeyi düzenlemek hem detayı hem listedeki
+   * netini tazelemeli, yoksa liste eski neti gösterirdi. Önek
+   * eşleşmesi burada tam olarak istenen işi ücretsiz yapıyor —
+   * `notePlansMonth` ile aynı yön.
+   */
+  deneme: (id: string) => ["denemeler", id] as const,
+
+  /*
+   * Bir denemenin yanlışları.
+   *
+   * `denemeler` önekinin ALTINDA DEĞİL ve bu bilerek: yanlışa fotoğraf
+   * eklemek denemenin netini DEĞİŞTİRMEZ. Ortak önek, her fotoğraf
+   * yüklemesinde deneme listesinin ve ders satırlarının yeniden
+   * çekilmesi demekti — `planGoals`'ın önekten kaçınma gerekçesiyle
+   * aynı: gereksiz iş.
+   *
+   * Deneme başına ayrı anahtar: yanlışlar denemenin çocuğu ve ekran
+   * hep tek denemenin yanlışlarını okur.
+   */
+  denemeYanlislari: () => ["deneme-yanlislari"] as const,
+  denemeYanlislariFor: (denemeId: string) =>
+    ["deneme-yanlislari", denemeId] as const,
+  /*
+   * Vadesi gelen tekrarlar — Bugün ekranının kuyruğu.
+   *
+   * `denemeYanlislariFor` ile aynı önekte: bir yanlışı tekrar olarak
+   * işaretlemek hem denemenin listesini hem kuyruğu tazelemeli.
+   * Tarih anahtarın parçası; gün dönünce kuyruk kendiliğinden
+   * yenilenir ve dünkü liste önbellekte yaşamaya devam etmez.
+   */
+  denemeTekrarlari: (date: DateStr) =>
+    ["deneme-yanlislari", "tekrar", date] as const,
 } as const;

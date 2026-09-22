@@ -6,6 +6,7 @@ import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { formatPercent } from "@/lib/ui/tr";
 import Link from "next/link";
+import { IstatistikTabs } from "@/app/(app)/istatistik/IstatistikTabs";
 import { Screen, ScreenHeader, ScreenBody } from "@/components/Screen";
 import { EmptyState } from "@/components/EmptyState";
 import { ChartIcon } from "@/components/icons";
@@ -118,7 +119,9 @@ export function StatsScreen() {
   if (!isLoading && (allRoutines ?? []).length === 0) {
     return (
       <Screen>
-        <ScreenHeader title="İstatistik" width="3xl" />
+        <ScreenHeader title="İstatistik" width="3xl">
+          <IstatistikTabs />
+        </ScreenHeader>
         <EmptyState
           icon={<ChartIcon size={22} />}
           title="Henüz veri yok"
@@ -145,7 +148,9 @@ export function StatsScreen() {
             Arşiv
           </Link>
         }
-      />
+      >
+        <IstatistikTabs />
+      </ScreenHeader>
 
       <ScreenBody width="3xl">
         {/* Tek filtre satırı, kapsadığı her şeyin üstünde. Grafik

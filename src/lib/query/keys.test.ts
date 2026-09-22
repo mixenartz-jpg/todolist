@@ -42,6 +42,29 @@ describe("qk önek hiyerarşisi", () => {
     expect(qk.planGoalsMonth(asDateStr("2026-08-01"))[0]).toBe("plan-goals");
   });
 
+  it("deneme detayı listenin ALTINDA, yanlışlar DIŞINDA", () => {
+    /*
+     * İki ayrı karar, iki ayrı gerekçe — ikisi de burada sabitleniyor:
+     *
+     *  · Detay listeyle aynı önekte: denemeyi düzenlemek listedeki
+     *    neti de tazelemeli, yoksa liste eski sayıyı gösterir.
+     *  · Yanlışlar AYRI kökte: fotoğraf eklemek neti değiştirmez ve
+     *    ortak önek her yüklemede deneme listesini yeniden çekerdi.
+     *
+     * Bu ikisi ters yönlerde ve tam olarak bu yüzden test ediliyor:
+     * biri "önek eşleşsin", diğeri "eşleşmesin" diyor ve ikisi de
+     * sessizce bozulabilir.
+     */
+    expect(qk.deneme("abc")[0]).toBe(qk.denemeler()[0]);
+    expect(qk.denemeYanlislariFor("abc")[0]).not.toBe(qk.denemeler()[0]);
+
+    // Tekrar kuyruğu yanlışlarla aynı kökte: bir tekrarı işaretlemek
+    // hem denemenin listesini hem kuyruğu tazelemeli.
+    expect(qk.denemeTekrarlari(asDateStr("2026-09-22"))[0]).toBe(
+      qk.denemeYanlislari()[0],
+    );
+  });
+
   it("kök anahtarların hepsi birbirinden farklıdır", () => {
     /*
      * Aynı kökü paylaşan iki anahtar, birini geçersiz kılmanın ötekini
@@ -59,6 +82,8 @@ describe("qk önek hiyerarşisi", () => {
       qk.sectionLabels()[0],
       qk.categories()[0],
       qk.planGoals()[0],
+      qk.denemeler()[0],
+      qk.denemeYanlislari()[0],
     ];
 
     expect(new Set(roots).size).toBe(roots.length);
