@@ -23,6 +23,10 @@ import { createClient } from "@/lib/supabase/server";
  * yazıyor. Burası yalnızca kapanışın kurtarma yolu.
  */
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) {
+    return new NextResponse(null, { status: 403 });
+  }
+
   const supabase = await createClient();
 
   const {
@@ -65,6 +69,48 @@ export async function POST(request: Request) {
   return new NextResponse(null, { status: 204 });
 }
 
+/**
+ * İstek AYNI KÖKENDEN mi geldi?
+ *
+ * ── Neden gerekli? ──
+ * `sendBeacon` preflight'sız ve ÇEREZLE gönderiliyor. Kötü niyetli
+ * bir site, kurbanın oturumu açıkken arka planda buraya istek atıp
+ * sahte odak satırları yazdırabilirdi — hesap ele geçirme değil ama
+ * kullanıcının kendi istatistiğini kirleten gerçek bir bütünlük
+ * ihlali.
+ *
+ * ── Neden `Host`a karşı, sabit bir adrese karşı DEĞİL? ──
+ * Ortam değişkeninden okunan bir adres, preview deploy'larda
+ * (her deploy ayrı alan adı) meşru isteği reddederdi. İsteğin kendi
+ * `Host` başlığıyla karşılaştırmak her ortamda doğru çalışıyor.
+ *
+ * ── `Sec-Fetch-Site` önce ──
+ * Modern tarayıcıların doğrudan cevabı ve sayfa kodu tarafından
+ * değiştirilemez. Yoksa `Origin`e düşülüyor; o da TARAYICI tarafından
+ * ekleniyor ve JS ile değiştirilemiyor.
+ *
+ * ── İkisi de yoksa GEÇİLİYOR ──
+ * Bazı istemciler hiçbirini göndermiyor ve yokluğu saldırı saymak
+ * meşru isteği kırardı. Asıl savunma hattı zaten oturum kontrolü ve
+ * RLS; bu, önüne konan ek bir katman.
+ */
+function isSameOrigin(request: Request): boolean {
+  const site = request.headers.get("sec-fetch-site");
+  if (site !== null) return site === "same-origin" || site === "none";
+
+  const origin = request.headers.get("origin");
+  if (origin === null) return true;
+
+  const host = request.headers.get("host");
+  if (host === null) return false;
+
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
 interface ParsedDraft {
   taskId: string | null;
   taskTitle: string;
@@ -76,6 +122,15 @@ interface ParsedDraft {
 
 /** Bir oturumun kabul edilebilir en uzun net süresi. Bkz. `parseDraft`. */
 const MAX_NET_SECONDS = 24 * 60 * 60;
+
+/**
+ * Başlık uzunluk sınırı — `tasks.title` ile AYNI (0001: 1..200).
+ *
+ * Bu alan o başlığın kopyası ve farklı bir sınır taşıması, kopyanın
+ * aslından uzun olabileceği anlamına gelirdi. Sınırsız bırakmak ise
+ * depolamayı şişiren bir yol açardı.
+ */
+const MAX_TITLE_LENGTH = 200;
 
 /**
  * Gövdeyi doğrular.
@@ -97,10 +152,30 @@ function parseDraft(body: unknown): ParsedDraft | null {
   const b = body as Record<string, unknown>;
 
   if (b.taskId !== null && typeof b.taskId !== "string") return null;
-  if (typeof b.taskTitle !== "string" || b.taskTitle.length === 0) return null;
   if (b.mode !== "free" && b.mode !== "pomodoro") return null;
   if (typeof b.startedAt !== "string") return null;
   if (typeof b.endedAt !== "string") return null;
+
+  if (
+    typeof b.taskTitle !== "string" ||
+    b.taskTitle.trim().length === 0 ||
+    b.taskTitle.length > MAX_TITLE_LENGTH
+  ) {
+    return null;
+  }
+
+  /*
+   * Damgalar AYRIŞTIRILABİLİR ve sıraları doğru olmalı.
+   *
+   * Postgres `timestamptz` biçimi zaten doğruluyor ama SIRAYI
+   * doğrulamıyor; ters bir çift tabloya anlamsız bir satır bırakırdı.
+   * `Number.isNaN` kontrolü şart — `NaN < NaN` false döner ve
+   * ayrıştırılamayan bir damga sessizce geçerdi.
+   */
+  const started = Date.parse(b.startedAt);
+  const ended = Date.parse(b.endedAt);
+  if (Number.isNaN(started) || Number.isNaN(ended)) return null;
+  if (ended < started) return null;
 
   if (
     typeof b.netSeconds !== "number" ||

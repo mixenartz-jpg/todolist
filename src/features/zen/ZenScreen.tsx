@@ -54,9 +54,18 @@ import "./zen.css";
 export function ZenScreen({
   task,
   onExit,
+  onSaveError,
 }: {
   task: Task;
   onExit: () => void;
+  /**
+   * Kayıt başarısız oldu.
+   *
+   * Uyarıyı Zen'in KENDİSİ gösteremez: `onExit` ekranı anında söküyor
+   * ve buradaki bir toast hiç görünmezdi. Sağlayıcı (`ZenProvider`)
+   * Zen kapandıktan sonra da ayakta ve mesajı orada gösteriyor.
+   */
+  onSaveError: (message: string) => void;
 }) {
   const [mode, setMode] = useState<FocusMode>("free");
   const [phase, setPhase] = useState<Phase>("focus");
@@ -75,6 +84,16 @@ export function ZenScreen({
     readStoredProfile,
   );
 
+  /*
+   * Kaç kez BÖLÜNDÜ — sekme gizlenip oturum kurtarıldığında artıyor.
+   *
+   * Turu değiştirmiyor, yalnızca anahtarı değiştirip sayacı sıfırdan
+   * doğuruyor: gönderilen süre ikinci kez sayılmasın, geri dönen
+   * kullanıcının yeni süresi de kaybolmasın.
+   */
+  const [splits, setSplits] = useState(0);
+  const handleSplit = useCallback(() => setSplits((n) => n + 1), []);
+
   function handlePhaseEnd() {
     const rounds = phase === "focus" ? completedRounds + 1 : completedRounds;
     setCompletedRounds(rounds);
@@ -84,11 +103,11 @@ export function ZenScreen({
   return (
     <ZenPhase
       /*
-       * Aşama ve tur birlikte anahtar: aynı aşamaya geri dönüldüğünde
-       * (odak → mola → odak) tur değiştiği için anahtar yine yeni ve
-       * sayaç yine sıfırdan doğuyor.
+       * Aşama, tur ve bölüm birlikte anahtar: aynı aşamaya geri
+       * dönüldüğünde (odak → mola → odak) tur değiştiği için anahtar
+       * yine yeni ve sayaç yine sıfırdan doğuyor.
        */
-      key={`${phase}-${completedRounds}`}
+      key={`${phase}-${completedRounds}-${splits}`}
       task={task}
       mode={mode}
       phase={phase}
@@ -100,6 +119,8 @@ export function ZenScreen({
         storeProfile(id);
       }}
       onPhaseEnd={handlePhaseEnd}
+      onSplit={handleSplit}
+      onSaveError={onSaveError}
       onExit={onExit}
     />
   );
@@ -120,6 +141,8 @@ function ZenPhase({
   onModeChange,
   onProfileChange,
   onPhaseEnd,
+  onSplit,
+  onSaveError,
   onExit,
 }: {
   task: Task;
@@ -130,11 +153,14 @@ function ZenPhase({
   onModeChange: (mode: FocusMode) => void;
   onProfileChange: (id: PomodoroProfileId) => void;
   onPhaseEnd: () => void;
+  /** Sekme gizlenip oturum kurtarıldı; sayaç sıfırdan başlamalı. */
+  onSplit: () => void;
+  onSaveError: (message: string) => void;
   onExit: () => void;
 }) {
   const timer = useFocusTimer();
   const toggleTask = useToggleTask();
-  const saveSession = useSaveFocusSession();
+  const saveSession = useSaveFocusSession(onSaveError);
 
   const today = todayStr();
   const todayTotal = useTodayFocusSeconds(today);
@@ -193,11 +219,29 @@ function ZenPhase({
    *
    * MOLA da yazılmaz — tablo yalnızca odak turlarını tutuyor (0021).
    */
+  /**
+   * Bu aşamanın turu KAYDEDİLDİ mi?
+   *
+   * ── Neden gerekli? ──
+   * İki yol aynı turu yazabiliyor: `persist` (Bitti/Çık/Esc/tur sonu)
+   * ve `sendFocusSessionBeacon` (sekme kapanışı). İkisi arka arkaya
+   * çalışabilir — kullanıcı "Çık"a basıp sekmeyi kapatırsa, ya da
+   * sekmeyi gizleyip geri gelip "Çık"a basarsa — ve aynı oturum
+   * tabloya İKİ satır olarak düşerdi. Günlük toplam o turu iki kez
+   * sayardı.
+   *
+   * State DEĞİL ref: bayrağın render'ı etkilemesi gerekmiyor ve
+   * `visibilitychange` dinleyicisinin onu anında görmesi gerekiyor.
+   */
+  const savedRef = useRef(false);
+
   const persist = useCallback(() => {
     const draft = draftRef.current;
+    if (savedRef.current) return;
     if (draft.netSeconds === 0) return;
     if (phase !== "focus") return;
 
+    savedRef.current = true;
     saveSession.mutate({ ...draft, endedAt: new Date().toISOString() });
   }, [phase, saveSession]);
 
@@ -252,16 +296,32 @@ function ZenPhase({
   }, []);
 
   /*
-   * Sayfa kapanırken oturumu KURTAR.
+   * Sekme gizlenince oturumu KURTAR.
    *
-   * `beforeunload` DEĞİL: mobil tarayıcılarda güvenilir
-   * tetiklenmiyor. `sendBeacon` sayfa öldükten sonra da gönderiyor
-   * (gerekçenin tamamı `sessions.ts`te).
+   * ── Neden `beforeunload` değil? ──
+   * Mobil tarayıcılarda güvenilir tetiklenmiyor. `sendBeacon` sayfa
+   * öldükten sonra da gönderiyor (gerekçenin tamamı `sessions.ts`te).
+   *
+   * ── Gizlenme KAPANMA demek değil ──
+   * Başka bir sekmeye geçmek de `hidden` tetikliyor ve kullanıcı geri
+   * dönüp çalışmaya devam edebilir. Bu yüzden gönderimden sonra sayaç
+   * SIFIRLANIYOR (`onSplit`): geri dönen kullanıcının yeni süresi
+   * ayrı bir tur olarak yazılıyor ve hiçbir saniye kaybolmuyor.
+   *
+   * Turun ikiye bölünmesi kabul edilebilir bir maliyet: alternatifi
+   * ya kaydı kilitleyip sonraki süreyi kaybetmek, ya da kilidi hiç
+   * koymayıp aynı süreyi iki kez saymaktı.
    */
   useEffect(() => {
     function onHidden() {
       if (document.visibilityState !== "hidden") return;
       if (phase !== "focus") return;
+
+      /*
+       * `persist` bu turu zaten yazdıysa DOKUNMA: kullanıcı "Çık"a
+       * basıp hemen sekmeyi kapatırsa aynı oturum iki satır olurdu.
+       */
+      if (savedRef.current) return;
 
       const draft = draftRef.current;
       if (draft.netSeconds === 0) return;
@@ -270,11 +330,13 @@ function ZenPhase({
         ...draft,
         endedAt: new Date().toISOString(),
       });
+
+      onSplit();
     }
 
     document.addEventListener("visibilitychange", onHidden);
     return () => document.removeEventListener("visibilitychange", onHidden);
-  }, [phase]);
+  }, [phase, onSplit]);
 
   const shown = countdown ? remaining : timer.seconds;
 

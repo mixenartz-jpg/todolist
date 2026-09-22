@@ -31,7 +31,12 @@ create table if not exists public.focus_sessions (
   -- ve bu KASITLI: oturum, o an neye odaklanıldığının kaydı. Geçmiş
   -- kayıtları güncellemek, geçmişi yeniden yazmak olurdu.
   task_id uuid references public.tasks(id) on delete set null,
-  task_title text not null,
+
+  -- Uzunluk sınırı `tasks.title` ile AYNI (0001: 1..200). Bu alan o
+  -- başlığın kopyası ve farklı bir sınır taşıması, kopyanın aslından
+  -- uzun olabileceği anlamına gelirdi. Sınırsız bırakmak ise
+  -- depolamayı şişiren bir yol açardı.
+  task_title text not null check (length(trim(task_title)) between 1 and 200),
 
   -- 'break' değeri YOK: tablo yalnızca odak turlarını tutuyor, böylece
   -- "bugün ne kadar çalıştım" sorusu burada TEK anlamlı kalıyor. Mola
@@ -47,7 +52,14 @@ create table if not exists public.focus_sessions (
   -- düşülerek hesaplanıp yazılıyor.
   net_seconds integer not null check (net_seconds >= 0),
 
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+
+  -- Bitiş başlangıçtan ÖNCE olamaz. İstemci tarafında da kontrol
+  -- ediliyor ama sınırdan gelen veriye güvenilmez ve bu kısıt, hangi
+  -- yoldan gelirse gelsin ters bir çiftin tabloya girmesini yapısal
+  -- olarak engelliyor.
+  constraint focus_sessions_ended_after_started
+    check (ended_at >= started_at)
 );
 
 comment on table public.focus_sessions is

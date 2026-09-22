@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Task } from "@/features/tasks/types";
+import { Toast, useToast } from "@/components/Toast";
 import { ZenScreen } from "./ZenScreen";
 
 interface ZenContextValue {
@@ -42,6 +43,19 @@ const ZenContext = createContext<ZenContextValue | null>(null);
 export function ZenProvider({ children }: { children: ReactNode }) {
   const [task, setTask] = useState<Task | null>(null);
 
+  /*
+   * Kayıt hatası uyarısı BURADA gösteriliyor, Zen ekranında değil.
+   *
+   * Çıkış akışı `persist()` ardından hemen `onExit()` çağırıyor ve
+   * ekran sökülüyor — ZenScreen içindeki bir toast doğduğu karede
+   * ölürdü. Sağlayıcı Zen kapandıktan sonra da ayakta, mesaj burada
+   * yaşıyor.
+   *
+   * Yazma yine de fire-and-forget: uyarı çıkışı ENGELLEMİYOR, yalnızca
+   * kullanıcının süresinin kaydedildiğini SANMASINI engelliyor.
+   */
+  const toast = useToast();
+
   const enter = useCallback((next: Task) => setTask(next), []);
   const exit = useCallback(() => setTask(null), []);
 
@@ -53,7 +67,15 @@ export function ZenProvider({ children }: { children: ReactNode }) {
   return (
     <ZenContext.Provider value={value}>
       {children}
-      {task && <ZenScreen task={task} onExit={exit} />}
+      {task && (
+        <ZenScreen task={task} onExit={exit} onSaveError={toast.show} />
+      )}
+      <Toast
+        message={toast.message}
+        variant={toast.variant}
+        token={toast.token}
+        onDismiss={toast.dismiss}
+      />
     </ZenContext.Provider>
   );
 }

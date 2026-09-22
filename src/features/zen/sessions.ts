@@ -59,10 +59,14 @@ export function useSaveFocusSession(onError?: (message: string) => void) {
       if (error) throw error;
     },
 
-    onError: (error) => {
-      onError?.(
-        error instanceof Error ? error.message : "Odak süresi kaydedilemedi.",
-      );
+    /*
+     * Ham hata metni GÖSTERİLMİYOR: "duplicate key value violates
+     * unique constraint" gibi bir cümle kullanıcıya hiçbir şey
+     * anlatmıyor ve şema detayını sızdırıyor. Tek bir Türkçe cümle,
+     * yapılabilecek tek şeyi de söylüyor.
+     */
+    onError: () => {
+      onError?.("Odak süresi kaydedilemedi.");
     },
 
     /*
