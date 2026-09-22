@@ -1,7 +1,14 @@
-# Rutin
+# Kero YKS
 
-Kişisel rutin ve görev takip uygulaması. Ana ekran **rutin × gün matrisi**:
-rutinler satır, ayın günleri sütun, hücrelere tıklayarak işaretlenir.
+YKS hazırlığı için kişisel koçluk uygulaması. İki döngüyü birlikte
+tutar:
+
+- **Günlük disiplin** — rutin × gün matrisi, günlük görevler, notlar
+- **Sınav ölçümü** — deneme kaydı, net takibi, yanlış defteri ve
+  aralıklı tekrar
+
+Koçluk döngüsü şöyle kapanır: *deneme gir → net gör → yanlışları
+fotoğrafla → tekrar kuyruğuna düşsün.*
 
 ## Kurulum
 
@@ -12,6 +19,9 @@ rutinler satır, ayın günleri sütun, hücrelere tıklayarak işaretlenir.
    altındaki dosyaları **numara sırasıyla** çalıştır (`0001`'den
    sonuncuya). Sıra önemlidir: sonraki dosyalar öncekilerin tablo ve
    trigger'larına dayanır.
+   `0020` bir **storage bucket'ı** oluşturur (`deneme-gorselleri`) —
+   yanlış fotoğrafları oraya yüklenir. Bucket **özeldir** ve okuma
+   yalnızca imzalı URL ile yapılır; panelde "public" işaretlenmemeli.
 3. **Project Settings → API** bölümünden şu iki değeri kopyala:
    - Project URL
    - `anon` / `publishable` key
@@ -104,6 +114,20 @@ zıplar ve kırılmış seriler kendiliğinden iyileşirdi.
 tamamlanma `value >= target`'tan hesaplanır. İki ayrı doğruluk kaynağı
 kaçınılmaz olarak birbirinden ayrışır.
 
+**Net saklanmaz, türetilir.** `denemeler` tablosunda `net` sütunu
+yoktur; net `doğru − yanlış / 4` ile ders satırlarından hesaplanır
+(`features/deneme/net.ts`). Saklansaydı `dogru` güncellenip net
+güncellenmediğinde yalan söyleyebilen ikinci bir doğruluk kaynağı
+olurdu — `entries.done`'un olmamasıyla aynı disiplin. Net **negatif
+olabilir** ve sıfıra kırpılmaz: ÖSYM de kırpmıyor, kırpmak kötü giden
+iki denemeyi ekranda aynı gösterirdi.
+
+**Yanlış görselleri imzalı URL ile okunur.** Satırda `image_path`
+duruyor, URL değil. İmzalı URL bir saat yaşar; satıra yazılsaydı
+ertesi gün açılan sayfada kırık görsel olurdu. Yükleme yolu
+`<user_id>/<uuid>.webp` ve bu bir **güvenlik sınırıdır** — storage
+politikaları ilk segmenti `auth.uid()` ile karşılaştırır.
+
 **Renkler doğrulanmıştır.** 8 rutin kimlik rengi ve 4 adımlı yoğunluk
 rampası renk körlüğü ayrımı, kontrast ve açıklık bandı kontrollerinden
 geçirilmiştir. Slot **sırası** güvenlik mekanizmasıdır — değiştirilmemeli.
@@ -148,3 +172,20 @@ taşınanlar), günlük not + 5 seviyeli ruh hali (autosave), takvim
 kartları (doğru birimle + son 14 gün şeridi), haftalık trend grafiği,
 yıllık ısı haritası (53×7), rutin döküm tablosu. Tarih aralığı filtresi
 (30/90 gün, bu yıl, tümü) tüm görünümleri birlikte kapsar.
+
+**Deneme takibi tamamlandı** — `/istatistik/denemeler` altında:
+
+- **Kayıt** — tür seçilince ders satırları kendiliğinden gelir, iki
+  sayı girilince üçüncüsü (boş) türetilir, net her tuşta canlı
+  hesaplanır. Hedef: bir deneme ~30 saniyede girilsin.
+- **Trend** — TYT/AYT/branş/YDT **ayrı çizgiler**. 120 soruluk TYT ile
+  40 soruluk branş aynı eksende ortalanırsa branş günü grafikte çöküş
+  gibi görünürdü.
+- **Yanlış defteri** — Ctrl+V ile ekran görüntüsü yapıştırılır, WebP'ye
+  sıkıştırılıp özel bucket'a yüklenir, layout shift olmadan çizilir.
+- **Hata sepeti** — beş kova (bilgi/işlem/dikkat/süre/strateji) ve
+  baskın kovanın **reçetesi**. Dağılımı göstermek yetmez; ne
+  çalışılacağını söylemek gerekir.
+- **Tekrar kuyruğu** — 1-3-7-21 gün merdiveni, vadesi gelenler Bugün
+  ekranında. Dördüncü tekrardan sonra yanlış mezun olur ve dürtmeyi
+  bırakır.
