@@ -301,3 +301,27 @@ export interface ShoppingItemRow {
   created_at: string;
   updated_at: string;
 }
+
+/**
+ * Odak oturumu satırı (0021).
+ *
+ * `task_id` null olabilir (görev silinmiş) ama `task_title` ASLA:
+ * geçmiş, görevin hâlâ var olmasına bağlı olmadan okunabilir kalmalı.
+ * Bu, `ShoppingItemRow`'un ayrı tablo oluşuyla aynı disiplin —
+ * bağımlılığı yapısal olarak kesmek.
+ *
+ * `net_seconds`, `ended_at - started_at` DEĞİLDİR: duraklamalar
+ * düşülmüş süredir. Farkı türetmek, Zen'in kaydetmeme gerekçesindeki
+ * yalanı geri getirirdi.
+ */
+export interface FocusSessionRow {
+  id: string;
+  user_id: string;
+  task_id: string | null;
+  task_title: string;
+  mode: "free" | "pomodoro";
+  started_at: string;
+  ended_at: string;
+  net_seconds: number;
+  created_at: string;
+}
