@@ -11,9 +11,11 @@ import { Toast, useToast } from "@/components/Toast";
 import { cn } from "@/lib/ui/cn";
 import { formatLongDate } from "@/lib/ui/tr";
 import { formatNet, formatSure } from "./format";
+import { HATA_TURLERI, type HataTuru } from "./hatasepeti";
+import { HataSepetiKarti } from "./HataSepetiKarti";
 import { hesaplaNet, toplamNet, yanlisBosOrani } from "./net";
 import { useDeleteDeneme } from "./mutations";
-import { useCreateYanlis, useDeleteYanlis } from "./mutations";
+import { useCreateYanlis, useDeleteYanlis, useUpdateYanlis } from "./mutations";
 import { useDeneme, useDenemeYanlislari } from "./queries";
 import type { DenemeTur } from "./sinav";
 import type { DenemeDers, DenemeDetayli, DenemeYanlis } from "./types";
@@ -47,6 +49,7 @@ export function DenemeDetay({ denemeId }: { denemeId: string }) {
 
   const createYanlis = useCreateYanlis(toast.show);
   const deleteYanlis = useDeleteYanlis(toast.show);
+  const updateYanlis = useUpdateYanlis(toast.show);
   const deleteDeneme = useDeleteDeneme(toast.show);
 
   const [formAcik, setFormAcik] = useState(false);
@@ -120,6 +123,14 @@ export function DenemeDetay({ denemeId }: { denemeId: string }) {
 
         <DersTablosu dersler={deneme.dersler} />
 
+        {/*
+         * Hata sepeti ders tablosundan SONRA, yanlış ızgarasından
+         * ÖNCE: "ne kadar iyiyim" (net, ders kırılımı) → "neyi yanlış
+         * yapıyorum" (sepet) → "işte o yanlışlar" (ızgara). Teşhis,
+         * kanıtından önce gelir.
+         */}
+        <HataSepetiKarti yanlislar={yanlislar ?? []} />
+
         <YanlislarBolumu
           deneme={deneme}
           yanlislar={yanlislar}
@@ -140,6 +151,21 @@ export function DenemeDetay({ denemeId }: { denemeId: string }) {
               id: yanlis.id,
               denemeId: deneme.id,
               imagePath: yanlis.imagePath,
+            })
+          }
+          onEtiketle={(yanlis, hataTuru) =>
+            updateYanlis.mutate({
+              id: yanlis.id,
+              denemeId: deneme.id,
+              patch: {
+                /*
+                 * Aynı etikete ikinci tık onu KALDIRIR. Yanlış
+                 * etiketlenen bir yanlışı düzeltmenin tek yolu bu;
+                 * ayrı bir "temizle" düğmesi beş kovanın yanına
+                 * altıncı bir kontrol koyardı.
+                 */
+                hataTuru: yanlis.hataTuru === hataTuru ? null : hataTuru,
+              },
             })
           }
           onError={toast.show}
@@ -340,6 +366,7 @@ interface YanlislarBolumuProps {
   onFormKapat: () => void;
   onEkle: React.ComponentProps<typeof YanlisEkleForm>["onSubmit"];
   onSil: (yanlis: DenemeYanlis) => void;
+  onEtiketle: (yanlis: DenemeYanlis, hataTuru: HataTuru) => void;
   onError: (message: string) => void;
 }
 
@@ -352,6 +379,7 @@ function YanlislarBolumu({
   onFormKapat,
   onEkle,
   onSil,
+  onEtiketle,
   onError,
 }: YanlislarBolumuProps) {
   const dersAdlari = deneme.dersler.map((d) => d.ders);
@@ -404,7 +432,11 @@ function YanlislarBolumu({
         <ul className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-3">
           {yanlislar.map((y) => (
             <li key={y.id}>
-              <YanlisKarti yanlis={y} onSil={() => onSil(y)} />
+              <YanlisKarti
+                yanlis={y}
+                onSil={() => onSil(y)}
+                onEtiketle={(tur) => onEtiketle(y, tur)}
+              />
             </li>
           ))}
         </ul>
@@ -416,9 +448,11 @@ function YanlislarBolumu({
 function YanlisKarti({
   yanlis,
   onSil,
+  onEtiketle,
 }: {
   yanlis: DenemeYanlis;
   onSil: () => void;
+  onEtiketle: (hataTuru: HataTuru) => void;
 }) {
   const baslik = yanlis.soruNo
     ? `${yanlis.ders} · ${yanlis.soruNo}. soru`
@@ -460,6 +494,66 @@ function YanlisKarti({
           ×
         </button>
       </div>
+
+      <HataEtiketleri secili={yanlis.hataTuru} onSec={onEtiketle} />
     </div>
   );
 }
+
+/**
+ * Hata türü etiketleri — beş kova, tek tık.
+ *
+ * ── Neden açılır liste DEĞİL? ──
+ * Etiketleme seri bir iş: kullanıcı on beş yanlışı arka arkaya
+ * geçiyor. Açılır liste her biri için aç–seç–kapa demekti; tek tıklık
+ * ciplerde aynı iş üçte bir sürede biter. Beş seçenek bir listeyi hak
+ * edecek kadar çok değil.
+ *
+ * Kısaltılmış adlar (`kisa`): kart 160px genişliğinde ve "Bilgi
+ * eksiği" tam hâliyle iki satıra sarardı. Tam ad `title` ve
+ * `aria-label` ile erişilebilir kalıyor.
+ */
+function HataEtiketleri({
+  secili,
+  onSec,
+}: {
+  secili: HataTuru | null;
+  onSec: (hataTuru: HataTuru) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {HATA_TURLERI.map((h) => {
+        const aktif = secili === h.tur;
+
+        return (
+          <button
+            key={h.tur}
+            type="button"
+            onClick={() => onSec(h.tur)}
+            title={h.ad}
+            aria-label={h.ad}
+            aria-pressed={aktif}
+            className={cn(
+              "rounded px-1.5 py-0.5 text-[length:var(--text-2xs)] leading-tight",
+              "transition-colors duration-[var(--duration-fast)]",
+              aktif
+                ? "bg-[var(--color-accent)] text-[var(--color-on-accent)]"
+                : "bg-[var(--color-surface-3)] text-[var(--color-ink-3)] hover:text-[var(--color-ink-2)]",
+            )}
+          >
+            {KISA_AD[h.tur]}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Dar kartta sığan kısaltmalar. Tam ad `title`/`aria-label`'da. */
+const KISA_AD: Record<HataTuru, string> = {
+  bilgi: "Bilgi",
+  islem: "İşlem",
+  dikkat: "Dikkat",
+  sure: "Süre",
+  strateji: "Strateji",
+};

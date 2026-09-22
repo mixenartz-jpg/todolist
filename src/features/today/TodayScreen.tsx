@@ -10,6 +10,7 @@ import { CheckIcon } from "@/components/icons";
 import { Toast, useToast } from "@/components/Toast";
 import { isCompleted, valueOn } from "@/features/entries/completion";
 import { useSetEntry } from "@/features/entries/mutations";
+import { TekrarKuyrugu } from "@/features/deneme/TekrarKuyrugu";
 import { EMPTY_ENTRIES, useEntries } from "@/features/entries/queries";
 import { isActiveOn, isDueOn } from "@/features/routines/schedule";
 import { useRoutines } from "@/features/routines/queries";
@@ -267,6 +268,15 @@ export function TodayScreen() {
                   focus && toggleTask.mutate({ id: focus.id, done: true })
                 }
               />
+
+              {/*
+               * Tekrar kuyruğu odak kartının hemen ALTINDA: günün
+               * asıl işinden sonra ama rutinlerden önce. Vadesi gelen
+               * bir tekrar bugünün işidir ve aşağıda kalsaydı
+               * kaydırılmadan görülmezdi. Hiç tekrar yoksa bileşen
+               * kendini çizmiyor — boş bir kutu yer kaplamaz.
+               */}
+              <TekrarKuyrugu bugun={today} onError={toast.show} />
 
               <section>
                 {routines.length === 0 ? (

@@ -3,6 +3,7 @@ import { asDateStr } from "@/lib/date/date";
 import { denemeYanlis } from "@/features/testing/fixtures";
 import {
   advanceReview,
+  asamaEtiketi,
   vadesiGelenler,
   GRADUATED_STAGE,
   initialReviewState,
@@ -126,5 +127,26 @@ describe("vadesiGelenler", () => {
 
   test("boş girdi boş döner", () => {
     expect(vadesiGelenler([], today)).toEqual([]);
+  });
+});
+
+describe("asamaEtiketi", () => {
+  test("stage 0 ilk tekrarı bekler — '1. tekrar' yazar", () => {
+    /*
+     * `review_stage` TAMAMLANAN tekrar sayısı. Bire eklemeden
+     * yazılsaydı kullanıcı "0. tekrar" görürdü — tek satırlık bir
+     * kayma, yanlış bir ilerleme anlatır.
+     */
+    expect(asamaEtiketi(0)).toBe("1. tekrar · 1 gün aralık");
+  });
+
+  test("aralık o aşamanın merdiven adımıdır", () => {
+    expect(asamaEtiketi(1)).toBe("2. tekrar · 3 gün aralık");
+    expect(asamaEtiketi(2)).toBe("3. tekrar · 7 gün aralık");
+    expect(asamaEtiketi(3)).toBe("4. tekrar · 21 gün aralık");
+  });
+
+  test("mezun aşamada gösterilecek sonraki aralık yok", () => {
+    expect(asamaEtiketi(GRADUATED_STAGE)).toBe("Son tekrar");
   });
 });

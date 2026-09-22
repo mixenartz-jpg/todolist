@@ -109,3 +109,25 @@ export function toReviewState(yanlis: DenemeYanlis): ReviewState {
     nextReviewDate: yanlis.nextReviewDate,
   };
 }
+
+/**
+ * "Kaçıncı tekrar" metni — kuyruk satırında gösterilir.
+ *
+ * ── Buradaki bire ekleme neden DOĞRU? ──
+ * `review_stage` TAMAMLANAN tekrar sayısıdır, "hangi aralık" değil
+ * (bkz. yukarıdaki sözleşme). Yani stage 0, ilk tekrarı BEKLEYEN bir
+ * yanlış demek ve ekranda "1. tekrar" yazmalı. Bire eklemeden
+ * yazılsaydı kullanıcı "0. tekrar" görürdü.
+ *
+ * Bu, ekran metni olmasına rağmen saf modülde: tek satırlık bir
+ * kayma, kullanıcıya yanlış bir ilerleme anlatır ve bileşenin içinde
+ * gözden kaçardı.
+ */
+export function asamaEtiketi(stage: number): string {
+  const aralik = REVIEW_INTERVALS[stage];
+
+  // Mezun ya da sınır dışı: gösterilecek bir "sonraki aralık" yok.
+  if (aralik === undefined) return "Son tekrar";
+
+  return `${stage + 1}. tekrar · ${aralik} gün aralık`;
+}
