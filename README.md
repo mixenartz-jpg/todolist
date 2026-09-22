@@ -122,6 +122,14 @@ olurdu — `entries.done`'un olmamasıyla aynı disiplin. Net **negatif
 olabilir** ve sıfıra kırpılmaz: ÖSYM de kırpmıyor, kırpmak kötü giden
 iki denemeyi ekranda aynı gösterirdi.
 
+**Plan ölçekleri farklı SORULARA cevap verir.** Hafta birincil ölçek
+ve varsayılandır: ekran açıldığında üzerinde çalışılacak yedi gün
+görünür. Ay ölçeği gün hücresi çizmez, **hafta haritası** çizer —
+"hangi hafta ne kadar dolu" sorusunun cevabı. Önce ikisi de aynı gün
+satırını çiziyordu (kırk iki satır) ve ikinci ölçeğin varlık sebebi
+yoktu. Bir haftaya basmak o haftaya götürür; harita bir gezinme
+yüzeyidir, orada iş yapılmaz ve bu ayrımın kendisidir.
+
 **Yanlış görselleri imzalı URL ile okunur.** Satırda `image_path`
 duruyor, URL değil. İmzalı URL bir saat yaşar; satıra yazılsaydı
 ertesi gün açılan sayfada kırık görsel olurdu. Yükleme yolu
