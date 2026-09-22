@@ -2,8 +2,15 @@ import { describe, expect, it } from "vitest";
 import { asDateStr, eachDay, startOfIsoWeek } from "@/lib/date/date";
 import { monthGrid } from "./monthgrid";
 import { task } from "@/features/testing/fixtures";
-import { anchorForScale, buildPlanRange, chunkWeeks } from "./range";
-import type { PlanBucket } from "./range";
+import {
+  anchorForScale,
+  buildPlanRange,
+  chunkWeeks,
+  DEFAULT_SCALE,
+  scaleFromParam,
+  scaleToParam,
+} from "./range";
+import type { PlanBucket, PlanScale } from "./range";
 
 /*
  * 3 Ağustos 2026 Pazartesi'dir; hafta 9 Ağustos Pazar'da biter.
@@ -328,5 +335,46 @@ describe("anchorForScale", () => {
       const result = anchorForScale(asDateStr(anchor), "week", TODAY);
       expect(startOfIsoWeek(result)).toBe(result);
     }
+  });
+});
+
+describe("ölçek ⇄ URL sözleşmesi", () => {
+  it("varsayılan ölçek URL'e YAZILMAZ", () => {
+    /*
+     * Temiz `/planlama` adresi varsayılan görünümü göstermeli.
+     * `null` dönmeseydi her ziyaret adres çubuğuna bir parametre
+     * ekler ve "bu ay"a dönmek URL'i sıfırlamazdı.
+     */
+    expect(scaleToParam(DEFAULT_SCALE)).toBeNull();
+  });
+
+  it("varsayılan OLMAYAN ölçek URL'de temsil edilir", () => {
+    const other: PlanScale = DEFAULT_SCALE === "week" ? "month" : "week";
+    expect(scaleToParam(other)).not.toBeNull();
+  });
+
+  it("gidiş-dönüş her iki ölçekte de kimliktir", () => {
+    /*
+     * ASIL KORUNAN ŞEY. Okuma ve yazma birbirinin tersi olmak
+     * zorunda; `DEFAULT_SCALE` çevrilip yalnızca biri güncellenseydi
+     * bir ölçek adres çubuğunda hiç temsil edilemez, o ölçeğe
+     * geçmek URL'e yazılmadığı için yenilemede kaybolurdu.
+     */
+    for (const scale of ["week", "month"] as const) {
+      expect(scaleFromParam(scaleToParam(scale))).toBe(scale);
+    }
+  });
+
+  it("tanınmayan değer varsayılana düşer — ekranı kırmaz", () => {
+    // Adres çubuğuna elle yazılan bir şey uygulamayı bozmamalı.
+    for (const raw of [null, "", "çorba", "hafta", "MONTH"]) {
+      expect(scaleFromParam(raw)).toBe(DEFAULT_SCALE);
+    }
+  });
+
+  it("ay ölçeğinin URL değeri Türkçe 'ay'", () => {
+    // Redirect'ler (`ay/page.tsx`) bu dizeyi elle yazıyor; değişirse
+    // yer imleri sessizce yanlış ekrana açılır.
+    expect(scaleToParam("month")).toBe("ay");
   });
 });

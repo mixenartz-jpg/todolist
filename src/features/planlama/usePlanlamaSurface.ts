@@ -4,7 +4,12 @@ import { useCallback, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { isDateStr, todayStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
-import { anchorForScale, type PlanScale } from "./range";
+import {
+  anchorForScale,
+  scaleFromParam,
+  scaleToParam,
+  type PlanScale,
+} from "./range";
 import type { CategoryFilter } from "./types";
 
 /**
@@ -24,31 +29,7 @@ const SCALE_PARAM = "ol";
 const CATEGORY_PARAM = "kat";
 /** "Kategorisi olmayanları göster" filtresinin URL'deki karşılığı. */
 const NO_CATEGORY = "yok";
-/**
- * URL'de ölçeğin yazılı biçimi.
- *
- * Yalnızca "ay" var: hafta VARSAYILAN ölçek ve varsayılan URL'e
- * yazılmıyor. Bir `SCALE_WEEK = "hafta"` sabiti burada dursaydı,
- * okuyan kişiye URL'in `?ol=hafta` taşıyabileceğini söylerdi —
- * taşımıyor, o adres `hafta/page.tsx` ile `/planlama`'ya düşüyor.
- */
-const SCALE_MONTH = "ay";
 
-/**
- * Varsayılan ölçek — parametre yoksa bu geçerli ve URL'e yazılmaz.
- *
- * ── Neden HAFTA, ay değil? ──
- * Ay ızgarası 42 gün satırı çiziyordu ve kullanıcının gerçekte
- * planladığı birim hafta. Kırk iki satırın otuz beşi "bugün değil"
- * diye sönük duruyor, aradaki yedi satır kayboluyordu. Hafta
- * varsayılan olunca ekran açıldığı anda üzerinde çalışılacak yedi
- * gün görünüyor.
- *
- * Ay kaybolmuyor: ölçek anahtarıyla erişilebilir ve artık gün hücresi
- * değil HAFTA HARİTASI çiziyor (bkz. PlanMonthMap) — "hangi hafta ne
- * kadar dolu" sorusunun cevabı, kırk iki satırlık bir liste değil.
- */
-const DEFAULT_SCALE: PlanScale = "week";
 
 export interface PlanlamaSurface {
   /** Bugün — tek yerde hesaplanır, alt ekranlar aynı günü görür. */
@@ -108,8 +89,7 @@ export function usePlanlamaSurface(): PlanlamaSurface {
 
   const today = useMemo(() => todayStr(), []);
 
-  const scale: PlanScale =
-    params.get(SCALE_PARAM) === SCALE_MONTH ? "month" : DEFAULT_SCALE;
+  const scale: PlanScale = scaleFromParam(params.get(SCALE_PARAM));
 
   const rawAnchor = params.get(ANCHOR_PARAM);
 
@@ -187,15 +167,7 @@ export function usePlanlamaSurface(): PlanlamaSurface {
       const defaultAnchor = anchorForScale(today, next, today);
 
       setParam({
-        /*
-         * Varsayılan ölçek URL'e YAZILMAZ: temiz `/planlama` adresi
-         * varsayılanı gösterir. Varsayılan hafta olduğu için artık
-         * URL'e yazılan `ay` — bu satır `DEFAULT_SCALE` çevrildiğinde
-         * onunla birlikte ters dönmek ZORUNDAYDI, yoksa "hafta" hem
-         * varsayılan hem de URL'e yazılan değer olurdu ve ay ölçeği
-         * adres çubuğunda hiç temsil edilemezdi.
-         */
-        [SCALE_PARAM]: next === DEFAULT_SCALE ? null : SCALE_MONTH,
+        [SCALE_PARAM]: scaleToParam(next),
         [ANCHOR_PARAM]: aligned === defaultAnchor ? null : aligned,
       });
     },
@@ -214,7 +186,7 @@ export function usePlanlamaSurface(): PlanlamaSurface {
       const defaultAnchor = anchorForScale(today, "week", today);
 
       setParam({
-        [SCALE_PARAM]: null, // hafta VARSAYILAN, URL'e yazılmaz
+        [SCALE_PARAM]: scaleToParam("week"),
         [ANCHOR_PARAM]: aligned === defaultAnchor ? null : aligned,
       });
     },
@@ -244,4 +216,4 @@ export function usePlanlamaSurface(): PlanlamaSurface {
 }
 
 /** URL'de ölçeğin yazılı biçimi — sekme bağlantıları için. */
-export { SCALE_PARAM, SCALE_MONTH, ANCHOR_PARAM, CATEGORY_PARAM };
+export { SCALE_PARAM, ANCHOR_PARAM, CATEGORY_PARAM };

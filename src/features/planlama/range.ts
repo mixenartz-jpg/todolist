@@ -197,3 +197,41 @@ export function anchorForScale(
 
   return startOfIsoWeek(sameMonth ? today : monthStart);
 }
+
+/**
+ * URL'deki `?ol=` değerinin ölçek karşılığı ve tersi.
+ *
+ * ── Neden `usePlanlamaSurface`'ten ÇIKARILDI? ──
+ * Bu bir çift: okuma (`scaleFromParam`) ve yazma (`scaleToParam`)
+ * birbirinin tersi olmak ZORUNDA. Hook'un içindeyken bu sözleşmenin
+ * testi yoktu ve varsayılan ölçek çevrildiğinde ikisinden yalnızca
+ * birini güncellemek mümkündü — o durumda "hafta" hem varsayılan hem
+ * URL'e yazılan değer olur, ay ölçeği adres çubuğunda hiç temsil
+ * edilemezdi. Saf fonksiyon olarak gidiş-dönüş bedavaya sınanıyor.
+ */
+
+/** Varsayılan ölçek — URL'de parametre yoksa bu geçerli. */
+export const DEFAULT_SCALE: PlanScale = "week";
+
+/** Varsayılan OLMAYAN ölçeğin URL'deki yazılı biçimi. */
+export const SCALE_MONTH_PARAM = "ay";
+
+/**
+ * URL değerini ölçeğe çevirir.
+ *
+ * Tanınmayan her şey (null, "çorba", eski "hafta") varsayılana düşer:
+ * adres çubuğuna elle yazılan bir değer ekranı kırmamalı.
+ */
+export function scaleFromParam(raw: string | null): PlanScale {
+  return raw === SCALE_MONTH_PARAM ? "month" : DEFAULT_SCALE;
+}
+
+/**
+ * Ölçeği URL değerine çevirir; `null` → parametre SİLİNİR.
+ *
+ * Varsayılan ölçek URL'e yazılmaz ki temiz `/planlama` adresi
+ * varsayılan görünümü göstersin.
+ */
+export function scaleToParam(scale: PlanScale): string | null {
+  return scale === DEFAULT_SCALE ? null : SCALE_MONTH_PARAM;
+}
