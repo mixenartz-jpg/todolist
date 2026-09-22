@@ -167,4 +167,25 @@ export const qk = {
    */
   denemeTekrarlari: (date: DateStr) =>
     ["deneme-yanlislari", "tekrar", date] as const,
+
+  /*
+   * Odak oturumları (0021).
+   *
+   * Anahtar "focus-sessions": TİRELİ TEK PARÇA, `plan-goals` ve
+   * `week-goals` ile aynı gerekçe — ileride eklenecek bir
+   * `qk.focus(...)` anahtarının önek eşleşmesiyle bunu da geçersiz
+   * kılması yapısal olarak imkânsız kalsın.
+   *
+   * Gün başına alt anahtar: ekran YALNIZCA "bugün ne kadar
+   * odaklandım" sorusunu soruyor ve oturumlar yıllar boyunca
+   * birikiyor — `planGoalsMonth`'un bölünme gerekçesinin aynısı.
+   *
+   * Bir oturum kaydedilince ÖNEK tazeleniyor ve bu istenen yön
+   * (`notePlansMonth` ile aynı): gece yarısına saniyeler kala biten
+   * bir oturumun hangi güne düştüğü belirsizleşebilir ve öneki
+   * tazelemek her iki günü de doğruya çekiyor.
+   */
+  focusSessions: () => ["focus-sessions"] as const,
+  focusSessionsDay: (date: DateStr) =>
+    ["focus-sessions", "day", date] as const,
 } as const;
