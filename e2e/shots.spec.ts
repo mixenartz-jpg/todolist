@@ -57,6 +57,14 @@ const ROUTES: readonly Route[] = [
   { slug: "05-planlama", path: "/planlama", viewports: ALL },
   { slug: "07-planlama-hedefler", path: "/planlama/hedefler", viewports: ALL },
   { slug: "08-planlama-ozet", path: "/planlama/ozet", viewports: ALL },
+  /*
+   * `/planlama/hedefler/[id]` (hedef ağacı, 0022) BİLEREK YOK.
+   *
+   * Rota dinamik bir hedef kimliği istiyor ve bu hesapta kararlı bir
+   * tohum hedef yok; var olmayan bir kimlikle çekim, her koşuda boş
+   * bir sayfanın fotoğrafını çekerdi. Kararlı bir tohum eklendiğinde
+   * buraya "07b-hedef-agaci" olarak girer.
+   */
   { slug: "09-istatistik", path: "/istatistik", viewports: ALL },
   { slug: "10-rutinler", path: "/rutinler", viewports: ALL },
   { slug: "13-arsiv", path: "/arsiv", viewports: ALL },

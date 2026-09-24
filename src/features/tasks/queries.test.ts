@@ -16,6 +16,7 @@ function task(partial: Partial<Task> & { id: string }): Task {
     completedAt: null,
     categoryId: null,
     goalId: null,
+    nodeId: null,
     colorSlot: null,
     ...partial,
   };

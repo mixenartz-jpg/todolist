@@ -47,6 +47,16 @@ interface PlanDayRowProps {
   categoryById: ReadonlyMap<string, Category>;
   /** Havuzdan seçili görev varsa satır yerleştirme hedefi olur. */
   placing: boolean;
+  /**
+   * Bir şey bu güne SÜRÜKLENİYOR mu (Faz 6)?
+   *
+   * `placing`'den ayrı: sürükleme kipinde tıkla-yerleştir şeridi de
+   * gösteriliyor ama vurgu sürüklenen satırın üstündeyken değişmeli.
+   */
+  dragOver?: boolean;
+  /** Sürükleme bırakıldığında (Faz 6); verilmezse gün hedef olmaz. */
+  onDrop?: (date: DateStr) => void;
+  onDragOver?: (date: DateStr | null) => void;
   addPending: boolean;
   /**
    * Ay ölçeğinde komşu ay günleri kapsam dışıdır ve solar.
@@ -84,6 +94,9 @@ export function PlanDayRow({
   hasPlan,
   categoryById,
   placing,
+  dragOver = false,
+  onDrop,
+  onDragOver,
   addPending,
   inScope,
   collapsed,
@@ -166,7 +179,33 @@ export function PlanDayRow({
         // `collapsed` bayrağı orada anlamsız kalır.
         collapsed && !isEmpty && "planDayRowCollapsed",
         placing && "planDayRowTarget",
+        dragOver && "planDayRowTarget",
       )}
+      /*
+       * HTML5 yerel sürükle-bırak — İKİNCİL yol.
+       *
+       * `onDragOver`'da `preventDefault()` şart: olmadan tarayıcı
+       * bırakmayı reddeder. Dokunmada çalışmaz ve bu KABUL EDİLEBİLİR,
+       * çünkü tıkla-yerleştir yolu (yukarıdaki `placing` şeridi)
+       * dokunmayı ve klavyeyi zaten tam kapsıyor. Sürükleme
+       * kaldırılsa hiçbir akış kaybolmaz — gerekçe PlanNodePanel'de.
+       */
+      onDragOver={
+        onDrop &&
+        ((event) => {
+          event.preventDefault();
+          onDragOver?.(bucket.date);
+        })
+      }
+      onDragLeave={onDrop && (() => onDragOver?.(null))}
+      onDrop={
+        onDrop &&
+        ((event) => {
+          event.preventDefault();
+          onDragOver?.(null);
+          onDrop(bucket.date);
+        })
+      }
     >
       {/*
         Tarih kanalı. Gün paneli varsa bir düğmedir.

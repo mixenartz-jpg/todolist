@@ -59,6 +59,16 @@ export interface TaskRow {
   /** Aylık hedef FK. En fazla BİR tane. */
   goal_id: string | null;
   /**
+   * Görevin doğduğu plan düğümü (0022). null → düğümsüz görev; bu
+   * NORMAL durumdur, görevlerin çoğu bir ağaçtan gelmez.
+   *
+   * `goal_id` ile birlikte taşınır, onun yerine değil: düğümden doğan
+   * görev ikisini de doldurur. Böylece GoalCard'ın mevcut çubuğu
+   * (goalProgress → goal_id) değişmeden çalışır, ağaç sayfası ise
+   * aynı görevleri daha ince okur. İki sayaç değil, iki çözünürlük.
+   */
+  node_id: string | null;
+  /**
    * Görevin KENDİ renk slotu (0..7). null → kategori renginden
    * devralınır (0013). `smallint`, supabase-js'e number gelir.
    */
@@ -142,6 +152,34 @@ export interface WeekGoalRow {
    * Gerekçe migration 0014'te.
    */
   plan_goal_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Hedef ağacının düğümü (0022).
+ *
+ * `plan_goals`'ın altındaki plan katmanı: konu → alt konu → iş.
+ * Düğümler günlere GÖREV olarak dağıtılır (`tasks.node_id`).
+ *
+ * `depth` SUNUCU TÜRETİR (stamp_goal_node_depth trigger'ı); istemci
+ * asla göndermez ve bu yüzden `GoalNodeDraft`'ta yoktur.
+ *
+ * `plan_goal_id` her satırda dolu, yalnızca köklerde değil: tüm ağaç
+ * tek sorguda çekilebilsin diye. Trigger ebeveynle aynı olmasını
+ * garanti ettiği için kopya ayrışamaz (gerekçe 0022).
+ */
+export interface GoalNodeRow {
+  id: string;
+  user_id: string;
+  plan_goal_id: string;
+  /** null → hedefin doğrudan çocuğu (depth 1). */
+  parent_id: string | null;
+  /** 1..3. `smallint`, supabase-js'e number gelir. */
+  depth: number;
+  title: string;
+  note: string | null;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }

@@ -21,6 +21,13 @@ export default defineConfig({
         "**/*.test.ts",
         "**/queries.ts",
         "**/mutations.ts",
+        // Aynı gerekçe, farklı dosya adı: `nodeQueries.ts` /
+        // `nodeMutations.ts` (0022). Ayrı dosya olmalarının sebebi
+        // `mutations.ts`'in 800 satırı aşmış olması, farklı bir tür
+        // kod olmaları değil — ikisi de supabase çağrısı ve önbellek
+        // yamasından ibaret, karar vermiyorlar.
+        "**/nodeQueries.ts",
+        "**/nodeMutations.ts",
         "**/types.ts",
         // Tarayıcı API sarmalayıcısı (createImageBitmap/OffscreenCanvas).
         // Mantık içermez ve node ortamında çalıştırılamaz; kapsama

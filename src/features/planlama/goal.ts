@@ -22,6 +22,17 @@ import type { Category } from "./types";
  */
 export const GOAL_TITLE_MAX = 120;
 export const GOAL_NOTE_MAX = 2000;
+
+/**
+ * Plan düğümü başlığının sınırı (0022).
+ *
+ * `GOAL_TITLE_MAX`'ten (120) daha uzun ve bu bilerek: bir hedef
+ * başlığı kısadır ("Kimya"), bir plan kalemi olmayabilir ("Asitler ve
+ * bazlar — kuvvetli/zayıf ayrımı, soru bankası 50 soru"). Düğüm
+ * serbest metin taşıyor; tür alanı yok, dolayısıyla başlık hem konuyu
+ * hem yapılacak işi anlatmak zorunda.
+ */
+export const GOAL_NODE_TITLE_MAX = 200;
 export const CATEGORY_NAME_MAX = 40;
 /** DB kısıtı: 1..9999. */
 export const GOAL_TARGET_MAX = 9999;
@@ -37,6 +48,20 @@ export function normalizeGoalTitle(input: string): string | null {
   const trimmed = input.trim();
   if (trimmed.length === 0) return null;
   return trimmed.slice(0, GOAL_TITLE_MAX);
+}
+
+/**
+ * Plan düğümü başlığını normalleştirir.
+ *
+ * `normalizeGoalTitle` ile aynı sözleşme — boş girdi `null` — yalnızca
+ * sınır farklı. Ayrı fonksiyon, çünkü sınırı parametre yapmak her
+ * çağıranın doğru sabiti seçmesini gerektirirdi ve yanlış seçim
+ * sessizce kısa kesilen bir başlık olurdu.
+ */
+export function normalizeNodeTitle(input: string): string | null {
+  const trimmed = input.trim();
+  if (trimmed.length === 0) return null;
+  return trimmed.slice(0, GOAL_NODE_TITLE_MAX);
 }
 
 /** Kategori adı için aynı kural. */

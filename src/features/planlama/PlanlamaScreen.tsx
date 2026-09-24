@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   endOfIsoWeek,
   endOfMonth,
@@ -19,6 +19,7 @@ import { daySummaries } from "./dayplan";
 import { useSetTaskCategory, useSetTaskGoal } from "./mutations";
 import { useMonthPlanDays, usePlanGoals } from "./queries";
 import { PlanBacklog } from "./PlanBacklog";
+import { PlanNodePanel } from "./PlanNodePanel";
 import { PlanGoalStrip } from "./PlanGoalStrip";
 import { PlanDayRow } from "./PlanDayRow";
 import { PlanDaySheet } from "./PlanDaySheet";
@@ -33,6 +34,10 @@ import { usePlanCategories } from "./usePlanCategories";
 import { useCollapsedDays } from "./useCollapsedDays";
 import { weekSummaries } from "./weekmap";
 import { usePlanTaskActions } from "./usePlanTaskActions";
+import { isPlacingNode, isPlacingTask, type Placing } from "./placement";
+import { planDistribution } from "./distribute";
+import { useDistributeNodes } from "./nodeMutations";
+import { useGoalNodes } from "./nodeQueries";
 import { eachDay } from "@/lib/date/date";
 import "./planlama.css";
 
@@ -64,8 +69,23 @@ export function PlanlamaScreen() {
   const actions = usePlanTaskActions(toast.show);
   const { collapsedDays, toggleCollapsed } = useCollapsedDays(anchor);
 
-  /** Havuzdan seçilen görev — ızgara yerleştirme moduna girer. */
-  const [placingId, setPlacingId] = useState<string | null>(null);
+  /**
+   * Yerleştirilmeyi bekleyen şey — havuzdaki bir GÖREV ya da ağaçtaki
+   * bir plan BAŞLIĞI (0022).
+   *
+   * Tek kip, iki tür: ayrı durumlar iki farklı vurgulama dili ve iki
+   * Escape davranışı demekti (gerekçe placement.ts'te).
+   */
+  const [placing, setPlacing] = useState<Placing>(null);
+  /** Panelde seçili hedef — yerleştirilen düğümün ağacını bulmak için. */
+  const [panelGoalId, setPanelGoalId] = useState<string | null>(null);
+  // Kimliği kararlı: panelin effect'i her çizimde yeniden koşmasın.
+  const handlePanelGoal = useCallback(
+    (id: string | null) => setPanelGoalId(id),
+    [],
+  );
+  /** Sürüklemenin şu an üstünde durduğu gün (Faz 6). */
+  const [dragOverDate, setDragOverDate] = useState<DateStr | null>(null);
   /** Açılan gün paneli. */
   const [openDay, setOpenDay] = useState<DateStr | null>(null);
 
@@ -73,6 +93,7 @@ export function PlanlamaScreen() {
   const categories = usePlanCategories(tasksQuery.data, category);
   const setTaskCategory = useSetTaskCategory(toast.show);
   const setTaskGoal = useSetTaskGoal(toast.show);
+  const distribute = useDistributeNodes(toast.show);
 
   /*
    * Ölçek yalnızca ARALIĞI belirler.
@@ -148,23 +169,51 @@ export function PlanlamaScreen() {
   );
 
 
-  const placing = placingId !== null;
+  const isPlacing = placing !== null;
 
   useEffect(() => {
-    if (!placing) return;
+    if (!isPlacing) return;
 
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setPlacingId(null);
+      if (event.key === "Escape") setPlacing(null);
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [placing]);
+  }, [isPlacing]);
+
+  /*
+   * Yerleştirme kipindeki düğümün ağacı. Panel kendi sorgusunu açıyor
+   * ama bu ekranın da düğümün BAŞLIĞINA ihtiyacı var (görev ondan
+   * doğuyor) — aynı anahtar, aynı önbellek girdisi, ikinci bir ağ
+   * turu yok.
+   */
+  const placingNodeGoalId = isPlacingNode(placing) ? panelGoalId : null;
+  const placingNodesQuery = useGoalNodes(placingNodeGoalId);
 
   function handlePlace(date: DateStr) {
-    if (placingId === null) return;
-    actions.reschedule(placingId, date);
-    setPlacingId(null);
+    if (placing === null) return;
+
+    if (isPlacingTask(placing)) {
+      actions.reschedule(placing.id, date);
+      setPlacing(null);
+      return;
+    }
+
+    // Düğüm: görev TAŞINMIYOR, yenisi DOĞUYOR.
+    const node = (placingNodesQuery.data ?? []).find((n) => n.id === placing.id);
+    if (node === undefined) {
+      setPlacing(null);
+      return;
+    }
+
+    const plan = planDistribution(
+      [node],
+      { from: date, to: date, perDayCap: null },
+      node.planGoalId,
+    );
+    if (plan.drafts.length > 0) distribute.mutate({ drafts: plan.drafts });
+    setPlacing(null);
   }
 
   const openDayTasks =
@@ -241,7 +290,10 @@ export function PlanlamaScreen() {
                       today={today}
                       hasPlan={summaries.get(bucket.date)?.hasPlan ?? false}
                       categoryById={categories.categoryById}
-                      placing={placing}
+                      placing={isPlacing}
+                      dragOver={dragOverDate === bucket.date}
+                      onDrop={handlePlace}
+                      onDragOver={setDragOverDate}
                       addPending={actions.addPending}
                       inScope={bucket.inScope}
                       collapsed={collapsedDays.has(bucket.date)}
@@ -273,12 +325,29 @@ export function PlanlamaScreen() {
                 />
               )}
 
+              <PlanNodePanel
+                goals={goalsQuery.data ?? []}
+                tasks={tasksQuery.data ?? []}
+                selectedNodeId={isPlacingNode(placing) ? placing.id : null}
+                onSelectGoal={handlePanelGoal}
+                onSelect={(id) =>
+                  setPlacing(id === null ? null : { kind: "node", id })
+                }
+                /*
+                 * Sürükleme başlarken düğümü yerleştirme kipine sokar
+                 * — yani sürükleme, tıkla-yerleştir kipinin ÜSTÜNE
+                 * binen bir kısayol. Bırakma `handlePlace`'e düşüyor,
+                 * tıklamayla aynı yere.
+                 */
+                onDragStart={(id) => setPlacing({ kind: "node", id })}
+              />
+
               <PlanBacklog
                 tasks={range.backlog}
                 categoryById={categories.categoryById}
-                selectedId={placingId}
+                selectedId={isPlacingTask(placing) ? placing.id : null}
                 addPending={actions.addPending}
-                onSelect={setPlacingId}
+                onSelect={(id) => setPlacing(id === null ? null : { kind: "task", id })}
                 onAdd={actions.addBacklog}
                 onError={toast.show}
               />

@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import { category } from "@/features/testing/fixtures";
 import {
   CATEGORY_NAME_MAX,
+  GOAL_NODE_TITLE_MAX,
   GOAL_TITLE_MAX,
   completionStamp,
   isDuplicateCategoryName,
   normalizeCategoryName,
   normalizeGoalTitle,
+  normalizeNodeTitle,
   parseTargetCount,
   recountOnTargetChange,
   stepDoneCount,
@@ -277,5 +279,27 @@ describe("isDuplicateCategoryName", () => {
   it("boş girdide false döner", () => {
     // Boşluk kontrolü normalize'ın işi; burada çakışma yok demek doğru.
     expect(isDuplicateCategoryName(list, "   ")).toBe(false);
+  });
+});
+
+describe("normalizeNodeTitle", () => {
+  it("boş girdide null döner", () => {
+    expect(normalizeNodeTitle("   ")).toBeNull();
+  });
+
+  it("baştaki ve sondaki boşlukları atar", () => {
+    expect(normalizeNodeTitle("  Asitler  ")).toBe("Asitler");
+  });
+
+  it("200 karakterde keser — hedef başlığından uzun olabilir", () => {
+    // Bir plan kalemi bir hedef başlığından uzundur: "Asitler ve
+    // bazlar — kuvvetli/zayıf ayrımı, soru bankası 50 soru".
+    const uzun = "a".repeat(250);
+    expect(normalizeNodeTitle(uzun)).toHaveLength(GOAL_NODE_TITLE_MAX);
+  });
+
+  it("hedef başlığı sınırından DAHA uzununa izin verir", () => {
+    const orta = "a".repeat(150);
+    expect(normalizeNodeTitle(orta)).toHaveLength(150);
   });
 });

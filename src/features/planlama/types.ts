@@ -109,6 +109,55 @@ export interface WeekGoalDraft {
 }
 
 /**
+ * Hedef ağacının bir düğümü (0022).
+ *
+ * `PlanGoal` ile `Task` ARASINDAKİ katman: hedef "Kimya'yı
+ * bitireceğim" der, görev "12 Ekim'de 25 soru çöz" der, düğüm ise
+ * ikisini bağlayan planı taşır ("Asitler-Bazlar" → "Soru bankası 50
+ * soru").
+ *
+ * ── Neden `WeekGoal` gibi bir hedef değil? ──
+ * Düğümün kendi sayacı, kendi tamamlanma damgası, kendi ayı YOK ve
+ * bilerek yok. İlerlemesi bağlı görevlerinden ve çocuklarından
+ * TÜRETİLİR (bkz. nodeprogress.ts). İkinci bir elle işaretlenen sayaç
+ * eklemek, aynı gerçeğin iki kaynağı demekti — 0014'ün çift sayım
+ * gerekçesinin aynısı.
+ */
+export interface GoalNode {
+  id: string;
+  /** Ağacın ait olduğu aylık hedef. Her düğümde dolu (kök olmayanda da). */
+  planGoalId: string;
+  /** Üst düğüm; null → hedefin doğrudan çocuğu. */
+  parentId: string | null;
+  /**
+   * Ağaçtaki seviye, 1..3.
+   *
+   * SUNUCU TÜRETİR — istemci hesaplamaz, göndermez. `aria-level` bunu
+   * doğrudan okur; ağacı yürümek gerekmez.
+   */
+  depth: number;
+  /** Serbest metin. Tür/enum alanı YOK (gerekçe 0022). */
+  title: string;
+  note: string | null;
+  sortOrder: number;
+}
+
+export interface GoalNodeDraft {
+  planGoalId: string;
+  /** null → hedefin doğrudan çocuğu (depth 1). */
+  parentId: string | null;
+  title: string;
+  note: string | null;
+  /** Sona eklemek için: aynı ebeveyn altındaki mevcut kardeş sayısı. */
+  sortOrder: number;
+  /*
+   * `depth` BİLEREK YOK: sunucudaki trigger ebeveynden türetir.
+   * İstemcinin göndereceği bir derinlik, ebeveyni görmediği için
+   * yanlış olabilir ve check kısıtı onu ancak 3'ü aştığında yakalardı.
+   */
+}
+
+/**
  * Kategori filtresi.
  *
  *   null    → filtre yok, hepsi görünür

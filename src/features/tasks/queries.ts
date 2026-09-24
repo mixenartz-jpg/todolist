@@ -48,6 +48,7 @@ export function toTask(row: TaskRow): Task {
     completedAt: row.completed_at,
     categoryId: row.category_id,
     goalId: row.goal_id,
+    nodeId: row.node_id,
     colorSlot: row.color_slot,
   };
 }

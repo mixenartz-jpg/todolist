@@ -148,6 +148,9 @@ export function useCreateTask(onError?: (message: string) => void) {
          * ilerleme sayacı bir an için eksik sayardı ve sonra zıplardı.
          */
         goalId: draft.goalId ?? null,
+        // Düğüm de aynı gerekçeyle taşınır: ağaç sayfasındaki ilerleme
+        // çubuğu, sunucu cevabını beklemeden dolmaya başlasın.
+        nodeId: draft.nodeId ?? null,
         // Yeni görev rengini KATEGORİDEN devralır ve kategorisi de yok:
         // nötr çizilir. Renk sonradan verilen ikinci bir harekettir.
         colorSlot: null,

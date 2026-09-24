@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/Button";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { cn } from "@/lib/ui/cn";
@@ -26,6 +27,15 @@ interface GoalCardProps {
    * gerekirdi — ekranda on hedef varsa on kopya.
    */
   daysIdle: number | null;
+  /**
+   * Bu hedefin ağacından okunan ölçü; ağaç yoksa undefined.
+   *
+   * Verildiğinde `progress`'in yerine GEÇER — "ağaç varsa ağaç
+   * kazanır" kararının kart tarafındaki yarısı (goalmeasure.ts).
+   * `progress` yine de alınıyor çünkü koçluk satırı (`GoalCoachLine`,
+   * `goalPace`) onun üstünde çalışıyor.
+   */
+  treeMeasure?: { ratio: number | null; taskTotal: number; taskDone: number; nodeCount: number };
   pending: boolean;
   onUpdate: (draft: PlanGoalDraft) => void;
   onStep: (doneCount: number) => void;
@@ -50,13 +60,32 @@ export function GoalCard({
   progress,
   today,
   daysIdle,
+  treeMeasure,
   pending,
   onUpdate,
   onStep,
   onArchive,
   onDelete,
 }: GoalCardProps) {
-  const { goal, ratio, source, taskTotal, taskDone } = progress;
+  const { goal } = progress;
+
+  /*
+   * Ağaç varsa ölçü ONDAN okunur ve sayısal hedef/bağlı görev
+   * sayaçlarını yener. Kullanıcı bir hedefe ağaç kurduğunda "bu
+   * hedefi nasıl ölçeceğimi kalem kalem yazdım" demiş oluyor; kartın
+   * başka bir sayı göstermesi, iki farklı yüzde demekti.
+   */
+  const ratio = treeMeasure ? treeMeasure.ratio : progress.ratio;
+  const source: GoalProgress["source"] | "tree" = treeMeasure
+    ? "tree"
+    : progress.source;
+  const taskTotal = treeMeasure ? treeMeasure.taskTotal : progress.taskTotal;
+  const taskDone = treeMeasure ? treeMeasure.taskDone : progress.taskDone;
+
+  // Ağaç kurulu ama hiç dağıtılmamışsa ölçü YOK — `ratio: null`'ın
+  // nodeprogress.ts'teki anlamı burada da geçerli.
+  const measured = ratio !== null;
+
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -126,6 +155,20 @@ export function GoalCard({
           )}
         </div>
 
+        {/*
+          Ağaç sayfasına geçiş. Hedefi parçalara ayırmak ayrı bir
+          oturum işi — kart üstünde akordeon olarak açılsaydı üç
+          seviyelik girinti kartın genişliğini yerdi (gerekçe
+          GoalTreeScreen'de).
+        */}
+        <Link
+          href={`/planlama/hedefler/${goal.id}`}
+          aria-label={`${goal.title}: ağacı aç`}
+          className="shrink-0 rounded-lg px-2 py-1 text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-quart)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-accent)]"
+        >
+          Ağaç
+        </Link>
+
         <Button
           size="sm"
           variant="ghost"
@@ -145,12 +188,13 @@ export function GoalCard({
       </div>
 
       <div className="mt-3">
-        {source === "none" ? (
+        {!measured ? (
           /* Çubuk YOK. %0 çizmek "hiç başlamadın" derdi; doğrusu
              ölçünün henüz tanımlanmamış olması. */
           <p className="text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
-            Henüz ölçülmüyor — sayısal hedef yaz ya da bu hedefe görev
-            bağla.
+            {source === "tree"
+              ? `${treeMeasure?.nodeCount} başlık yazıldı, henüz güne dağıtılmadı.`
+              : "Henüz ölçülmüyor — sayısal hedef yaz ya da bu hedefe görev bağla."}
           </p>
         ) : (
           <>
@@ -181,7 +225,9 @@ export function GoalCard({
               <span className="tabular text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
                 {source === "count"
                   ? `${goal.doneCount} / ${goal.targetCount}`
-                  : `${taskDone} / ${taskTotal} iş`}
+                  : source === "tree"
+                    ? `${taskDone} / ${taskTotal} iş · ${treeMeasure?.nodeCount} başlık`
+                    : `${taskDone} / ${taskTotal} iş`}
               </span>
 
               {/* Elle sayaç YALNIZCA sayısal hedefte: görev bazlı
@@ -229,7 +275,7 @@ export function GoalCard({
       {confirmDelete && (
         <ConfirmDialog
           title={`"${goal.title}" silinsin mi?`}
-          description="Bu hedefe bağlı görevler silinmez, hedefsiz olur. Geçmiş ay özetini korumak istiyorsan silmek yerine arşivle."
+          description="Bu hedefin AĞACI da silinir. Bağlı görevler silinmez, hedefsiz olur. Geçmiş ay özetini korumak istiyorsan silmek yerine arşivle."
           confirmLabel="Sil"
           onConfirm={() => {
             onDelete();

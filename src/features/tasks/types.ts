@@ -43,6 +43,20 @@ export interface Task {
   /** Bağlı olduğu aylık hedef. En fazla BİR tane; null → bağsız. */
   goalId: string | null;
   /**
+   * Görevin DOĞDUĞU plan düğümü (0022). null → düğümsüz görev.
+   *
+   * `goalId`'nin yerine değil, YANINDA durur: ağaçtan dağıtılan görev
+   * ikisini birden taşır. `goalId` "hangi hedef", `nodeId` "o hedefin
+   * hangi kalemi" sorusunu cevaplıyor — aynı görev kümesinin iki
+   * çözünürlüğü, iki ayrı sayaç değil. Çift sayım bu yüzden
+   * imkânsız: `goalProgress` görevleri `goalId`'den sayar,
+   * `goalTreeProgress` aynı görevleri `nodeId`'den gruplar.
+   *
+   * Düğüm silinince null'a düşer (`on delete set null`): görevin
+   * kendisi bir kayıttır ve tamamlanmış geçmişi korunmalıdır.
+   */
+  nodeId: string | null;
+  /**
    * Görevin KENDİ rengi (0..7). null → KATEGORİDEN DEVRAL.
    *
    * `categoryId`'nin null'ıyla aynı ruhta birinci sınıf bir durum:
@@ -75,4 +89,12 @@ export interface TaskDraft {
    * gürültü olurdu.
    */
   goalId?: string | null;
+  /**
+   * Doğduğu plan düğümü; null/verilmemiş → düğümsüz görev (0022).
+   *
+   * `goalId` ile birlikte verilir: ağaçtan dağıtılan görev hem hedefi
+   * hem kalemi bilir. Opsiyonel oluşunun gerekçesi `goalId`'ninkiyle
+   * aynı — çağıranların çoğu düğümsüz görev üretiyor.
+   */
+  nodeId?: string | null;
 }

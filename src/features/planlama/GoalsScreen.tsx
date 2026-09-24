@@ -15,6 +15,8 @@ import {
   useStepGoalProgress,
   useUpdateGoal,
 } from "./mutations";
+import { goalMeasure } from "./goalmeasure";
+import { useGoalNodesFor } from "./nodeQueries";
 import { PlanlamaHeader } from "./PlanlamaHeader";
 import { usePlanGoals } from "./queries";
 import { daysSinceGoalTask } from "./pace";
@@ -80,14 +82,41 @@ export function GoalsScreen() {
   );
 
   /*
+   * Ayın TÜM hedeflerinin ağaçları, TEK sorguda.
+   *
+   * Her kartın yüzdesi ağaç varsa ondan okunuyor (goalmeasure.ts) ve
+   * kart başına ayrı sorgu, on hedefli bir ayda on ağ turu demekti.
+   */
+  const goalIds = useMemo(() => goals.map((g) => g.id), [goals]);
+  const nodesQuery = useGoalNodesFor(goalIds);
+
+  /** Hedef kimliğinden ağaç ölçüsüne; ağacı olmayan hedef listede YOK. */
+  const treeMeasures = useMemo(() => {
+    const nodes = nodesQuery.data ?? [];
+    if (nodes.length === 0) return new Map<string, ReturnType<typeof goalMeasure>>();
+
+    const out = new Map<string, ReturnType<typeof goalMeasure>>();
+    for (const goal of goals) {
+      const measure = goalMeasure(goal, nodes, tasksQuery.data ?? []);
+      if (measure.kind === "tree") out.set(goal.id, measure);
+    }
+    return out;
+  }, [goals, nodesQuery.data, tasksQuery.data]);
+
+  /*
    * Başlıktaki sayaç AÇIK hedefleri sayar (arşivlenmemiş ve
    * tamamlanmamış). Hepsini saysaydı ay ilerledikçe rakam hiç azalmaz
    * ve ilerleme hissi kaybolurdu — CategoryFilterBar rozetleriyle aynı
    * gerekçe.
    */
-  const openGoals = progresses.filter(
-    (p) => p.goal.archivedAt === null && (p.ratio === null || p.ratio < 1),
-  ).length;
+  const openGoals = progresses.filter((p) => {
+    if (p.goal.archivedAt !== null) return false;
+    // Ağaç varsa sayaç da ondan okunmalı, yoksa başlıktaki rakam
+    // kartlardaki yüzdelerle çelişirdi.
+    const measure = treeMeasures.get(p.goal.id);
+    const ratio = measure && measure.kind === "tree" ? measure.ratio : p.ratio;
+    return ratio === null || ratio < 1;
+  }).length;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -149,6 +178,10 @@ export function GoalsScreen() {
                     progress={progress}
                     today={today}
                     daysIdle={daysSinceGoalTask(progress, tasksQuery.data ?? [], today)}
+                    treeMeasure={(() => {
+                      const m = treeMeasures.get(progress.goal.id);
+                      return m && m.kind === "tree" ? m : undefined;
+                    })()}
                     pending={updateGoal.isPending}
                     onUpdate={(draft) =>
                       updateGoal.mutate({

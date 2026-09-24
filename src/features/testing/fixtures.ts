@@ -8,7 +8,7 @@
 import { addDays, asDateStr, eachDay } from "@/lib/date/date";
 import type { RoutineWithSchedule, Schedule, ScheduleVersion } from "@/features/routines/types";
 import { entryKey, type EntryMap } from "@/features/entries/entry-map";
-import type { Category, PlanGoal } from "@/features/planlama/types";
+import type { Category, GoalNode, PlanGoal } from "@/features/planlama/types";
 import type { Task } from "@/features/tasks/types";
 import type { DenemeYanlis } from "@/features/deneme/types";
 
@@ -120,6 +120,8 @@ interface TaskOptions {
   completedAt?: string | null;
   categoryId?: string | null;
   goalId?: string | null;
+  /** Görevi bir plan düğümüne bağlar (0022). */
+  nodeId?: string | null;
   colorSlot?: number | null;
 }
 
@@ -145,6 +147,7 @@ export function task(options: TaskOptions = {}): Task {
     completedAt: options.completedAt ?? null,
     categoryId: options.categoryId ?? null,
     goalId: options.goalId ?? null,
+    nodeId: options.nodeId ?? null,
     colorSlot: options.colorSlot ?? null,
   };
 }
@@ -200,6 +203,41 @@ export function planGoal(options: PlanGoalOptions = {}): PlanGoal {
     colorSlot: options.colorSlot ?? 0,
     sortOrder: options.sortOrder ?? 0,
     archivedAt: options.archivedAt ?? null,
+  };
+}
+
+interface GoalNodeOptions {
+  id?: string;
+  /** Ağacın hedefi; verilmezse "g1". */
+  planGoalId?: string;
+  /** null → kök düğüm (depth 1). Varsayılan budur. */
+  parentId?: string | null;
+  /** Verilmezse `parentId`'den türetilir: kök 1, çocuk 2. */
+  depth?: number;
+  title?: string;
+  note?: string | null;
+  sortOrder?: number;
+}
+
+/**
+ * Test için hedef ağacı düğümü üretir.
+ *
+ * `depth` verilmezse `parentId`'den kabaca türetilir (kök → 1, çocuk →
+ * 2). Üç seviyeli ağaç kuran testler depth'i AÇIKÇA vermeli: gerçekte
+ * onu sunucu hesaplıyor ve fixture'ın tahmin yürütmesi, testin
+ * sunucudan farklı bir ağaç kurmasına yol açardı.
+ */
+export function goalNode(options: GoalNodeOptions = {}): GoalNode {
+  const parentId = options.parentId ?? null;
+
+  return {
+    id: options.id ?? `n${++counter}`,
+    planGoalId: options.planGoalId ?? "g1",
+    parentId,
+    depth: options.depth ?? (parentId === null ? 1 : 2),
+    title: options.title ?? "Test başlığı",
+    note: options.note ?? null,
+    sortOrder: options.sortOrder ?? 0,
   };
 }
 

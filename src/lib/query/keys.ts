@@ -76,6 +76,54 @@ export const qk = {
   planGoalsMonth: (month: DateStr) => ["plan-goals", month] as const,
 
   /*
+   * Hedef ağacının düğümleri (0022).
+   *
+   * Anahtar "goal-nodes": TİRELİ TEK PARÇA, `plan-goals` ve
+   * `week-goals` ile aynı gerekçe — ileride eklenecek bir
+   * `qk.goal(...)` anahtarının önek eşleşmesiyle bunu da geçersiz
+   * kılması yapısal olarak imkânsız kalsın.
+   *
+   * `planGoals` ÖNEKİNİN ALTINDA DEĞİL ve bu kritik: bir düğümü
+   * yeniden adlandırmak hedefin KENDİ satırını (başlık, sayaç, renk,
+   * sıra) değiştirmez. Ortak önek, her düğüm düzenlemesinde o ayın
+   * tüm hedef listesinin yeniden çekilmesi demekti —
+   * `planGoals`'ın önekten kaçınma gerekçesinin aynısı, bir seviye
+   * derinde.
+   *
+   * HEDEF BAŞINA ayrı alt anahtar: ağaç tek sorguda, tek hedef için
+   * çekiliyor (0022'nin plan_goal_id denormalizasyonunun sebebi) ve
+   * ekran hep tek hedefin ağacına bakıyor — `planGoalsMonth`'un
+   * bölünme gerekçesiyle aynı.
+   *
+   * ── Görev anahtarıyla ilişkisi ──
+   * Düğümü güne DAĞITMAK yalnızca `qk.tasks()`'i tazeler, bunu değil:
+   * dağıtım düğüm satırlarını değiştirmiyor, yalnızca yeni görevler
+   * doğuruyor ve ağacın ilerlemesi zaten istemcide `useTasks()`'tan
+   * türetiliyor (nodeprogress.ts). Düğüm SİLMEK ise ikisini birden
+   * tazeler — sunucu `on delete set null` ile görevlerin `node_id`'sini
+   * boşaltıyor.
+   */
+  goalNodes: () => ["goal-nodes"] as const,
+  goalNodesFor: (planGoalId: string) => ["goal-nodes", planGoalId] as const,
+  /*
+   * Birden çok hedefin ağaçları TEK sorguda — Hedefler ekranı her
+   * kartın yüzdesini ağaçtan okumak zorunda ve kart başına sorgu, on
+   * hedefli bir ayda on ağ turu demekti.
+   *
+   * Kimlikler anahtarın parçası ve SIRALI verilmeli (çağıran
+   * sıralıyor): aynı hedef kümesi farklı sırada gelirse ikinci bir
+   * önbellek girdisi doğardı.
+   *
+   * Üçüncü eleman "many" sabiti: `["goal-nodes", <tek id>]` ile
+   * karışmasın. Tek hedefin ağacı ayrı bir anahtarda yaşıyor ve
+   * ikisinin aynı satırları iki yerde tutması, birini tazeleyip
+   * diğerini bayat bırakma riski taşıyor — bu yüzden ayrımı
+   * yapısal tutuyoruz.
+   */
+  goalNodesMany: (planGoalIds: readonly string[]) =>
+    ["goal-nodes", "many", planGoalIds.join(",")] as const,
+
+  /*
    * Haftalık hedefler (0011).
    *
    * Anahtar "week-goals": TİRELİ TEK PARÇA, tıpkı "plan-goals" gibi ve

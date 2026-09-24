@@ -89,3 +89,28 @@ describe("qk önek hiyerarşisi", () => {
     expect(new Set(roots).size).toBe(roots.length);
   });
 });
+
+describe("hedef ağacı anahtarları (0022)", () => {
+  it("düğüm anahtarı 'plan-goals' önekini TAŞIMAZ", () => {
+    /*
+     * Bir düğümü yeniden adlandırmak, hedefin kendi satırını
+     * değiştirmiyor. Ortak önek olsaydı her düğüm düzenlemesi o ayın
+     * tüm hedef listesini yeniden çekerdi.
+     */
+    expect(qk.goalNodes()[0]).not.toBe(qk.planGoals()[0]);
+    expect(qk.goalNodesFor("g1")[0]).not.toBe(qk.planGoals()[0]);
+  });
+
+  it("hedef başına ayrı alt anahtar üretir", () => {
+    expect(qk.goalNodesFor("g1")).not.toEqual(qk.goalNodesFor("g2"));
+    // Ama ikisi de aynı önekin altında: gerekirse tüm ağaçlar tek
+    // seferde geçersiz kılınabilsin.
+    expect(qk.goalNodesFor("g1")[0]).toBe(qk.goalNodes()[0]);
+  });
+
+  it("görev anahtarıyla KARIŞMAZ", () => {
+    // Dağıtım `qk.tasks()`'i tazeliyor, silme ikisini birden.
+    // Önekleri çakışsaydı ayrım imkânsız olurdu.
+    expect(qk.goalNodes()[0]).not.toBe(qk.tasks()[0]);
+  });
+});
