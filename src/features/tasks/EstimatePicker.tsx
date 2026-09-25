@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useRevealOnMount } from "@/lib/ui/useRevealOnMount";
 import { cn } from "@/lib/ui/cn";
 import { ESTIMATE_PRESETS, formatEstimate, parseEstimateInput } from "./estimate";
 
@@ -24,6 +25,8 @@ export function EstimatePicker({
 }) {
   const [custom, setCustom] = useState("");
   const [invalid, setInvalid] = useState(false);
+  const groupRef = useRef<HTMLDivElement>(null);
+  useRevealOnMount(groupRef);
 
   function pick(minutes: number | null) {
     if (minutes !== value) onChange(minutes);
@@ -42,6 +45,7 @@ export function EstimatePicker({
 
   return (
     <div
+      ref={groupRef}
       role="group"
       aria-label={`${taskTitle}: tahmini süre`}
       className="mt-2 flex flex-wrap items-center gap-1.5"

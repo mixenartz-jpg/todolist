@@ -18,7 +18,13 @@
  * kimliğe göre sıralasaydık planın mantığı bozulurdu.
  */
 
-import { compareDates, eachDay } from "@/lib/date/date";
+import {
+  addDays,
+  compareDates,
+  eachDay,
+  isoWeekday,
+  startOfIsoWeek,
+} from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import type { GoalNode } from "./types";
 
@@ -146,4 +152,38 @@ export function parsePerDayCap(input: string): number | undefined {
   const value = Number(trimmed);
   if (value < 1 || value > PER_DAY_CAP_MAX) return undefined;
   return value;
+}
+
+/**
+ * "Güne" panelinin çoklu gün kısayolları.
+ *
+ *   rest-of-week : bugünden bu Pazar'a kadar her gün
+ *   weekdays     : bu haftanın kalan hafta içi günleri; hafta sonundaysak
+ *                  gelecek haftanın Pzt–Cum'u (boş liste dönmesin)
+ *   next-7       : bugünden başlayarak 7 gün
+ *
+ * Geçmiş gün hiçbir kısayolda yok: kısayol "bundan sonrasını planla"
+ * demek.
+ */
+export type MultiDayShortcut = "rest-of-week" | "weekdays" | "next-7";
+
+export function multiDayShortcut(
+  today: DateStr,
+  kind: MultiDayShortcut,
+): DateStr[] {
+  const monday = startOfIsoWeek(today);
+
+  switch (kind) {
+    case "rest-of-week":
+      return eachDay(today, addDays(monday, 6));
+    case "weekdays": {
+      if (isoWeekday(today) >= 6) {
+        const next = addDays(monday, 7);
+        return eachDay(next, addDays(next, 4));
+      }
+      return eachDay(today, addDays(monday, 4));
+    }
+    case "next-7":
+      return eachDay(today, addDays(today, 6));
+  }
 }

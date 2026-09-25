@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/Button";
+import { useRevealOnMount } from "@/lib/ui/useRevealOnMount";
 import { GOAL_NODE_TITLE_MAX, GOAL_NOTE_MAX, normalizeNodeTitle } from "./goal";
 import type { GoalNode } from "./types";
 
@@ -41,6 +42,9 @@ export function GoalNodeForm({
   placeholder = "Ne yapılacak?",
 }: GoalNodeFormProps) {
   const [title, setTitle] = useState(initial?.title ?? "");
+  // Açılınca düğmeleriyle birlikte ekrana gelsin (bkz. useRevealOnMount).
+  const formRef = useRef<HTMLFormElement>(null);
+  useRevealOnMount(formRef);
   const [note, setNote] = useState(initial?.note ?? "");
 
   const normalized = normalizeNodeTitle(title);
@@ -64,7 +68,8 @@ export function GoalNodeForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+    <form
+      ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-2">
       <input
         value={title}
         onChange={(event) => setTitle(event.target.value)}

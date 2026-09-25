@@ -82,7 +82,9 @@ export function NodeBulkSend({
   return (
     <form
       onSubmit={handleSubmit}
-      className="sticky bottom-3 z-[var(--z-sticky)] mt-4 flex flex-wrap items-end gap-2.5 rounded-xl border border-[var(--color-accent)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-overlay)]"
+      // Telefonda sekme çubuğunun ÜSTÜNDE yapışır; `bottom-3` çubuğun
+      // arkasına düşüyordu.
+      className="sticky bottom-[calc(var(--tabbar-h)+env(safe-area-inset-bottom)+0.75rem)] md:bottom-3 z-[var(--z-sticky)] mt-4 flex flex-wrap items-end gap-2.5 rounded-xl border border-[var(--color-accent)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-overlay)]"
     >
       <p className="tabular w-full text-[length:var(--text-sm)] font-medium">
         {nodes.length} başlık seçildi

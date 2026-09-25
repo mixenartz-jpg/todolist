@@ -88,7 +88,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       <NavRail />
       {/* overflow-x-hidden değil min-w-0: geniş içerik kendi kaydırma
           konteynerinde kalsın, sayfayı yana itmesin. */}
-      <main className="flex min-w-0 max-w-full flex-1 flex-col overflow-x-clip pb-16 md:pb-0">
+      {/* Alt boşluk: sekme çubuğu + iPhone ana ekran çizgisi + hızlı
+          panel düğmesine nefes payı. Eskiden düz `pb-16` (64px) idi;
+          58px'lik çubuğun üstünde sayfanın son satırı neredeyse
+          çubuğa değiyordu. */}
+      <main className="flex min-w-0 max-w-full flex-1 flex-col overflow-x-clip pb-[calc(var(--tabbar-h)+env(safe-area-inset-bottom)+2rem)] md:pb-0">
         {children}
       </main>
       {/* Hızlı panel HER sayfada: kullanıcı Planlama'da ay kurarken

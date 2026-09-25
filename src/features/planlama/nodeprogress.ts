@@ -196,16 +196,25 @@ export function sentTasksByNode(tasks: readonly Task[]): Map<string, Task[]> {
 /** Bir kalemin güne dağıtılma durumu — Planlama'nın ağaç paneli için. */
 export interface NodeDispatch {
   /**
-   * none → henüz güne gönderilmedi.
-   * sent → gönderildi, işi bitmedi.
-   * done → gönderildi ve işi bitti.
+   * none   → henüz güne gönderilmedi.
+   * sent   → gönderildi, işi bitmedi.
+   * done   → gönderildi ve işi bitti.
+   * repeat → tekrarlanan kalem (0024): hiç tükenmez, çizilmez.
    */
-  state: "none" | "sent" | "done";
+  state: "none" | "sent" | "done" | "repeat";
   /**
    * `sent` iken işaretin göstereceği gün: bitmemiş görevlerin EN ERKENİ
    * (kullanıcının sıradaki randevusu). Tarihsiz görev havuzdadır → null.
    */
   day: DateStr | null;
+  /** Kalemin KENDİ görev sayısı — tekrarlananda "3×" olarak görünür. */
+  count: number;
+  /**
+   * Kalemin KENDİ bitmemiş görevlerinin günleri, sıralı (tarihsiz =
+   * null, sonda). Birden çok güne gönderilen kalemde hepsi görünsün
+   * diye; `day` bunun ilkidir. Başlıkta (kendi görevi yoksa) boş.
+   */
+  days: (DateStr | null)[];
 }
 
 /**
@@ -229,29 +238,43 @@ export function nodeDispatch(
     const children = entry.children.map(visit);
     const mine = own.get(entry.node.id) ?? [];
 
+    const count = mine.length;
+    // `sentTasksByNode` tarihe göre sıralı, tarihsizler sonda.
+    const openDays = mine.filter((t) => !t.done).map((t) => t.dueDate);
+    const nextOpen = openDays[0] ?? null;
+
     let result: NodeDispatch;
-    if (mine.length > 0) {
+    if (entry.node.repeating) {
+      // Tekrarlanan kalem tükenmez: durumu her zaman "repeat".
+      result = { state: "repeat", day: nextOpen, count, days: openDays };
+    } else if (count > 0) {
       const open = mine.filter((t) => !t.done);
       result =
         open.length === 0
-          ? { state: "done", day: null }
-          : // `sentTasksByNode` tarihe göre sıralı, tarihsizler sonda.
-            { state: "sent", day: open[0]!.dueDate };
+          ? { state: "done", day: null, count, days: [] }
+          : { state: "sent", day: nextOpen, count, days: openDays };
     } else if (
       children.length > 0 &&
-      children.every((c) => c.state !== "none")
+      // Tekrarlanan çocuk en az bir kez gönderildiyse "karşılanmış"
+      // sayılır; hiç gönderilmediyse başlığı çizdirmez.
+      children.every((c) =>
+        c.state === "repeat" ? c.count > 0 : c.state !== "none",
+      )
     ) {
-      const pending = children.filter((c) => c.state === "sent");
+      // Tekrarlanan çocuk hiç "bitmez" — başlık en fazla "sent" olur.
+      const pending = children.filter(
+        (c) => c.state === "sent" || c.state === "repeat",
+      );
       const days = pending
         .map((c) => c.day)
         .filter((d): d is DateStr => d !== null)
         .sort();
       result =
         pending.length === 0
-          ? { state: "done", day: null }
-          : { state: "sent", day: days[0] ?? null };
+          ? { state: "done", day: null, count, days: [] }
+          : { state: "sent", day: days[0] ?? null, count, days: [] };
     } else {
-      result = { state: "none", day: null };
+      result = { state: "none", day: null, count, days: [] };
     }
 
     out.set(entry.node.id, result);

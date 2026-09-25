@@ -189,6 +189,12 @@ export interface GoalNodeRow {
   title: string;
   note: string | null;
   sort_order: number;
+  /**
+   * Tekrarlanan kalem (0024). Opsiyonel (`?`), çünkü migration ELLE
+   * çalıştırılıyor: ondan önce `select("*")` alanı döndürmez —
+   * `toGoalNode` `?? false` ile düşürür.
+   */
+  repeating?: boolean;
   created_at: string;
   updated_at: string;
 }

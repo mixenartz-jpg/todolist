@@ -36,7 +36,10 @@ interface GoalNodeRowProps {
   onAddChild: () => void;
   onDelete: () => void;
   onMove: (parentId: string | null) => void;
-  onSend: (date: DateStr, estimateMinutes: number | null) => void;
+  /** Bir ya da BİRDEN ÇOK güne gönder — her güne bir görev. */
+  onSend: (dates: readonly DateStr[], estimateMinutes: number | null) => void;
+  /** Tekrarlanan kalem bayrağını çevir (0024). */
+  onToggleRepeating: () => void;
   /**
    * Bu kalemin KENDİ görevleri — "nereye gönderildi" çipleri
    * (bkz. `sentTasksByNode`). Çocukların görevleri burada YOK.
@@ -90,6 +93,7 @@ export function GoalNodeRow({
   onDelete,
   onMove,
   onSend,
+  onToggleRepeating,
   sentTasks,
   onRecall,
   onReorder,
@@ -197,6 +201,12 @@ export function GoalNodeRow({
                 {node.title}
               </button>
 
+              {node.repeating && (
+                <span className="ml-1.5 inline-flex items-center gap-0.5 rounded-full border border-[var(--color-line-2)] px-1.5 align-middle text-[length:var(--text-2xs)] text-[var(--color-accent)]">
+                  <span aria-hidden>↻</span> Tekrarlı
+                </span>
+              )}
+
               {node.note && (
                 <p className="mt-0.5 text-[length:var(--text-xs)] leading-relaxed text-[var(--color-ink-3)]">
                   {node.note}
@@ -234,6 +244,19 @@ export function GoalNodeRow({
               onClick={() => onReorder(1)}
             >
               ↓
+            </RowButton>
+
+            {/* Tekrarlanan kalem: güne gönderilince tükenmez. */}
+            <RowButton
+              label={
+                node.repeating
+                  ? `${node.title}: tekrarlanan kalem, kapat`
+                  : `${node.title}: tekrarlanan kalem yap`
+              }
+              pressed={node.repeating}
+              onClick={onToggleRepeating}
+            >
+              ↻
             </RowButton>
 
             {/* 3. seviyede alt başlık YOK: sınır burada görünür
@@ -283,8 +306,8 @@ export function GoalNodeRow({
         <NodeSendToDay
           today={today}
           pending={pending}
-          onSend={(date, estimateMinutes) => {
-            onSend(date, estimateMinutes);
+          onSend={(dates, estimateMinutes) => {
+            onSend(dates, estimateMinutes);
             setSending(false);
           }}
           onCancel={() => setSending(false)}
@@ -473,18 +496,28 @@ function SentTasks({
 function RowButton({
   label,
   onClick,
+  pressed,
   children,
 }: {
   label: string;
   onClick: () => void;
+  /** Aç/kapa düğmesi ise basılı durumu. */
+  pressed?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
       aria-label={label}
+      aria-pressed={pressed}
+      title={label}
       onClick={onClick}
-      className="size-6 rounded text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-ink)]"
+      className={cn(
+        "size-6 rounded text-[length:var(--text-xs)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-ink)]",
+        pressed
+          ? "bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
+          : "text-[var(--color-ink-3)]",
+      )}
     >
       {children}
     </button>

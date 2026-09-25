@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/Button";
+import { useRevealOnMount } from "@/lib/ui/useRevealOnMount";
 import type { DateStr } from "@/lib/date/types";
 import { ColorSlotPicker } from "./ColorSlotPicker";
 import {
@@ -39,6 +40,9 @@ export function GoalForm({
   onCancel,
 }: GoalFormProps) {
   const [title, setTitle] = useState(initial?.title ?? "");
+  // Açılınca düğmeleriyle birlikte ekrana gelsin (bkz. useRevealOnMount).
+  const formRef = useRef<HTMLFormElement>(null);
+  useRevealOnMount(formRef);
   const [note, setNote] = useState(initial?.note ?? "");
   const [target, setTarget] = useState(
     initial?.targetCount === null || initial?.targetCount === undefined
@@ -73,7 +77,8 @@ export function GoalForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+    <form
+      ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-3">
       <input
         value={title}
         onChange={(event) => setTitle(event.target.value)}

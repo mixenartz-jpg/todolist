@@ -304,6 +304,14 @@
   /* Görev satırları arası. 0.625 → 0.5rem: ayda en çok tekrarlanan
      değer ve 2px'lik fark 40 satırda 80px kazandırıyor. */
   --row-gap: 0.5rem;
+  /*
+   * Mobil alt sekme çubuğunun yüksekliği (ölçülen ~58px, bir tık
+   * payla). Çubuk `fixed` olduğu için akışta yer tutmaz; altındaki
+   * içeriğin kaçması gereken mesafe bu. Sayfa alt boşluğu, kaydırma
+   * payı (`scroll-padding-bottom`), hızlı panel ve toplu gönderim
+   * çubuğu aynı değeri okur — biri değişirse hepsi birlikte değişir.
+   */
+  --tabbar-h: 3.75rem;
 
   /* ══ Planlama — ajanda kağıdı ölçüleri ═══════════════════════════
    * Ay ve hafta ölçeği 7 dar sütun yerine geniş yatay gün satırlarına
@@ -472,6 +480,20 @@ body {
 @layer base {
   html {
     color-scheme: dark;
+  }
+
+  /*
+   * Telefonda kaydırma payı: tarayıcı odaklanan bir kutuyu ya da
+   * `scrollIntoView` hedefini ekrana getirirken sabit sekme çubuğunun
+   * ARKASINA değil ÜSTÜNE yerleştirir. Olmadan açılan formun
+   * "Ekle / Vazgeç" düğmeleri çubuğun altında kalıyordu.
+   */
+  @media (max-width: 767px) {
+    html {
+      scroll-padding-bottom: calc(
+        var(--tabbar-h) + env(safe-area-inset-bottom) + 0.75rem
+      );
+    }
   }
 
   body {
