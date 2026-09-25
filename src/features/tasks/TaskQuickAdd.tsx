@@ -70,7 +70,7 @@ export function TaskQuickAdd({ dueDate, pending = false, onAdd }: TaskQuickAddPr
           <button
             type="submit"
             disabled={pending}
-            className="h-11 shrink-0 rounded-xl bg-[var(--color-accent)] px-4 font-medium text-[var(--color-on-accent)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
+            className="h-11 shrink-0 rounded-xl bg-[var(--color-accent-fill)] px-4 font-medium text-[var(--color-on-accent)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
           >
             Ekle
           </button>

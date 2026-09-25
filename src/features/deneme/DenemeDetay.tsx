@@ -660,7 +660,7 @@ function HataEtiketleri({
               "rounded px-1.5 py-0.5 text-[length:var(--text-2xs)] leading-tight",
               "transition-colors duration-[var(--duration-fast)]",
               aktif
-                ? "bg-[var(--color-accent)] text-[var(--color-on-accent)]"
+                ? "bg-[var(--color-accent-fill)] text-[var(--color-on-accent)]"
                 : "bg-[var(--color-surface-3)] text-[var(--color-ink-3)] hover:text-[var(--color-ink-2)]",
             )}
           >

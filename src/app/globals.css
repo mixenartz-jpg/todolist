@@ -45,7 +45,7 @@
    * ezmesi gerekiyor, yoksa ileride yazılacak bir `font-sans` sınıfı
    * sessizce yanlış aileye düşerdi.
    */
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", sans-serif;
 
   /*
@@ -57,7 +57,7 @@
    * başlıklar ve tüm SAYILAR `--font-sans` kalır — el yazısında
    * tabular hizalama yoktur ve net/sayaç sütunları kayardı.
    */
-  --font-hand: var(--font-caveat), var(--font-inter), cursive;
+  --font-hand: var(--font-caveat), var(--font-montserrat), cursive;
 
   /*
    * Yarıçap ölçeği Tailwind'in varsayılanını EZER.
@@ -75,64 +75,73 @@
 }
 
 :root {
-  /* ══ Yüzeyler — vurgunun hue'suna tonlanmış koyu rampa ════════════
+  /* ══ Yüzeyler — nötr gri zemin, lacivert kartlar ════════════════
    *
-   * İlk palet mavimsi kroma taşıyordu (#0b0d11) ve sonuç nötr değil
-   * "kirli koyu mavi"ydi; kroma sıfırlandı. Şimdi kroma GERİ GELDİ
-   * ama bu kez rastgele değil, VURGUNUN KENDİ HUE'SUNA doğru (48°).
+   * Tema turuncu–kahveden "açık mavi / gri / beyaz, ışımalı" temaya
+   * geçti. İki katman bilerek FARKLI sıcaklıkta:
    *
-   * Gerekçe: turuncu bir vurgunun yanında chroma-0 bir zemin ölü
-   * görünür — göz turuncuyu "sıcak", zemini "soğuk" okur ve ikisi
-   * aynı yüzeye ait hissettirmez. 0.008–0.010 kroma hissedilmez ama
-   * ilişkiyi kurar. Üst sınır 0.015: ötesinde zemin "kahverengi"
-   * olur ve kendi başına bir renk iddiasına döner.
+   *   zemin (bg)  : neredeyse nötr koyu gri (kroma 0.004). Kartlar
+   *                 onun üstünde "yüzen" lacivert paneller olarak
+   *                 okunsun diye zemin renksiz tutuluyor.
+   *   yüzeyler    : lacivert (hue 255, kroma 0.042–0.048). Kartın
+   *                 kimliği bu — #122134 civarı, hedef görseldeki
+   *                 kart rengiyle aynı aile.
    *
-   * Hue 48 tüm rampada AYNI — vurguyla birebir. Farklı bir hue
-   * vermek (örn. zemin 30, vurgu 48) iki ayrı sıcaklık üretir. */
-  --color-bg: oklch(0.135 0.008 48);
-  --color-surface: oklch(0.175 0.008 48);
-  --color-surface-2: oklch(0.215 0.009 48);
-  --color-surface-3: oklch(0.25 0.01 48);
+   * Kroma yüzey rampası boyunca hafifçe ARTAR: açılan yüzey griye
+   * kaçıp solmasın, lacivert kalsın.
+   *
+   * Kontrastlar tam OKLCH dönüşümüyle ölçüldü (colors.contrast.test):
+   * ink bg'de 16.7:1, surface'ta 14.7:1. */
+  --color-bg: oklch(0.19 0.004 255);
+  --color-surface: oklch(0.245 0.042 255);
+  --color-surface-2: oklch(0.28 0.045 255);
+  --color-surface-3: oklch(0.315 0.048 255);
 
   /* ══ Mürekkep ════════════════════════════════════════════════════ */
   --color-ink: oklch(0.965 0 0); /* 18.0:1 / bg */
-  --color-ink-2: oklch(0.78 0 0); /* 11.2:1 / bg */
+  --color-ink-2: oklch(0.8 0.01 250); /* 9.9:1 / bg */
   /* KURAL: `ink-3` surface-3 ÜZERİNDE metin için kullanılmaz (4.19:1,
-   * AA'nın altında). bg ve surface üzerinde geçerlidir. */
-  --color-ink-3: oklch(0.605 0 0); /* 5.2:1 / bg */
+   * AA'nın altında). bg, surface ve surface-2 üzerinde geçerlidir. */
+  --color-ink-3: oklch(0.66 0.015 250); /* 5.9:1 / bg */
   /* ASLA metin değil: eksen çizgisi, sönük ikon, ayraç. */
-  --color-ink-4: oklch(0.46 0 0); /* 2.8:1 */
+  --color-ink-4: oklch(0.5 0.02 250); /* ~2.8:1 */
 
   /* ══ Çizgiler ════════════════════════════════════════════════════ */
-  --color-line: oklch(0.285 0 0); /* varsayılan kart kenarı */
-  --color-line-2: oklch(0.335 0 0); /* girdi, ayrım */
-  --color-line-3: oklch(0.42 0 0); /* hover / seçili kenar */
+  /* Mavi tonlu: hedef görseldeki kartların ince mavi kenarı. */
+  --color-line: oklch(0.34 0.05 255); /* varsayılan kart kenarı */
+  --color-line-2: oklch(0.4 0.06 252); /* girdi, ayrım */
+  --color-line-3: oklch(0.5 0.08 250); /* hover / seçili kenar */
 
-  /* ══ Vurgu: turuncu ══════════════════════════════════════════════
+  /* ══ Vurgu: açık mavi — İKİ ROL ════════════════════════════════
    *
-   * Önce kobalttı, sonra monokrom oldu (mürekkebin kendisi), şimdi
-   * turuncu. Gerekçe ürünün kimliğiyle değişti: bu artık bir kayıt
-   * aracı değil, bir koçluk uygulaması. Monokrom kabuk sakin ama
-   * sessizdi; "ilerliyorsun" demenin görsel bir dili yoktu.
+   * Turuncudan maviye geçerken vurgu iki token'a bölündü, çünkü tek
+   * bir mavi iki işi birden yapamıyor:
    *
-   * Turuncu DEKORASYON DEĞİL, rol taşır: birincil eylem, mevcut
-   * seçim, ilerleme, tamamlanan iş. Yüzeyin ~%10-15'ini kaplar —
-   * gerisi hâlâ koyu ve sakin. Metin beyaz kalır (bkz. mürekkep);
-   * turuncu metin okunabilirliği düşürürdü.
+   *   accent      : AÇIK mavi (L=0.76). Metin, ikon, ilerleme çubuğu,
+   *                 seçili kenar, ışıma. Zeminde 8.7:1, yüzeyde 7.6:1.
+   *   accent-fill : ORTA mavi (L=0.55). Birincil düğme ve dolu çip
+   *                 DOLGUSU; üstünde BEYAZ yazı (`on-accent`) 4.87:1
+   *                 ile AA'yı geçer. Açık mavi dolgu üstünde beyaz yazı
+   *                 okunmazdı, koyu yazı ise hedef görünümden uzaktı.
    *
-   * L=0.70 seçimi ÖLÇÜLDÜ: zemin üzerinde 7.01:1, yüzey üzerinde
-   * 6.64:1 (büyük metin eşiği 3:1, gövde 4.5:1 — ikisini de aşar).
-   * Daha parlak (0.78+) neon gibi titrer, daha koyu (0.62-) zeminde
-   * kaybolur. `on-accent` ile birlikte 6.94:1 verir. */
-  --color-accent: oklch(0.7 0.19 48);
-  --color-accent-hover: oklch(0.755 0.185 48);
-  --color-accent-active: oklch(0.655 0.195 48);
+   * `accent-hover` / `accent-active` DOLGUNUN durumları — bugün
+   * yalnızca düğmeler kullanıyor. Hover bir tık açılır (4.5:1'de
+   * kalır), active bir tık koyulaşır.
+   *
+   * Vurgu hâlâ DEKORASYON DEĞİL, rol taşır: birincil eylem, mevcut
+   * seçim, ilerleme, tamamlanan iş. */
+  --color-accent: oklch(0.76 0.12 245);
+  --color-accent-fill: oklch(0.55 0.17 252);
+  --color-accent-hover: oklch(0.565 0.17 252);
+  --color-accent-active: oklch(0.52 0.165 252);
   /* Devre dışı dolgu — kromanın çoğu düşer. İnaktif bir öğe doygun
      renk taşımaz (aksi hâlde "tıklanabilir" der). */
-  --color-accent-soft: oklch(0.32 0.055 48);
-  /* Turuncu dolgu üstündeki metin. Koyu, çünkü L=0.70 turuncu üstünde
-     beyaz metin yalnızca 2.9:1 verir — eşiğin altında. */
-  --color-on-accent: oklch(0.145 0.02 48);
+  --color-accent-soft: oklch(0.33 0.05 252);
+  /* Mavi dolgu (`accent-fill`) üstündeki metin. */
+  --color-on-accent: oklch(1 0 0);
+  /* AÇIK bir zemin üstündeki koyu metin — ısı haritasının açık
+     kademeleri (3, 4). `on-accent` beyaz olunca bu rol ondan ayrıldı. */
+  --color-on-light: oklch(0.2 0.03 255);
 
   /* ══ Odak — accent'ten AYRI bir token ═════════════════════════════
    * accent artık beyaz; beyaz dolgulu birincil düğmede beyaz halka
@@ -180,35 +189,41 @@
    * belirsiz bir bulanıklık olur; ikisi üst üste binince ışık
    * gerçekten bir KAYNAKTAN çıkıyormuş gibi okunur.
    */
-  --glow-accent-sm: 0 0 10px -3px oklch(0.7 0.19 48 / 0.5),
-    0 0 24px -6px oklch(0.7 0.19 48 / 0.32);
-  --glow-accent-md: 0 0 18px -4px oklch(0.7 0.19 48 / 0.45),
-    0 0 48px -10px oklch(0.7 0.19 48 / 0.3);
-  --glow-accent-lg: 0 0 32px -6px oklch(0.72 0.19 48 / 0.42),
-    0 0 90px -16px oklch(0.7 0.19 48 / 0.28);
+  --glow-accent-sm: 0 0 10px -3px oklch(0.72 0.14 245 / 0.5),
+    0 0 24px -6px oklch(0.72 0.14 245 / 0.32);
+  --glow-accent-md: 0 0 18px -4px oklch(0.72 0.14 245 / 0.45),
+    0 0 48px -10px oklch(0.72 0.14 245 / 0.3);
+  --glow-accent-lg: 0 0 32px -6px oklch(0.76 0.13 245 / 0.42),
+    0 0 90px -16px oklch(0.72 0.14 245 / 0.28);
 
   /*
    * Kart parlaması — kenarlıkla BİRLİKTE yaşayabilen tek ışıma.
    *
    * Yukarıdaki kural "ışıyan eleman kenarlığını kaybeder" diyordu ve
    * o kural DOLU ışıma için hâlâ geçerli. Bu ayrı bir token çünkü
-   * amacı farklı: kartı vurgulamak değil, ona SICAKLIK vermek.
+   * amacı farklı: kartı vurgulamak değil, onu hafifçe PARLATMAK.
    * Opaklık o yüzden çok düşük (0.10-0.18) ve kenarlık okunur kalıyor
    * — "hayalet kart" eşiğinin altında.
    */
-  --glow-card: 0 0 0 1px oklch(0.7 0.19 48 / 0.1),
-    0 2px 20px -6px oklch(0.7 0.19 48 / 0.18);
-  --glow-card-hover: 0 0 0 1px oklch(0.7 0.19 48 / 0.22),
-    0 4px 32px -8px oklch(0.7 0.19 48 / 0.3);
+  --glow-card: 0 0 0 1px oklch(0.72 0.14 245 / 0.1),
+    0 2px 20px -6px oklch(0.72 0.14 245 / 0.18);
+  --glow-card-hover: 0 0 0 1px oklch(0.72 0.14 245 / 0.22),
+    0 4px 32px -8px oklch(0.72 0.14 245 / 0.3);
+  /*
+   * Başlık ışıması — hedef görseldeki "Hoş geldin" gibi beyaz, yumuşak
+   * bir hale. Yalnızca h1/h2'de (bkz. `@layer base`); gövde metnine
+   * uygulansa okunurluğu düşürürdü.
+   */
+  --glow-text: 0 0 18px oklch(1 0 0 / 0.22), 0 0 2px oklch(1 0 0 / 0.12);
   /*
    * Odak halkası + ışıma. `--shadow-focus`'un ÜSTÜNE değil YERİNE
    * kullanılır (iki `box-shadow` zinciri birbirini ezer).
    *
-   * Halka hâlâ beyaz (`--color-focus`): turuncu dolgulu bir düğmede
-   * turuncu halka kaybolurdu. Işıma halkanın DIŞINDA yaşar ve odağın
+   * Halka hâlâ beyaz (`--color-focus`): mavi dolgulu bir düğmede mavi
+   * halka kaybolurdu. Işıma halkanın DIŞINDA yaşar ve odağın
    * hangi öğede olduğunu uzaktan da okutur. */
   --shadow-focus-glow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-focus),
-    0 0 20px -2px oklch(0.7 0.19 48 / 0.5);
+    0 0 20px -2px oklch(0.72 0.14 245 / 0.5);
 
   /* ══ Durum ═══════════════════════════════════════════════════════
    * `danger` eskiden slot-7 (#e66767) ile neredeyse aynıydı. Tek
@@ -219,15 +234,14 @@
    * bildirimi mürekkeple verilir — yeşil onay rozeti kabuğu renklendirir. */
   --color-danger: oklch(0.7 0.19 25);
   /*
-   * `warn` SARIYA kaydırıldı (hue 82 → 95).
+   * `warn` TURUNCU/amber (hue 60).
    *
-   * Eski değer turuncu-sarıydı ve vurgu monokromken sorun değildi.
-   * Vurgu turuncu olunca (hue 48) ikisi komşu hue'lara düştü:
-   * "uyarı" ile "birincil eylem" aynı sıcaklıkta okunuyordu ve bir
-   * uyarı rozeti tıklanabilir bir şey gibi görünüyordu. 95 sarının
-   * içine girer, turuncudan açıkça ayrışır.
+   * Vurgu turuncuyken uyarı onunla karışmasın diye sarıya (95)
+   * itilmişti. Vurgu maviye dönünce o gerekçe tersine döndü: turuncu
+   * artık mavi kabukta en ayrışan sıcak renk ve hedef görseldeki
+   * "Kontenjan doluyor" hapının rengi de bu.
    */
-  --color-warn: oklch(0.85 0.16 95);
+  --color-warn: oklch(0.78 0.15 60);
   --color-good: oklch(0.72 0.17 148);
 
   /* ══ Yarıçap ═════════════════════════════════════════════════════ */
@@ -326,7 +340,7 @@
    * hissedildiği yer — malzeme modelinin bütün amacı bu.
    *
    * ── saturate(160%) neden? ──
-   * Camın altından geçen doygun şeyler: vurgu (turuncu), slot ve
+   * Camın altından geçen doygun şeyler: vurgu (mavi), slot ve
    * kategori noktaları, ısı haritası. Doygunluğu yükseltmek onları
    * malzemenin içinden renk ipucu olarak okunur tutar; camı gri bir
    * scrim'den ayıran da tam olarak bu. Vurgu turuncuya dönünce bu
@@ -350,8 +364,8 @@
    * hap gibi okunur, kabuk gibi değil. */
   /* Zemin rampasıyla aynı hue'ya tonlu — chroma-0 bir cam, tonlu bir
      zeminin üstünde "daha gri" durur ve yamalı görünür. */
-  --glass-bg: oklch(0.175 0.008 48 / 0.72);
-  --glass-bg-strong: oklch(0.155 0.008 48 / 0.86);
+  --glass-bg: oklch(0.225 0.035 255 / 0.72);
+  --glass-bg-strong: oklch(0.2 0.03 255 / 0.86);
   --glass-blur: blur(20px) saturate(160%);
   --glass-blur-strong: blur(32px) saturate(140%);
   --glass-line: oklch(1 0 0 / 0.08);
@@ -416,13 +430,13 @@
   /* ══ Yoğunluk rampası — YENİDEN DEMİRLENDİ ════════════════════════
    * Matris skor satırı, takvim tonlaması, ısı haritası.
    *
-   * `level-0` (#171b24) eski MAVİMSİ yüzeyin hemen üstünde durmak için
-   * seçilmişti; nötr zeminde tek başına mavi bir leke oluyordu. Artık
-   * nötr: "veri yok" bir seviye değildir, yokluktur.
+   * `level-0` "veri yok"tur, bir kademe değil: lacivert yüzeyin bir
+   * tık üstünde, düşük kromalı. Yüzeyden ayrılır ama kademe 1'in
+   * mavisiyle karışmaz.
    *
    * 1-4 tek hue (250), eşit açıklık adımı (0.13), koyulaşan zemine
    * karşı bir tık aydınlatıldı. */
-  --color-level-0: oklch(0.215 0 0);
+  --color-level-0: oklch(0.3 0.02 255);
   --color-level-1: oklch(0.4 0.09 250);
   --color-level-2: oklch(0.53 0.13 250);
   --color-level-3: oklch(0.66 0.145 250);
@@ -487,27 +501,31 @@ body {
      */
     background-color: var(--color-bg);
     /*
-     * İKİ kaynak: üstte geniş ve sıcak, altta dar ve derin.
+     * Üç katman: tepede soluk MAVİ bir ışık havuzu, gövdede köşegen
+     * gri bir parıltı (hedef görseldeki zeminin hafif "fırçalanmış"
+     * dokusu), sağ altta beyaza yakın zayıf bir hale.
      *
-     * Tek gradyanla denendi ve zayıf kaldı: %16 opaklık koyu zeminde
-     * neredeyse görünmüyor, ama tek katmanda artırmak tepeyi turuncu
-     * bir şeride çeviriyordu. İki kaynak yükü paylaşıyor — üstteki
-     * okuma alanını ısıtıyor, alttaki çerçeveyi kapatıyor ve ikisinin
-     * arasında kalan orta bölge doğal olarak en koyu yer oluyor.
+     * Opaklıklar bilerek düşük: zemin nötr gri kalmalı ki lacivert
+     * kartlar onun üstünde ayrışsın. Mavi havuz güçlü olsaydı kartla
+     * zemin aynı renge boğulurdu.
      */
     background-image:
       radial-gradient(
-        ellipse 95% 65% at 50% -10%,
-        oklch(0.75 0.2 48 / 0.55) 0%,
-        oklch(0.7 0.19 46 / 0.28) 22%,
-        oklch(0.64 0.16 44 / 0.1) 45%,
-        transparent 68%
+        ellipse 90% 55% at 50% -12%,
+        oklch(0.66 0.13 245 / 0.26) 0%,
+        oklch(0.6 0.12 245 / 0.1) 38%,
+        transparent 66%
+      ),
+      linear-gradient(
+        135deg,
+        transparent 20%,
+        oklch(1 0 0 / 0.025) 45%,
+        transparent 70%
       ),
       radial-gradient(
-        ellipse 80% 55% at 85% 105%,
-        oklch(0.7 0.18 38 / 0.26) 0%,
-        oklch(0.64 0.15 38 / 0.1) 35%,
-        transparent 62%
+        ellipse 70% 50% at 90% 105%,
+        oklch(0.9 0.02 245 / 0.07) 0%,
+        transparent 60%
       );
     background-attachment: fixed;
     background-repeat: no-repeat;
@@ -536,6 +554,13 @@ body {
     /* Satır uzunluklarını dengeler — çok satırlı başlıkta tek kelimelik
      * yetim satır bırakmaz. */
     text-wrap: balance;
+  }
+
+  /* Büyük başlıklar hafifçe ışır (bkz. `--glow-text`). h3 hariç:
+   * kart içi alt başlıklarda ışıma kalabalık olurdu. */
+  h1,
+  h2 {
+    text-shadow: var(--glow-text);
   }
 
   /*

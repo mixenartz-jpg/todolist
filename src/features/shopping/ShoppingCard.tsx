@@ -134,7 +134,7 @@ export function ShoppingCard({
             type="submit"
             disabled={createItem.isPending}
             className={cn(
-              "h-9 shrink-0 rounded-lg bg-[var(--color-accent)] px-3",
+              "h-9 shrink-0 rounded-lg bg-[var(--color-accent-fill)] px-3",
               "text-[length:var(--text-sm)] font-medium text-[var(--color-on-accent)]",
               "transition-colors duration-[var(--duration-fast)]",
               "hover:bg-[var(--color-accent-hover)] disabled:opacity-50",

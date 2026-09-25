@@ -102,10 +102,9 @@ export function BrandMark({
      * Yazı yedeği. `aria-label` YOK: metnin kendisi zaten okunuyor,
      * etiket eklemek ekran okuyucuda çift okumaya yol açardı.
      *
-     * Turuncu, logonun kendi rengi — `--color-accent` (oklch 0.7 0.19 48)
-     * gönderilen logonun turuncusuyla aynı aileden. Metin normalde
-     * beyaz kalır (bkz. globals.css mürekkep kuralı); marka imzası
-     * bunun bilinçli tek istisnasıdır ve 7.01:1 ile eşiği aşar.
+     * Vurgu rengi (`--color-accent`, açık mavi). Metin normalde beyaz
+     * kalır (bkz. globals.css mürekkep kuralı); marka imzası bunun
+     * bilinçli tek istisnasıdır ve zeminde 8.7:1 ile eşiği aşar.
      */
     <span
       className="font-hand font-bold leading-none text-[var(--color-accent)]"

@@ -1,12 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Caveat, Inter } from "next/font/google";
+import { Caveat, Montserrat } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
 
-const inter = Inter({
+/*
+ * Gövde ailesi — Montserrat.
+ *
+ * Inter'in yerini aldı: mavi/beyaz ışımalı temanın yuvarlak, kalın
+ * başlık sesi bu ailede (hedef görsel de Montserrat). Değişken font:
+ * ağırlık listesi verilmiyor, 400–700 arası tek dosyadan gelir.
+ * Sayılar `.tabular` ile hizalı kalır (Montserrat `tnum` taşır).
+ */
+const montserrat = Montserrat({
   // latin-ext Türkçe karakterler için gerekli: ğ, ş, ı, İ, ç, ö, ü
   subsets: ["latin", "latin-ext"],
-  variable: "--font-inter",
+  variable: "--font-montserrat",
   display: "swap",
 });
 
@@ -22,7 +30,7 @@ const inter = Inter({
  *
  * ── Neden her yerde DEĞİL? ──
  * El yazısı okunabilirliği düşürür ve sayı hizalaması yoktur. Gövde,
- * başlık ve TÜM sayılar Inter kalır (bkz. globals.css `--font-sans`).
+ * başlık ve TÜM sayılar Montserrat kalır (bkz. globals.css `--font-sans`).
  * Caveat yalnızca marka anlarında görünür: logo komşuluğu, deneme adı,
  * koç cümlesi. Beşinci bir yere eklemek onu dekorasyona çevirir —
  * ışıma (glow) token'ıyla aynı disiplin.
@@ -61,7 +69,7 @@ export const viewport: Viewport = {
   /* `--color-bg` ile aynı değer; `manifest.ts` ile birlikte değişir.
    * `statusBarStyle: "black-translucent"` (yukarıda) ilk kez gerçekten
    * doğru: durum çubuğu artık altındaki cam kabuğun üstünde duruyor. */
-  themeColor: "#080808",
+  themeColor: "#131416",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -73,7 +81,7 @@ export default function RootLayout({
   return (
     <html
       lang="tr"
-      className={`${inter.variable} ${caveat.variable} h-full antialiased`}
+      className={`${montserrat.variable} ${caveat.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>

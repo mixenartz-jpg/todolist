@@ -14,33 +14,36 @@ import { SLOT_HEX, SLOT_COUNT, SLOT_NAMES } from "./colors";
  */
 
 /** `globals.css` ile AYNI değerler. Değişirse burası da değişmeli. */
-const SURFACE_L = 0.175; // --color-surface: oklch(0.175 0.008 48)
-const BG_L = 0.135; // --color-bg
-const SURFACE_3_L = 0.25; // --color-surface-3
+const BG = { L: 0.19, C: 0.004, H: 255 }; // --color-bg
+const SURFACE = { L: 0.245, C: 0.042, H: 255 }; // --color-surface
+const SURFACE_2 = { L: 0.28, C: 0.045, H: 255 }; // --color-surface-2
+const SURFACE_3 = { L: 0.315, C: 0.048, H: 255 }; // --color-surface-3
+const SURFACE_L = SURFACE.L;
+const BG_L = BG.L;
+const SURFACE_3_L = SURFACE_3.L;
 
 /*
- * Yüzey rampası artık kroma TAŞIYOR (0.008–0.010, hue 48 — vurgunun
- * kendi hue'su). Kroma bu kadar düşükken parlanıklığa etkisi
- * ölçülebilir ama küçüktür; `luminanceFromOklchL` (chroma-0 kestirmesi)
- * yüzey testleri için hâlâ yeterince doğru ve kontrolleri DAHA SIKI
- * tarafta tutar.
- *
- * Vurgu (kroma 0.19) için bu kestirme geçersiz: tam OKLCH → sRGB
- * dönüşümü gerekir ve aşağıda `oklchToSrgb` onu yapıyor.
+ * Yüzeyler artık LACİVERT (kroma 0.042–0.048). Bu kromada chroma-0
+ * kestirmesi (`luminanceFromOklchL`) parlaklığı birkaç yüzde
+ * saptırıyor; yüzey kontrastları bu yüzden tam OKLCH → sRGB
+ * dönüşümüyle (`luminanceFromOklch`) ölçülüyor.
  */
 
-/** `globals.css` vurgu rampası. */
-const ACCENT = { L: 0.7, C: 0.19, H: 48 };
-const ACCENT_HOVER = { L: 0.755, C: 0.185, H: 48 };
-const ON_ACCENT = { L: 0.145, C: 0.02, H: 48 };
-const WARN = { L: 0.85, C: 0.16, H: 95 };
+/** `globals.css` vurgu rampası — iki rol (bkz. globals.css). */
+const ACCENT = { L: 0.76, C: 0.12, H: 245 }; // metin, çubuk, ışıma
+const ACCENT_FILL = { L: 0.55, C: 0.17, H: 252 }; // düğme dolgusu
+const ACCENT_HOVER = { L: 0.565, C: 0.17, H: 252 };
+const ACCENT_ACTIVE = { L: 0.52, C: 0.165, H: 252 };
+const ON_ACCENT = { L: 1, C: 0, H: 0 }; // beyaz
+const ON_LIGHT = { L: 0.2, C: 0.03, H: 255 };
+const WARN = { L: 0.78, C: 0.15, H: 60 };
 
-const INK = { name: "ink", L: 0.965 };
-const INK_2 = { name: "ink-2", L: 0.78 };
-const INK_3 = { name: "ink-3", L: 0.605 };
+const INK = { name: "ink", L: 0.965, C: 0, H: 0 };
+const INK_2 = { name: "ink-2", L: 0.8, C: 0.01, H: 250 };
+const INK_3 = { name: "ink-3", L: 0.66, C: 0.015, H: 250 };
 
 /** Yoğunluk rampası — `globals.css` `--color-level-*` açıklıkları. */
-const LEVEL_L = [0.215, 0.4, 0.53, 0.66, 0.8];
+const LEVEL_L = [0.3, 0.4, 0.53, 0.66, 0.8];
 
 /**
  * sRGB hex → bağıl parlaklık (WCAG 2.1 tanımı).
@@ -120,10 +123,7 @@ describe("rutin kimlik renkleri (slot)", () => {
   test.each(SLOT_HEX.map((hex, i) => [i, hex, SLOT_NAMES[i]] as const))(
     "slot %i (%s / %s) yüzeye karşı en az 3:1 kontrast taşır",
     (_i, hex) => {
-      const ratio = contrast(
-        relativeLuminance(hex),
-        luminanceFromOklchL(SURFACE_L),
-      );
+      const ratio = contrast(relativeLuminance(hex), luminanceFromOklch(SURFACE));
       expect(ratio).toBeGreaterThanOrEqual(3);
     },
   );
@@ -183,15 +183,15 @@ describe("yoğunluk rampası (level)", () => {
   });
 
   /*
-   * `MatrixScoreRow` ve `CalendarDayCell` kademe ≥3'te metni
-   * `--color-on-accent`e (koyu) çeviriyor. Bu eşiğin doğru yerde
-   * olduğunu ölçer: 3 ve 4 koyu metin taşıyacak kadar açık olmalı.
+   * `MatrixScoreRow` kademe ≥3'te metni `--color-on-light`a (koyu)
+   * çeviriyor. Bu eşiğin doğru yerde olduğunu ölçer: 3 ve 4 koyu metin
+   * taşıyacak kadar açık olmalı.
    */
   test("kademe 3 ve 4 koyu metin taşıyacak kadar açıktır", () => {
     for (const level of [3, 4]) {
       const ratio = contrast(
         luminanceFromOklchL(LEVEL_L[level]!),
-        luminanceFromOklchL(0.14), // --color-on-accent
+        luminanceFromOklch(ON_LIGHT),
       );
       expect(ratio).toBeGreaterThanOrEqual(4.5);
     }
@@ -200,20 +200,20 @@ describe("yoğunluk rampası (level)", () => {
 
 describe("mürekkep rampası", () => {
   test.each([
-    [INK, "bg", BG_L, 4.5],
-    [INK, "surface", SURFACE_L, 4.5],
-    [INK_2, "bg", BG_L, 4.5],
-    [INK_2, "surface", SURFACE_L, 4.5],
-    [INK_3, "bg", BG_L, 4.5],
-    [INK_3, "surface", SURFACE_L, 4.5],
+    [INK, "bg", BG],
+    [INK, "surface", SURFACE],
+    [INK, "surface-2", SURFACE_2],
+    [INK_2, "bg", BG],
+    [INK_2, "surface", SURFACE],
+    [INK_2, "surface-2", SURFACE_2],
+    [INK_3, "bg", BG],
+    [INK_3, "surface", SURFACE],
+    [INK_3, "surface-2", SURFACE_2],
   ] as const)(
     "%s zemine (%s) karşı AA gövde metni eşiğini geçer",
-    (ink, _surfaceName, surfaceL, min) => {
-      const ratio = contrast(
-        luminanceFromOklchL(ink.L),
-        luminanceFromOklchL(surfaceL),
-      );
-      expect(ratio).toBeGreaterThanOrEqual(min);
+    (ink, _surfaceName, surface) => {
+      const ratio = contrast(luminanceFromOklch(ink), luminanceFromOklch(surface));
+      expect(ratio).toBeGreaterThanOrEqual(4.5);
     },
   );
 
@@ -225,8 +225,8 @@ describe("mürekkep rampası", () => {
    */
   test("ink-3 surface-3 üzerinde AA'yı geçemez (kuralın gerekçesi)", () => {
     const ratio = contrast(
-      luminanceFromOklchL(INK_3.L),
-      luminanceFromOklchL(SURFACE_3_L),
+      luminanceFromOklch(INK_3),
+      luminanceFromOklch(SURFACE_3),
     );
     expect(ratio).toBeLessThan(4.5);
   });
@@ -238,66 +238,62 @@ describe("mürekkep rampası", () => {
 });
 
 describe("yüzey rampası", () => {
-  test("nötr siyah rampa monoton açılır", () => {
+  test("yüzey rampası monoton açılır", () => {
     expect(SURFACE_L).toBeGreaterThan(BG_L);
     expect(SURFACE_3_L).toBeGreaterThan(SURFACE_L);
   });
 });
 
 /*
- * VURGU RAMPASI — turuncu.
+ * VURGU RAMPASI — mavi, iki rol.
  *
- * Palet monokromdan (accent = ink) turuncuya döndü. Monokromken
- * kontrast sorusu yoktu: vurgu zaten mürekkebin kendisiydi. Turuncu
- * kendi parlaklığını getiriyor ve her iddia ölçülmeli.
- *
- * `globals.css`'teki yorumlarda yazılı sayılar BURADAN geliyor;
- * değerler değişirse bu testler kırmızıya döner ve yorumlar da
- * güncellenmek zorunda kalır.
+ * `accent` açık mavi (metin, çubuk, ışıma), `accent-fill` orta mavi
+ * (düğme dolgusu, üstünde BEYAZ yazı). `globals.css`'teki yorumlarda
+ * yazılı sayılar BURADAN geliyor; değerler değişirse bu testler
+ * kırmızıya döner ve yorumlar da güncellenmek zorunda kalır.
  */
-describe("vurgu rampası (turuncu)", () => {
-  const bgLum = luminanceFromOklchL(BG_L);
-  const surfaceLum = luminanceFromOklchL(SURFACE_L);
+describe("vurgu rampası (mavi)", () => {
+  const bgLum = luminanceFromOklch(BG);
+  const surfaceLum = luminanceFromOklch(SURFACE);
 
-  test("vurgu zemine karşı en az 3:1 taşır (büyük metin, ikon)", () => {
-    expect(contrast(luminanceFromOklch(ACCENT), bgLum)).toBeGreaterThanOrEqual(
-      3,
+  test("açık mavi vurgu zemine karşı gövde metni eşiğini (4.5:1) geçer", () => {
+    expect(contrast(luminanceFromOklch(ACCENT), bgLum)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test("açık mavi vurgu yüzeye karşı 4.5:1 geçer", () => {
+    expect(contrast(luminanceFromOklch(ACCENT), surfaceLum)).toBeGreaterThanOrEqual(
+      4.5,
     );
   });
 
-  test("vurgu yüzeye karşı en az 3:1 taşır", () => {
-    expect(
-      contrast(luminanceFromOklch(ACCENT), surfaceLum),
-    ).toBeGreaterThanOrEqual(3);
-  });
-
   /*
-   * EN KRİTİK KONTROL. Birincil düğmenin dolgusu vurgu, METNİ
-   * `on-accent`. Bu oran 4.5'in altına düşerse düğme yazısı
+   * EN KRİTİK KONTROL. Birincil düğmenin dolgusu `accent-fill`, METNİ
+   * beyaz (`on-accent`). Bu oran 4.5'in altına düşerse düğme yazısı
    * okunmaz olur ve bunu hiçbir derleme hatası söylemez.
    *
-   * Beyaz metin burada YETMEZ: L=0.70 turuncu üstünde beyaz yalnızca
-   * ~2.9:1 verir. `on-accent`'in koyu olmasının sebebi bu.
+   * Açık mavi (`accent`) dolgu üstünde beyaz yazı ~2:1 verirdi —
+   * dolgunun ayrı ve koyu bir token olmasının sebebi bu.
    */
-  test("dolgu üstündeki metin (on-accent) en az 4.5:1 taşır", () => {
+  test.each([
+    ["dolgu", ACCENT_FILL],
+    ["hover", ACCENT_HOVER],
+    ["active", ACCENT_ACTIVE],
+  ] as const)("%s üstündeki beyaz metin en az 4.5:1 taşır", (_name, fill) => {
     expect(
-      contrast(luminanceFromOklch(ON_ACCENT), luminanceFromOklch(ACCENT)),
+      contrast(luminanceFromOklch(ON_ACCENT), luminanceFromOklch(fill)),
     ).toBeGreaterThanOrEqual(4.5);
   });
 
-  test("hover dolgusunda da metin en az 4.5:1 taşır", () => {
+  test("açık vurgu üstünde beyaz metin AA'yı geçemez (iki rolün gerekçesi)", () => {
     expect(
-      contrast(luminanceFromOklch(ON_ACCENT), luminanceFromOklch(ACCENT_HOVER)),
-    ).toBeGreaterThanOrEqual(4.5);
+      contrast(luminanceFromOklch(ON_ACCENT), luminanceFromOklch(ACCENT)),
+    ).toBeLessThan(4.5);
   });
 
   /*
-   * `warn` ile `accent` AYRIŞMALI.
-   *
-   * İkisi de sıcak renkler ve eski `warn` (hue 82) turuncu-sarıydı:
-   * vurgu turuncuya dönünce "uyarı" ile "birincil eylem" aynı
-   * sıcaklıkta okunuyordu. Hue farkı bu ayrımın mekanizmasıdır ve
-   * bu test onu dondurur.
+   * `warn` ile `accent` AYRIŞMALI: uyarı rozeti tıklanabilir bir şey
+   * gibi okunmamalı. Turuncu (60) ile mavi (245) arasındaki hue farkı
+   * bu ayrımın mekanizması.
    */
   test("uyarı rengi vurgudan en az 40 derece hue uzaklıkta durur", () => {
     expect(Math.abs(WARN.H - ACCENT.H)).toBeGreaterThanOrEqual(40);

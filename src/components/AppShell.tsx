@@ -213,10 +213,10 @@ function MobileTabBar() {
               "active:scale-[0.97]",
               // Aktif sekme ışır — "buradasın"ın dört meşru
               // ışıma yerinden biri (bkz. globals.css glow bloğu).
-              // İkon ve etiket turuncuya döner, ışıma ikonun
+              // İkon ve etiket maviye döner, ışıma ikonun
               // arkasından gelir.
               active
-                ? "font-medium text-[var(--color-accent)] [&>svg]:drop-shadow-[0_0_6px_oklch(0.7_0.19_48/0.55)]"
+                ? "font-medium text-[var(--color-accent)] [&>svg]:drop-shadow-[0_0_6px_oklch(0.72_0.14_245/0.55)]"
                 : "text-[var(--color-ink-3)]",
             )}
           >

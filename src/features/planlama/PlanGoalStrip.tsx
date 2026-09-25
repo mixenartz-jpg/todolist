@@ -147,7 +147,7 @@ function HedefSatiri({
             "grid size-6 shrink-0 place-items-center rounded text-[length:var(--text-base)] leading-none",
             "transition-colors duration-[var(--duration-fast)]",
             open
-              ? "bg-[var(--color-accent)] text-[var(--color-on-accent)]"
+              ? "bg-[var(--color-accent-fill)] text-[var(--color-on-accent)]"
               : "text-[var(--color-ink-3)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-ink)]",
           )}
         >

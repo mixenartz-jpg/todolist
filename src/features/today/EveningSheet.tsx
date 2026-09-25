@@ -187,7 +187,7 @@ export function EveningSheet({
               className={cn(
                 "inline-flex h-10 items-center rounded-lg px-4",
                 "text-[length:var(--text-sm)] font-medium",
-                "bg-[var(--color-accent)] text-[var(--color-on-accent)]",
+                "bg-[var(--color-accent-fill)] text-[var(--color-on-accent)]",
                 "transition-shadow duration-[var(--duration-fast)]",
                 "hover:shadow-[var(--glow-accent-md)]",
               )}
@@ -227,7 +227,7 @@ function ActionButton({
         "h-8 rounded-md px-2.5 text-[length:var(--text-xs)]",
         "transition-colors duration-[var(--duration-fast)]",
         active
-          ? "bg-[var(--color-accent)] text-[var(--color-on-accent)]"
+          ? "bg-[var(--color-accent-fill)] text-[var(--color-on-accent)]"
           : "bg-[var(--color-surface-2)] text-[var(--color-ink-3)] hover:text-[var(--color-ink-2)]",
       )}
     >

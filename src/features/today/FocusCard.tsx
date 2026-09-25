@@ -142,7 +142,7 @@ export function FocusCard({
           className={cn(
             "inline-flex h-10 items-center rounded-lg px-4",
             "text-[length:var(--text-sm)] font-medium",
-            "bg-[var(--color-accent)] text-[var(--color-on-accent)]",
+            "bg-[var(--color-accent-fill)] text-[var(--color-on-accent)]",
             "transition-shadow duration-[var(--duration-fast)]",
             "hover:shadow-[var(--glow-accent-md)]",
           )}

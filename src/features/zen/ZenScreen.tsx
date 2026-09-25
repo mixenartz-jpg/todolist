@@ -394,7 +394,7 @@ function ZenPhase({
           className={cn(
             "inline-flex h-11 items-center rounded-lg px-5",
             "text-[length:var(--text-sm)] font-medium",
-            "bg-[var(--color-accent)] text-[var(--color-on-accent)]",
+            "bg-[var(--color-accent-fill)] text-[var(--color-on-accent)]",
             "transition-shadow duration-[var(--duration-fast)]",
             "hover:shadow-[var(--glow-accent-md)]",
           )}
@@ -422,7 +422,7 @@ function ZenPhase({
             className={cn(
               "inline-flex h-11 items-center rounded-lg px-5",
               "text-[length:var(--text-sm)] font-medium",
-              "bg-[var(--color-accent)] text-[var(--color-on-accent)]",
+              "bg-[var(--color-accent-fill)] text-[var(--color-on-accent)]",
               "transition-shadow duration-[var(--duration-fast)]",
               "hover:shadow-[var(--glow-accent-md)]",
             )}

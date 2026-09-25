@@ -87,7 +87,7 @@ function HaftaSatiri({
         <p className="flex items-center gap-2 text-[length:var(--text-sm)] font-medium">
           {formatWeekRange(hafta.weekStart, hafta.weekEnd)}
           {hafta.hasToday && (
-            <span className="rounded bg-[var(--color-accent)] px-1.5 py-0.5 text-[length:var(--text-2xs)] font-medium text-[var(--color-on-accent)]">
+            <span className="rounded bg-[var(--color-accent-fill)] px-1.5 py-0.5 text-[length:var(--text-2xs)] font-medium text-[var(--color-on-accent)]">
               Bu hafta
             </span>
           )}

@@ -15,6 +15,11 @@ import { cn } from "@/lib/ui/cn";
  * olmaktan çıkarıp YAPISAL hâle getiriyor: `Card`'a gölge geçirmenin
  * bir yolu yok, çünkü öyle bir prop yok. Gölge yüzen kabuğun hakkı.
  *
+ * TEK istisna `--glow-card`: siyah bir gölge değil, kenarlıkla
+ * BİRLİKTE yaşamak için tasarlanmış düşük opaklıklı mavi bir hale
+ * (bkz. globals.css). Mavi/ışımalı temada kartları zeminden ayıran
+ * şey o; tondan gelir, prop'la eklenemez.
+ *
  * ── İç içe kart YASAK ──
  * `impeccable`: "nested cards are always wrong". İç içe bir kutu
  * gerekiyorsa `tone="sunken"` kullanılır — kenarlıksız, bir tık koyu.
@@ -24,15 +29,17 @@ type CardTone = "default" | "sunken" | "selected" | "target";
 type CardPad = "none" | "sm" | "md";
 
 const TONES: Record<CardTone, string> = {
+  /* Sol üstten hafif bir parlama: lacivert kart düz bir blok değil,
+   * ışığı alan bir panel gibi okunur (hedef görseldeki kartlar). */
   default:
-    "border border-[var(--color-line)] bg-[var(--color-surface)]",
+    "border border-[var(--color-line)] bg-[var(--color-surface)] bg-[image:linear-gradient(160deg,oklch(1_0_0/0.035),transparent_55%)] shadow-[var(--glow-card)]",
   /* İç içe kutu: kart DEĞİL, kartın içindeki çukur alan. Kenarlığı
    * yok — iki kenarlığın yan yana gelmesi çift çizgi yapardı. */
   sunken: "bg-[var(--color-surface-2)]",
   /* Seçili: kenar mürekkebe yaklaşır. Renk tek başına bilgi taşımaz;
    * çağıran ayrıca `aria-selected`/`aria-current` vermelidir. */
   selected:
-    "border border-[var(--color-line-3)] bg-[var(--color-surface-2)]",
+    "border border-[var(--color-line-3)] bg-[var(--color-surface-2)] shadow-[var(--glow-card-hover)]",
   /* Yerleştirme hedefi: kesikli kenar + zemin yıkaması. İki kanal —
    * kenar STİLİ tek başına renk körlüğünde de, düşük kontrastta da
    * zayıf bir sinyal. */
