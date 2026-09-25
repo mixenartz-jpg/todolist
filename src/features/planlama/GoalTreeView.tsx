@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, type KeyboardEvent } from "react";
 import type { DateStr } from "@/lib/date/types";
+import type { Task } from "@/features/tasks/types";
 import { GoalNodeForm } from "./GoalNodeForm";
 import { GoalNodeRow } from "./GoalNodeRow";
 import type { NodeProgress } from "./nodeprogress";
@@ -39,7 +40,10 @@ interface GoalTreeViewProps {
   onRename: (id: string, values: { title: string; note: string | null }) => void;
   onDelete: (id: string) => void;
   onMove: (id: string, parentId: string | null) => void;
-  onSend: (id: string, date: DateStr) => void;
+  onSend: (id: string, date: DateStr, estimateMinutes: number | null) => void;
+  /** Kalem kimliğinden KENDİ görevlerine (bkz. `sentTasksByNode`). */
+  sentTasks: ReadonlyMap<string, readonly Task[]>;
+  onRecall: (taskId: string) => void;
   onReorder: (id: string, delta: -1 | 1) => void;
   onDragStart?: (id: string) => void;
 }
@@ -80,6 +84,8 @@ export function GoalTreeView({
   onDelete,
   onMove,
   onSend,
+  sentTasks,
+  onRecall,
   onReorder,
   onDragStart,
 }: GoalTreeViewProps) {
@@ -157,7 +163,11 @@ export function GoalTreeView({
           onRename={(values) => onRename(item.node.id, values)}
           onDelete={() => onDelete(item.node.id)}
           onMove={(parentId) => onMove(item.node.id, parentId)}
-          onSend={(date) => onSend(item.node.id, date)}
+          onSend={(date, estimateMinutes) =>
+            onSend(item.node.id, date, estimateMinutes)
+          }
+          sentTasks={sentTasks.get(item.node.id) ?? NO_TASKS}
+          onRecall={onRecall}
           onReorder={(delta) => onReorder(item.node.id, delta)}
           onDragStart={onDragStart && (() => onDragStart(item.node.id))}
         />
@@ -165,6 +175,9 @@ export function GoalTreeView({
     </ul>
   );
 }
+
+/** Görevi olmayan kalemler için tek, sabit boş liste. */
+const NO_TASKS: readonly Task[] = [];
 
 /**
  * Tek satır + altına açılabilen "yeni alt başlık" formu.
@@ -195,6 +208,8 @@ function TreeRow({
   onDelete,
   onMove,
   onSend,
+  sentTasks,
+  onRecall,
   onReorder,
   onDragStart,
 }: {
@@ -217,7 +232,9 @@ function TreeRow({
   onRename: (values: { title: string; note: string | null }) => void;
   onDelete: () => void;
   onMove: (parentId: string | null) => void;
-  onSend: (date: DateStr) => void;
+  onSend: (date: DateStr, estimateMinutes: number | null) => void;
+  sentTasks: readonly Task[];
+  onRecall: (taskId: string) => void;
   onReorder: (delta: -1 | 1) => void;
   onDragStart?: () => void;
 }) {
@@ -266,6 +283,8 @@ function TreeRow({
       onDelete={onDelete}
       onMove={onMove}
       onSend={onSend}
+      sentTasks={sentTasks}
+      onRecall={onRecall}
       onReorder={onReorder}
       onDragStart={onDragStart}
     >

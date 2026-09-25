@@ -159,3 +159,35 @@ export function treeRootRatio(
 
   return total === 0 ? null : done / total;
 }
+
+/**
+ * Her kalemin KENDİ görevleri — "bu kalem nereye gönderildi?"
+ *
+ * `goalTreeProgress`'in aksine alt ağacı TOPLAMAZ: satırda gösterilen
+ * çipler o kalemin kendisinden doğan görevlerdir; çocukların görevleri
+ * kendi satırlarında görünür. Toplansaydı aynı görev her atasının
+ * satırında bir kez daha "geri al" düğmesiyle çıkardı.
+ *
+ * Sıra tarihe göre; tarihsizler (havuza geri atılmış) SONDA.
+ */
+export function sentTasksByNode(tasks: readonly Task[]): Map<string, Task[]> {
+  const out = new Map<string, Task[]>();
+
+  for (const task of tasks) {
+    if (task.nodeId === null) continue;
+    const list = out.get(task.nodeId);
+    if (list) list.push(task);
+    else out.set(task.nodeId, [task]);
+  }
+
+  for (const list of out.values()) {
+    list.sort((a, b) => {
+      if (a.dueDate === b.dueDate) return 0;
+      if (a.dueDate === null) return 1;
+      if (b.dueDate === null) return -1;
+      return a.dueDate < b.dueDate ? -1 : 1;
+    });
+  }
+
+  return out;
+}
