@@ -131,6 +131,49 @@ export function useEditGoalNode(onError?: (message: string) => void) {
 }
 
 /**
+ * Kalemi tekrarlanan / tekrarsız yap (0024) — iyimser.
+ *
+ * Görevlere dokunmaz: bayrak yalnızca kalemin "tükenip tükenmediğini"
+ * söyler, önceden gönderilmiş görevler olduğu gibi kalır.
+ */
+export function useSetNodeRepeating(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      repeating,
+    }: NodeFieldVars & { repeating: boolean }) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("goal_nodes")
+        .update({ repeating })
+        .eq("id", id);
+      if (error) throw error;
+    },
+
+    onMutate: async ({ planGoalId, id, repeating }) => {
+      const key = qk.goalNodesFor(planGoalId);
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<GoalNode[]>(key);
+
+      qc.setQueryData<GoalNode[]>(key, (list) =>
+        list?.map((n) => (n.id === id ? { ...n, repeating } : n)),
+      );
+
+      return { previous, key };
+    },
+
+    onError: (error, _vars, context) => {
+      if (context) qc.setQueryData(context.key, context.previous);
+      onError?.(errorText(error));
+    },
+
+    onSettled: (_data, _error, vars) => invalidateTree(qc, vars.planGoalId),
+  });
+}
+
+/**
  * Düğümü ve TÜM ALTINI sil.
  *
  * İyimser silme `subtreeIds()` ile tüm dalı önbellekten çıkarıyor —

@@ -237,8 +237,8 @@ describe("nodeDispatch", () => {
 
   it("görevi olmayan kalem gönderilmemiştir", () => {
     const map = nodeDispatch(nodes, []);
-    expect(map.get("a")).toEqual({ state: "none", day: null });
-    expect(map.get("p")).toEqual({ state: "none", day: null });
+    expect(map.get("a")).toEqual({ state: "none", day: null, count: 0, days: [] });
+    expect(map.get("p")).toEqual({ state: "none", day: null, count: 0, days: [] });
   });
 
   it("gönderilen kalem en erken bitmemiş günü taşır", () => {
@@ -247,7 +247,13 @@ describe("nodeDispatch", () => {
       task({ nodeId: "a", dueDate: "2026-09-26" }),
       task({ nodeId: "a", dueDate: "2026-09-24", done: true }),
     ]);
-    expect(map.get("a")).toEqual({ state: "sent", day: "2026-09-26" });
+    expect(map.get("a")).toEqual({
+      state: "sent",
+      day: "2026-09-26",
+      count: 3,
+      // Birden çok güne gönderilen kalemin bitmemiş BÜTÜN günleri.
+      days: ["2026-09-26", "2026-09-29"],
+    });
   });
 
   it("görevlerinin hepsi bitmişse done", () => {
@@ -265,7 +271,7 @@ describe("nodeDispatch", () => {
       task({ nodeId: "a", dueDate: "2026-09-28" }),
       task({ nodeId: "b", dueDate: "2026-09-26", done: true }),
     ]);
-    expect(map.get("p")).toEqual({ state: "sent", day: "2026-09-28" });
+    expect(map.get("p")).toMatchObject({ state: "sent", day: "2026-09-28" });
   });
 
   it("bütün çocuklar bitince üst başlık done", () => {
@@ -278,6 +284,40 @@ describe("nodeDispatch", () => {
 
   it("başlığın kendisi gönderildiyse çocuklara bakılmaz", () => {
     const map = nodeDispatch(nodes, [task({ nodeId: "p", dueDate: "2026-09-27" })]);
-    expect(map.get("p")).toEqual({ state: "sent", day: "2026-09-27" });
+    expect(map.get("p")).toMatchObject({ state: "sent", day: "2026-09-27", count: 1 });
+  });
+});
+
+describe("nodeDispatch — tekrarlanan kalem", () => {
+  const parent = goalNode({ id: "p" });
+  const r = goalNode({ id: "r", parentId: "p", repeating: true, sortOrder: 0 });
+  const b = goalNode({ id: "b", parentId: "p", sortOrder: 1 });
+  const nodes = [parent, r, b];
+
+  it("bitmiş görevleri olsa da tükenmez, sayısını taşır", () => {
+    const map = nodeDispatch(nodes, [
+      task({ nodeId: "r", dueDate: "2026-09-24", done: true }),
+      task({ nodeId: "r", dueDate: "2026-09-25", done: true }),
+      task({ nodeId: "r", dueDate: "2026-09-27" }),
+    ]);
+    expect(map.get("r")).toEqual({
+      state: "repeat",
+      day: "2026-09-27",
+      count: 3,
+      days: ["2026-09-27"],
+    });
+  });
+
+  it("hiç gönderilmemiş tekrarlanan çocuk başlığı çizdirmez", () => {
+    const map = nodeDispatch(nodes, [task({ nodeId: "b", done: true })]);
+    expect(map.get("p")!.state).toBe("none");
+  });
+
+  it("gönderilmiş tekrarlanan çocukla başlık en fazla sent olur", () => {
+    const map = nodeDispatch(nodes, [
+      task({ nodeId: "r", done: true }),
+      task({ nodeId: "b", done: true }),
+    ]);
+    expect(map.get("p")!.state).toBe("sent");
   });
 });

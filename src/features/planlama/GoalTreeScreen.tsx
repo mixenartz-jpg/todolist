@@ -22,6 +22,7 @@ import {
   useMoveGoalNode,
   useEditGoalNode,
   useReorderGoalNodes,
+  useSetNodeRepeating,
 } from "./nodeMutations";
 import { useGoalNodes } from "./nodeQueries";
 import { usePlanGoals } from "./queries";
@@ -70,6 +71,7 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
   const distribute = useDistributeNodes(toast.show);
   // "Geri al": kalemden doğan görevi siler (iyimser — çip anında gider).
   const deleteTask = useDeleteTask(toast.show);
+  const setRepeating = useSetNodeRepeating(toast.show);
 
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
@@ -128,20 +130,25 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
     return next;
   }
 
-  function sendToDay(
+  /**
+   * Seçilen kalemleri bir ya da BİRDEN ÇOK güne gönderir: her gün
+   * için her kaleme bir görev. Tek `insert` — beş günlük bir gönderim
+   * beş ağ turu değil.
+   */
+  function sendToDays(
     nodeIds: readonly string[],
-    date: DateStr,
+    dates: readonly DateStr[],
     estimateMinutes: number | null = null,
   ) {
     const chosen = nodes.filter((n) => nodeIds.includes(n.id));
-    const plan = planDistribution(
-      chosen,
-      { from: date, to: date, perDayCap: null },
-      goalId,
+    const drafts = dates.flatMap(
+      (date) =>
+        planDistribution(chosen, { from: date, to: date, perDayCap: null }, goalId)
+          .drafts,
     );
-    if (plan.drafts.length === 0) return;
+    if (drafts.length === 0) return;
     distribute.mutate({
-      drafts: plan.drafts.map((draft) => ({ ...draft, estimateMinutes })),
+      drafts: drafts.map((draft) => ({ ...draft, estimateMinutes })),
     });
   }
 
@@ -244,9 +251,18 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
               sortOrder: nextSiblingOrder(nodes, parentId),
             })
           }
-          onSend={(id, date, estimateMinutes) =>
-            sendToDay([id], date, estimateMinutes)
+          onSend={(id, dates, estimateMinutes) =>
+            sendToDays([id], dates, estimateMinutes)
           }
+          onToggleRepeating={(id) => {
+            const node = nodes.find((n) => n.id === id);
+            if (!node) return;
+            setRepeating.mutate({
+              planGoalId: goalId,
+              id,
+              repeating: !node.repeating,
+            });
+          }}
           sentTasks={sentTasks}
           onRecall={(taskId) =>
             deleteTask.mutate(taskId, {

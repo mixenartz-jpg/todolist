@@ -57,6 +57,8 @@ export function toGoalNode(row: GoalNodeRow): GoalNode {
     title: row.title,
     note: row.note,
     sortOrder: row.sort_order,
+    // `?? false`: 0024 henüz çalıştırılmadıysa alan HİÇ gelmez.
+    repeating: row.repeating ?? false,
   };
 }
 

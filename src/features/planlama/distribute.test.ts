@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { asDateStr } from "@/lib/date/date";
 import { goalNode } from "@/features/testing/fixtures";
-import { parsePerDayCap, planDistribution } from "./distribute";
+import { multiDayShortcut, parsePerDayCap, planDistribution } from "./distribute";
 
 const d = asDateStr;
 
@@ -187,5 +187,43 @@ describe("parsePerDayCap", () => {
     expect(parsePerDayCap("iki")).toBeUndefined();
     expect(parsePerDayCap("2.5")).toBeUndefined();
     expect(parsePerDayCap("-1")).toBeUndefined();
+  });
+});
+
+describe("multiDayShortcut", () => {
+  const friday = d("2026-09-25");
+  const saturday = d("2026-09-26");
+
+  it("bu haftanın kalanı bugünden Pazar'a", () => {
+    expect(multiDayShortcut(friday, "rest-of-week")).toEqual([
+      d("2026-09-25"),
+      d("2026-09-26"),
+      d("2026-09-27"),
+    ]);
+  });
+
+  it("hafta içi: bu haftanın kalan iş günleri", () => {
+    expect(multiDayShortcut(d("2026-09-23"), "weekdays")).toEqual([
+      d("2026-09-23"),
+      d("2026-09-24"),
+      d("2026-09-25"),
+    ]);
+  });
+
+  it("hafta sonundaysa gelecek haftanın Pzt–Cum'u", () => {
+    expect(multiDayShortcut(saturday, "weekdays")).toEqual([
+      d("2026-09-28"),
+      d("2026-09-29"),
+      d("2026-09-30"),
+      d("2026-10-01"),
+      d("2026-10-02"),
+    ]);
+  });
+
+  it("7 gün bugünden başlar", () => {
+    const days = multiDayShortcut(friday, "next-7");
+    expect(days).toHaveLength(7);
+    expect(days[0]).toBe(friday);
+    expect(days[6]).toBe(d("2026-10-01"));
   });
 });

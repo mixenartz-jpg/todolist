@@ -78,6 +78,40 @@ export function formatRelativeDay(date: DateStr | null, today: DateStr): string 
   return formatShortDate(date);
 }
 
+/**
+ * Birden çok günü tek satırda: aynı aydaki tarihler birleşir.
+ *
+ *   [Bugün, 27 Eyl, 28 Eyl, 1 Eki] → "Bugün, 27, 28 Eylül, 1 Ekim"
+ *
+ * Günler sıralı gelmeli (çağıran `sentTasksByNode` sırasını
+ * kullanıyor). Bugün/Yarın/Dün kelimeyle kalır.
+ */
+export function formatDayList(
+  dates: readonly (DateStr | null)[],
+  today: DateStr,
+): string {
+  /** Her parça ya düz bir etiket ya da aynı aya ait gün numaraları. */
+  const parts: { month: string | null; items: string[] }[] = [];
+
+  for (const date of dates) {
+    const label = formatRelativeDay(date, today);
+    const match = /^(\d+) (\S+)$/.exec(label);
+    const last = parts[parts.length - 1];
+
+    if (match === null) {
+      parts.push({ month: null, items: [label] });
+    } else if (last !== undefined && last.month === match[2]) {
+      last.items.push(match[1]!);
+    } else {
+      parts.push({ month: match[2]!, items: [match[1]!] });
+    }
+  }
+
+  return parts
+    .map((p) => (p.month === null ? p.items[0] : `${p.items.join(", ")} ${p.month}`))
+    .join(", ");
+}
+
 /** "Ağustos 2026" */
 export function formatMonthYear(year: number, month: number): string {
   return `${MONTHS[month]} ${year}`;

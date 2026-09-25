@@ -40,7 +40,12 @@ interface GoalTreeViewProps {
   onRename: (id: string, values: { title: string; note: string | null }) => void;
   onDelete: (id: string) => void;
   onMove: (id: string, parentId: string | null) => void;
-  onSend: (id: string, date: DateStr, estimateMinutes: number | null) => void;
+  onSend: (
+    id: string,
+    dates: readonly DateStr[],
+    estimateMinutes: number | null,
+  ) => void;
+  onToggleRepeating: (id: string) => void;
   /** Kalem kimliğinden KENDİ görevlerine (bkz. `sentTasksByNode`). */
   sentTasks: ReadonlyMap<string, readonly Task[]>;
   onRecall: (taskId: string) => void;
@@ -84,6 +89,7 @@ export function GoalTreeView({
   onDelete,
   onMove,
   onSend,
+  onToggleRepeating,
   sentTasks,
   onRecall,
   onReorder,
@@ -163,9 +169,10 @@ export function GoalTreeView({
           onRename={(values) => onRename(item.node.id, values)}
           onDelete={() => onDelete(item.node.id)}
           onMove={(parentId) => onMove(item.node.id, parentId)}
-          onSend={(date, estimateMinutes) =>
-            onSend(item.node.id, date, estimateMinutes)
+          onSend={(dates, estimateMinutes) =>
+            onSend(item.node.id, dates, estimateMinutes)
           }
+          onToggleRepeating={() => onToggleRepeating(item.node.id)}
           sentTasks={sentTasks.get(item.node.id) ?? NO_TASKS}
           onRecall={onRecall}
           onReorder={(delta) => onReorder(item.node.id, delta)}
@@ -208,6 +215,7 @@ function TreeRow({
   onDelete,
   onMove,
   onSend,
+  onToggleRepeating,
   sentTasks,
   onRecall,
   onReorder,
@@ -232,7 +240,8 @@ function TreeRow({
   onRename: (values: { title: string; note: string | null }) => void;
   onDelete: () => void;
   onMove: (parentId: string | null) => void;
-  onSend: (date: DateStr, estimateMinutes: number | null) => void;
+  onSend: (dates: readonly DateStr[], estimateMinutes: number | null) => void;
+  onToggleRepeating: () => void;
   sentTasks: readonly Task[];
   onRecall: (taskId: string) => void;
   onReorder: (delta: -1 | 1) => void;
@@ -283,6 +292,7 @@ function TreeRow({
       onDelete={onDelete}
       onMove={onMove}
       onSend={onSend}
+      onToggleRepeating={onToggleRepeating}
       sentTasks={sentTasks}
       onRecall={onRecall}
       onReorder={onReorder}

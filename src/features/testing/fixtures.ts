@@ -219,6 +219,7 @@ interface GoalNodeOptions {
   title?: string;
   note?: string | null;
   sortOrder?: number;
+  repeating?: boolean;
 }
 
 /**
@@ -240,6 +241,7 @@ export function goalNode(options: GoalNodeOptions = {}): GoalNode {
     title: options.title ?? "Test başlığı",
     note: options.note ?? null,
     sortOrder: options.sortOrder ?? 0,
+    repeating: options.repeating ?? false,
   };
 }
 

@@ -140,6 +140,11 @@ export interface GoalNode {
   title: string;
   note: string | null;
   sortOrder: number;
+  /**
+   * Tekrarlanan kalem (0024): güne gönderilince TÜKENMEZ. Planlama
+   * paneli üstünü çizmez, kaç kez gönderildiğini yazar ("3×").
+   */
+  repeating: boolean;
 }
 
 export interface GoalNodeDraft {

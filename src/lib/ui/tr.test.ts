@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { asDateStr } from "@/lib/date/date";
-import { formatRelativeDay, formatWeekRange } from "./tr";
+import { formatDayList, formatRelativeDay, formatWeekRange } from "./tr";
 
 describe("formatWeekRange", () => {
   it("aynı ay içindeki haftada ay adını tek kez yazar", () => {
@@ -30,5 +30,29 @@ describe("formatRelativeDay", () => {
     expect(formatRelativeDay(asDateStr("2026-09-24"), today)).toBe("Dün");
     expect(formatRelativeDay(asDateStr("2026-09-29"), today)).toBe("29 Eylül");
     expect(formatRelativeDay(null, today)).toBe("Tarihsiz");
+  });
+});
+
+describe("formatDayList", () => {
+  const today = asDateStr("2026-09-25");
+  it("aynı aydaki günleri birleştirir, yakın günleri kelimeyle yazar", () => {
+    expect(
+      formatDayList(
+        [
+          today,
+          asDateStr("2026-09-27"),
+          asDateStr("2026-09-28"),
+          asDateStr("2026-10-01"),
+        ],
+        today,
+      ),
+    ).toBe("Bugün, 27, 28 Eylül, 1 Ekim");
+  });
+
+  it("tek gün ve tarihsiz", () => {
+    expect(formatDayList([asDateStr("2026-09-29")], today)).toBe("29 Eylül");
+    expect(formatDayList([asDateStr("2026-09-29"), null], today)).toBe(
+      "29 Eylül, Tarihsiz",
+    );
   });
 });

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Chevron } from "@/components/Chevron";
 import { cn } from "@/lib/ui/cn";
 import type { DateStr } from "@/lib/date/types";
-import { formatRelativeDay } from "@/lib/ui/tr";
+import { formatDayList, formatRelativeDay } from "@/lib/ui/tr";
 import type { Task } from "@/features/tasks/types";
 import { nodeDispatch } from "./nodeprogress";
 import { useGoalNodes } from "./nodeQueries";
@@ -173,10 +173,26 @@ export function PlanNodePanel({
                 <ul className="flex flex-col gap-0.5">
                   {flat.map((item) => {
                     const status = dispatch.get(item.node.id);
-                    const sent = status !== undefined && status.state !== "none";
+                    // Tekrarlanan kalem tükenmez: çizilmez, sayısı yazar.
+                    const repeat = status?.state === "repeat";
+                    const sent =
+                      status !== undefined &&
+                      status.state !== "none" &&
+                      !repeat;
                     const done = status?.state === "done";
+                    /*
+                     * Birden çok güne gönderilen kalemin günleri başlığın
+                     * ALTINDA, hepsi birden ("27, 28, 29 Eylül"). Tek gün
+                     * sağda kalır — kısa ve hizalı. Tekrarlananın da
+                     * yaklaşan günleri altta görünür.
+                     */
+                    const ownDays = status?.days ?? [];
+                    const dayList =
+                      (sent && ownDays.length > 1) || (repeat && ownDays.length > 0)
+                        ? formatDayList(ownDays, today)
+                        : null;
                     const dayText =
-                      status?.state === "sent"
+                      status?.state === "sent" && dayList === null
                         ? formatRelativeDay(status.day, today)
                         : null;
 
@@ -209,13 +225,21 @@ export function PlanNodePanel({
                               KALIR: kullanıcı neyi dağıttığını görmek
                               istiyor (week_goals'ın completed_at
                               gerekçesi). */}
-                          <span
-                            className={cn(
-                              "min-w-0 flex-1",
-                              sent && "text-[var(--color-ink-3)] line-through",
+                          <span className="min-w-0 flex-1">
+                            <span
+                              className={cn(
+                                "block",
+                                sent && "text-[var(--color-ink-3)] line-through",
+                              )}
+                            >
+                              {item.node.title}
+                            </span>
+                            {dayList !== null && (
+                              <span className="tabular mt-0.5 block text-[length:var(--text-2xs)] text-[var(--color-accent)]">
+                                <span className="sr-only">Gönderildiği günler: </span>
+                                {dayList}
+                              </span>
                             )}
-                          >
-                            {item.node.title}
                           </span>
 
                           {/* Belirteç çizginin DIŞINDA: günün de üstü
@@ -225,6 +249,16 @@ export function PlanNodePanel({
                             <span className="tabular shrink-0 whitespace-nowrap text-[length:var(--text-2xs)] text-[var(--color-accent)]">
                               <span className="sr-only">Gönderildi: </span>
                               {dayText}
+                            </span>
+                          )}
+                          {repeat && (
+                            <span
+                              title="Tekrarlanan kalem"
+                              className="tabular shrink-0 whitespace-nowrap text-[length:var(--text-2xs)] text-[var(--color-accent)]"
+                            >
+                              <span aria-hidden>↻ </span>
+                              <span className="sr-only">Tekrarlanan kalem, </span>
+                              {status!.count > 0 ? `${status!.count}×` : "tekrarlı"}
                             </span>
                           )}
                           {done && (
