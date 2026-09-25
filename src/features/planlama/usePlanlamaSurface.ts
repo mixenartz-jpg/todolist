@@ -120,12 +120,24 @@ export function usePlanlamaSurface(): PlanlamaSurface {
    * Hizalamayı `anchorForScale` yapıyor: o fonksiyon yazılmış ve
    * testliydi ama HİÇBİR EKRAN ÇAĞIRMIYORDU. Çağrıldığı yer burası.
    */
-  const anchor = useMemo(() => {
-    const base = rawAnchor !== null && isDateStr(rawAnchor) ? rawAnchor : today;
-    return anchorForScale(base, scale, today);
-  }, [rawAnchor, scale, today]);
+  const base = rawAnchor !== null && isDateStr(rawAnchor) ? rawAnchor : today;
 
-  const monthAnchor = useMemo(() => startOfMonth(anchor), [anchor]);
+  const anchor = useMemo(
+    () => anchorForScale(base, scale, today),
+    [base, scale, today],
+  );
+
+  /*
+   * Ay çapası HİZALANMAMIŞ tarihten türetilir, `anchor`'dan DEĞİL.
+   *
+   * Hedefler ekranı "Sonraki ay"a basınca `?t=2026-10-01` yazıyor.
+   * Hafta ölçeğinde bu tarih 28 Eylül Pazartesi'ye hizalanıyor ve
+   * `startOfMonth(anchor)` yine Eylül veriyordu — kullanıcı Ekim'e
+   * hiç geçemiyordu (geri giderken de 1 Ağustos → 27 Temmuz olup
+   * Temmuz'a atlıyordu). Hafta ölçeğinin yazdığı çapa zaten bir
+   * Pazartesi olduğundan o ekranlar için sonuç değişmiyor.
+   */
+  const monthAnchor = useMemo(() => startOfMonth(base), [base]);
 
   const rawCategory = params.get(CATEGORY_PARAM);
   const category: CategoryFilter =

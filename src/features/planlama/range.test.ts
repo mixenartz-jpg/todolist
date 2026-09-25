@@ -410,3 +410,19 @@ describe("ay birimli ekranların çapası", () => {
     expect(startOfMonth(sinirHaftasi)).toBe(asDateStr("2026-07-01"));
   });
 });
+
+describe("ay çapası hizalanmamış tarihten türetilir", () => {
+  it("ayın 1'i hafta ölçeğinde önceki aya kayan bir Pazartesi'ye hizalanır", () => {
+    /*
+     * 1 Ekim 2026 Perşembe; haftası 28 Eylül'de başlıyor. Ay çapası
+     * hizalanmış çapadan türetilseydi Hedefler ekranı Ekim'e geçemezdi
+     * — `usePlanlamaSurface` bu yüzden ham tarihi kullanıyor.
+     */
+    const ekim = asDateStr("2026-10-01");
+    const today = asDateStr("2026-09-25");
+    expect(startOfMonth(anchorForScale(ekim, "week", today))).toBe(
+      asDateStr("2026-09-01"),
+    );
+    expect(startOfMonth(ekim)).toBe(ekim);
+  });
+});
