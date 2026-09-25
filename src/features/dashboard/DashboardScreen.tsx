@@ -264,7 +264,7 @@ function CoachBanner({
           className={cn(
             "mt-4 inline-flex h-9 items-center rounded-lg px-3.5",
             "text-[length:var(--text-sm)] font-medium",
-            "bg-[var(--color-accent)] text-[var(--color-on-accent)]",
+            "bg-[var(--color-accent-fill)] text-[var(--color-on-accent)]",
             "transition-shadow duration-[var(--duration-fast)]",
             "hover:shadow-[var(--glow-accent-md)]",
           )}

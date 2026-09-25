@@ -21,14 +21,14 @@
 @keyframes markPop {
   from {
     transform: scale(0.8);
-    box-shadow: 0 0 0 0 oklch(0.7 0.19 48 / 0);
+    box-shadow: 0 0 0 0 oklch(0.72 0.14 245 / 0);
   }
   60% {
-    box-shadow: 0 0 14px 2px oklch(0.7 0.19 48 / 0.55);
+    box-shadow: 0 0 14px 2px oklch(0.72 0.14 245 / 0.55);
   }
   to {
     transform: scale(1);
-    box-shadow: 0 0 0 0 oklch(0.7 0.19 48 / 0);
+    box-shadow: 0 0 0 0 oklch(0.72 0.14 245 / 0);
   }
 }
 

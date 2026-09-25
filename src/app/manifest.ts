@@ -8,11 +8,11 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Plan, hedef, deneme ve yanlış takibi — kendi koçun ol",
     start_url: "/",
     display: "standalone",
-    /* `globals.css` → `--color-bg: oklch(0.135 0.008 48)`. Manifest hex
+    /* `globals.css` → `--color-bg: oklch(0.19 0.004 255)`. Manifest hex
      * ister; ikisi birlikte değişir, yoksa PWA splash eski mavi-siyahta
      * kalır ve uygulama açılışta bir kare yanlış renk gösterir. */
-    background_color: "#080808",
-    theme_color: "#080808",
+    background_color: "#131416",
+    theme_color: "#131416",
     orientation: "portrait",
     lang: "tr",
     icons: [

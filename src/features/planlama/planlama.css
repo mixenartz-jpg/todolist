@@ -322,16 +322,17 @@
 /* ── Durumlar ─────────────────────────────────────────────────────── */
 
 /*
- * Bugün: kanal TERS ÇEVRİLİR — mürekkep dolgu, koyu rakam.
+ * Bugün: kanal DOLDURULUR — mavi dolgu, beyaz rakam.
  *
- * `border-color: accent` yeterli değil çünkü accent artık beyaz ve
- * "hedef" durumu da beyaz kenarlık kullanıyordu; ikisi ayırt
- * edilemezdi. Monokrom palette bir tık kontrast en güçlü sinyaldir ve
- * ters çevrilmiş tek satır, kağıtta bugünü kalemle çerçevelemenin
- * karşılığıdır.
+ * Yalnızca kenarlık yeterli değil: "hedef" durumu da vurgu rengi
+ * kenarlık kullanıyor ve ikisi ayırt edilemezdi. Dolu tek kanal,
+ * kağıtta bugünü kalemle çerçevelemenin karşılığıdır.
  */
 .planDayRowToday .planDayGutter {
-  background: var(--color-ink);
+  /* Mavi dolgu + beyaz rakam — birincil düğmeyle aynı çift
+   * (`accent-fill` / `on-accent`, 4.87:1). Işıma "bugün buradasın". */
+  background: var(--color-accent-fill);
+  box-shadow: var(--glow-accent-sm);
   /* Ters çevrilmiş kanal kağıdın kenarına dayanıyor; sağ kıl çizgi
    * beyaz dolgunun üstünde görünmez ve gereksiz. */
   border-right-color: transparent;

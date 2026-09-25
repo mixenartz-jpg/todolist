@@ -477,7 +477,7 @@ function SecimDugmesi({
         "transition-[color,background-color,border-color] duration-[var(--duration-fast)] ease-[var(--ease-out-quart)]",
         "active:scale-[0.97]",
         secili
-          ? "border-transparent bg-[var(--color-accent)] text-[var(--color-on-accent)]"
+          ? "border-transparent bg-[var(--color-accent-fill)] text-[var(--color-on-accent)]"
           : "border-[var(--color-line-2)] bg-[var(--color-surface-2)] text-[var(--color-ink-2)] hover:text-[var(--color-ink)]",
       )}
     >

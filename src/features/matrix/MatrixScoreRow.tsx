@@ -61,11 +61,11 @@ export function MatrixScoreRow({
                 className="tabular flex h-5 w-7 items-center justify-center rounded-[3px] text-[length:var(--text-2xs)] leading-none"
                 style={{
                   background: levelVar(level),
-                  // Rampanın açık uçlarında koyu metin. `--color-on-accent`
+                  // Rampanın açık uçlarında koyu metin. `--color-on-light`
                   // "açık dolgu üstündeki mürekkep" için var; ham zemin
                   // hex'i yazmak paleti sessizce eskitirdi.
                   color:
-                    level >= 3 ? "var(--color-on-accent)" : "var(--color-ink-2)",
+                    level >= 3 ? "var(--color-on-light)" : "var(--color-ink-2)",
                 }}
               >
                 {Math.round(score.ratio * 100)}
