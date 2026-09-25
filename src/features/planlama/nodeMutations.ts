@@ -342,6 +342,7 @@ export function useDistributeNodes(onError?: (message: string) => void) {
         goalId: draft.goalId,
         nodeId: draft.nodeId,
         colorSlot: null,
+        estimateMinutes: null,
       }));
 
       qc.setQueryData<Task[]>(qk.tasks(), (tasks) => [

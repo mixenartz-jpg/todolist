@@ -85,6 +85,7 @@ interface PlanDayRowProps {
   onDelete: (task: Task) => void;
   onRename: (task: Task, title: string) => void;
   onUnschedule: (task: Task) => void;
+  onSetEstimate: (task: Task, minutes: number | null) => void;
   onReorder: (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => void;
 }
 
@@ -108,6 +109,7 @@ export function PlanDayRow({
   onDelete,
   onRename,
   onUnschedule,
+  onSetEstimate,
   onReorder,
 }: PlanDayRowProps) {
   const day = toParts(bucket.date).day;
@@ -269,6 +271,7 @@ export function PlanDayRow({
             onDelete={onDelete}
             onRename={onRename}
             onUnschedule={onUnschedule}
+            onSetEstimate={onSetEstimate}
             onReorder={onReorder}
           />
         )}

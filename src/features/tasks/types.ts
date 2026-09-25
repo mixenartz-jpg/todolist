@@ -68,6 +68,13 @@ export interface Task {
    * yan yana geldiğinde renk hiçbir şeyi ayırmıyor (gerekçe 0013).
    */
   colorSlot: number | null;
+  /**
+   * Tahmini süre, dakika (0023). null → tahmin girilmedi.
+   *
+   * Bir SAAT değil, bir büyüklük: "bu iş yaklaşık iki saat". Takvimde
+   * yer tutmaz; satırın sağındaki çipte görünür (bkz. `estimate.ts`).
+   */
+  estimateMinutes: number | null;
 }
 
 export interface TaskDraft {

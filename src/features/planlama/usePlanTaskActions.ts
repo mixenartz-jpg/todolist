@@ -8,6 +8,7 @@ import {
   useRenameTask,
   useReorderTasks,
   useRescheduleTask,
+  useSetTaskEstimate,
   useToggleTask,
 } from "@/features/tasks/mutations";
 import type { Task } from "@/features/tasks/types";
@@ -38,6 +39,8 @@ export interface PlanTaskActions {
   onDelete: (task: Task) => void;
   onRename: (task: Task, title: string) => void;
   onUnschedule: (task: Task) => void;
+  /** Tahmini süre (0023); null siler. */
+  onSetEstimate: (task: Task, minutes: number | null) => void;
   onReorder: (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => void;
   /** Havuzdan bir güne yerleştirme ve "gecikmeyi bugüne al" için. */
   reschedule: (id: string, dueDate: DateStr | null) => void;
@@ -54,6 +57,7 @@ export function usePlanTaskActions(
   const rescheduleTask = useRescheduleTask(onError);
   const renameTask = useRenameTask(onError);
   const reorderTasks = useReorderTasks(onError);
+  const setEstimate = useSetTaskEstimate(onError);
 
   const onReorder = useCallback(
     (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => {
@@ -75,6 +79,8 @@ export function usePlanTaskActions(
     // Görevi havuza geri atar — tarihini kaldırır.
     onUnschedule: (task) =>
       rescheduleTask.mutate({ id: task.id, dueDate: null }),
+    onSetEstimate: (task, minutes) =>
+      setEstimate.mutate({ id: task.id, estimateMinutes: minutes }),
     onReorder,
     reschedule: (id, dueDate) => rescheduleTask.mutate({ id, dueDate }),
     addBacklog: (title) =>

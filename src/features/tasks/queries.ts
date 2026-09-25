@@ -50,6 +50,8 @@ export function toTask(row: TaskRow): Task {
     goalId: row.goal_id,
     nodeId: row.node_id,
     colorSlot: row.color_slot,
+    // `?? null`: 0023 henüz çalıştırılmadıysa alan HİÇ gelmez.
+    estimateMinutes: row.estimate_minutes ?? null,
   };
 }
 

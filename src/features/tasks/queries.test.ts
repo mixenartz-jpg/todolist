@@ -18,6 +18,7 @@ function task(partial: Partial<Task> & { id: string }): Task {
     goalId: null,
     nodeId: null,
     colorSlot: null,
+    estimateMinutes: null,
     ...partial,
   };
 }

@@ -30,6 +30,7 @@ interface PlanDaySheetProps {
   onDelete: (task: Task) => void;
   onRename: (task: Task, title: string) => void;
   onUnschedule: (task: Task) => void;
+  onSetEstimate: (task: Task, minutes: number | null) => void;
   onReorder: (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => void;
 }
 
@@ -58,6 +59,7 @@ export function PlanDaySheet({
   onDelete,
   onRename,
   onUnschedule,
+  onSetEstimate,
   onReorder,
 }: PlanDaySheetProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -139,6 +141,7 @@ export function PlanDaySheet({
                   onDelete={() => onDelete(task)}
                   onRename={(title) => onRename(task, title)}
                   onDefer={() => onUnschedule(task)}
+                  onSetEstimate={(minutes) => onSetEstimate(task, minutes)}
                   /*
                    * Kategori seçici ve sıra düğmeleri aynı yuvayı
                    * paylaşır. Seçici TAMAMLANMIŞ görevde de durur:

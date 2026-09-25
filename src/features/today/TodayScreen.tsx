@@ -31,6 +31,7 @@ import {
   useRenameTask,
   useRescheduleTask,
   useSetTaskColor,
+  useSetTaskEstimate,
   useSetTaskNote,
   useToggleTask,
 } from "@/features/tasks/mutations";
@@ -90,6 +91,7 @@ export function TodayScreen() {
   const renameTask = useRenameTask(toast.show);
   const setTaskGoal = useSetTaskGoal(toast.show);
   const setTaskColor = useSetTaskColor(toast.show);
+  const setTaskEstimate = useSetTaskEstimate(toast.show);
   const setTaskNote = useSetTaskNote(toast.show);
 
   /**
@@ -329,6 +331,9 @@ export function TodayScreen() {
                           onToggle={() =>
                             toggleTask.mutate({ id: task.id, done: !task.done })
                           }
+                          onSetEstimate={(estimateMinutes) =>
+                            setTaskEstimate.mutate({ id: task.id, estimateMinutes })
+                          }
                           onDelete={() => deleteTask.mutate(task.id)}
                           onDefer={() =>
                             rescheduleTask.mutate({ id: task.id, dueDate: today })
@@ -437,6 +442,9 @@ export function TodayScreen() {
                           today={today}
                           onToggle={() =>
                             toggleTask.mutate({ id: task.id, done: !task.done })
+                          }
+                          onSetEstimate={(estimateMinutes) =>
+                            setTaskEstimate.mutate({ id: task.id, estimateMinutes })
                           }
                           onDelete={() => deleteTask.mutate(task.id)}
                           onRename={(title) =>

@@ -19,6 +19,7 @@ interface PlanTaskListProps {
   onDelete: (task: Task) => void;
   onRename: (task: Task, title: string) => void;
   onUnschedule: (task: Task) => void;
+  onSetEstimate: (task: Task, minutes: number | null) => void;
   onReorder: (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => void;
 }
 
@@ -50,6 +51,7 @@ export function PlanTaskList({
   onDelete,
   onRename,
   onUnschedule,
+  onSetEstimate,
   onReorder,
 }: PlanTaskListProps) {
   const ordered = orderForDay(tasks);
@@ -81,6 +83,7 @@ export function PlanTaskList({
             // ihtiyaç "bunu şimdilik geri koy"dur, bir gün ilerletmek
             // değil — o zaten sıradaki güne tıklamaktır.
             onDefer={() => onUnschedule(task)}
+            onSetEstimate={(minutes) => onSetEstimate(task, minutes)}
             extra={
               ordered.length > 1 && !task.done ? (
                 <ReorderButtons
