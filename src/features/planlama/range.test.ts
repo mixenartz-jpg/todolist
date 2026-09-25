@@ -3,6 +3,7 @@ import { asDateStr, eachDay, startOfIsoWeek, startOfMonth } from "@/lib/date/dat
 import { monthGrid } from "./monthgrid";
 import { task } from "@/features/testing/fixtures";
 import {
+  alignToScale,
   anchorForScale,
   buildPlanRange,
   chunkWeeks,
@@ -424,5 +425,26 @@ describe("ay çapası hizalanmamış tarihten türetilir", () => {
       asDateStr("2026-09-01"),
     );
     expect(startOfMonth(ekim)).toBe(ekim);
+  });
+});
+
+describe("alignToScale — URL çapası", () => {
+  const today = asDateStr("2026-09-25"); // Cuma, 21–27 Eylül haftası
+
+  it("bugünün ayındaki SONRAKİ hafta bugüne çekilmez", () => {
+    /*
+     * Hafta ölçeğinde "Sonraki hafta" `?t=2026-09-28` yazar. Eylül
+     * bugünün ayı ve `anchorForScale` o durumda bugünün haftasını
+     * döndürüyordu — kullanıcı bu haftadan ileri gidemiyordu.
+     */
+    const next = asDateStr("2026-09-28");
+    expect(anchorForScale(next, "week", today)).toBe(asDateStr("2026-09-21"));
+    expect(alignToScale(next, "week")).toBe(next);
+  });
+
+  it("hafta ortası bir gün kendi Pazartesi'sine, ay ölçeğinde ayın 1'ine", () => {
+    expect(alignToScale(asDateStr("2026-09-10"), "week")).toBe(asDateStr("2026-09-07"));
+    expect(alignToScale(asDateStr("2026-10-01"), "week")).toBe(asDateStr("2026-09-28"));
+    expect(alignToScale(asDateStr("2026-10-17"), "month")).toBe(asDateStr("2026-10-01"));
   });
 });

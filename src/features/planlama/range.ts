@@ -170,6 +170,22 @@ export function chunkWeeks(buckets: readonly PlanBucket[]): PlanBucket[][] {
 }
 
 /**
+ * Bir tarihi ölçeğin İLK GÜNÜNE hizalar: haftanın Pazartesi'si ya da
+ * ayın 1'i. Başka hiçbir şey yapmaz.
+ *
+ * ── Neden `anchorForScale` DEĞİL? ──
+ * O fonksiyon ölçek DEĞİŞİMİ içindir ve "bugün bu aydaysa bugünün
+ * haftası" kuralını taşır. URL'deki çapayı hizalamak için
+ * kullanıldığında o kural her ileri/geri adımda da çalışıyordu:
+ * 28 Eylül'e giden kullanıcı, Eylül bugünün ayı olduğu için bugünün
+ * haftasına geri çekiliyor ve bulunduğu haftadan ileri gidemiyordu.
+ * Kullanıcının seçtiği tarih yalnızca hizalanır, yorumlanmaz.
+ */
+export function alignToScale(date: DateStr, scale: PlanScale): DateStr {
+  return scale === "week" ? startOfIsoWeek(date) : startOfMonth(date);
+}
+
+/**
  * Ölçek değişince çapa hangi güne oturur?
  *
  * Çapa, ölçeğin ilk günüdür: hafta için Pazartesi, ay için ayın 1'i.

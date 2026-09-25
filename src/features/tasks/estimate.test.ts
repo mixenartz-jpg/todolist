@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { dayLoad, formatEstimate, parseEstimateInput, totalEstimate } from "./estimate";
+import {
+  dayLoad,
+  formatEstimate,
+  parseEstimateInput,
+  splitEstimateFromTitle,
+  totalEstimate,
+} from "./estimate";
 
 describe("formatEstimate", () => {
   it("bir saatin altı dakikadır", () => {
@@ -80,5 +86,44 @@ describe("dayLoad", () => {
 
   it("tahmin yoksa null", () => {
     expect(dayLoad([{ estimateMinutes: null, done: true }])).toBeNull();
+  });
+});
+
+describe("splitEstimateFromTitle", () => {
+  it("sondaki dakikayı ayırır", () => {
+    expect(splitEstimateFromTitle("Paragraf rutini 30dk")).toEqual({
+      title: "Paragraf rutini",
+      estimateMinutes: 30,
+    });
+    expect(splitEstimateFromTitle("Tekrar 45 dakika")).toEqual({
+      title: "Tekrar",
+      estimateMinutes: 45,
+    });
+  });
+
+  it("saat, ondalık saat ve saat + dakika", () => {
+    expect(splitEstimateFromTitle("TYT denemesi 2 saat").estimateMinutes).toBe(120);
+    expect(splitEstimateFromTitle("Fizik 1,5 saat").estimateMinutes).toBe(90);
+    expect(splitEstimateFromTitle("Fizik 1.5sa").estimateMinutes).toBe(90);
+    expect(splitEstimateFromTitle("Geometri 1 sa 20 dk")).toEqual({
+      title: "Geometri",
+      estimateMinutes: 80,
+    });
+  });
+
+  it("birimsiz sayı, ortadaki süre ve parantez adın parçası kalır", () => {
+    for (const title of [
+      "Paragraf | 30 Soru",
+      "TYT Deneme 2",
+      "Frekans | 2 Fen Denemesi + Analiz (30 Soru ~ 40dk)",
+      "40 dk koşu ve esneme",
+    ]) {
+      expect(splitEstimateFromTitle(title)).toEqual({ title, estimateMinutes: null });
+    }
+  });
+
+  it("ad boş kalacaksa ya da sınır dışıysa ayırmaz", () => {
+    expect(splitEstimateFromTitle("30dk").estimateMinutes).toBeNull();
+    expect(splitEstimateFromTitle("Kamp 30 saat").estimateMinutes).toBeNull();
   });
 });
