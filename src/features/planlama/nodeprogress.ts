@@ -32,6 +32,7 @@
  * 0014'ün çift sayım gerekçesinin aynısı.
  */
 
+import type { DateStr } from "@/lib/date/types";
 import type { Task } from "@/features/tasks/types";
 import { buildGoalTree, type GoalTreeNode } from "./tree";
 import type { GoalNode } from "./types";
@@ -189,5 +190,74 @@ export function sentTasksByNode(tasks: readonly Task[]): Map<string, Task[]> {
     });
   }
 
+  return out;
+}
+
+/** Bir kalemin güne dağıtılma durumu — Planlama'nın ağaç paneli için. */
+export interface NodeDispatch {
+  /**
+   * none → henüz güne gönderilmedi.
+   * sent → gönderildi, işi bitmedi.
+   * done → gönderildi ve işi bitti.
+   */
+  state: "none" | "sent" | "done";
+  /**
+   * `sent` iken işaretin göstereceği gün: bitmemiş görevlerin EN ERKENİ
+   * (kullanıcının sıradaki randevusu). Tarihsiz görev havuzdadır → null.
+   */
+  day: DateStr | null;
+}
+
+/**
+ * Her kalemin dağıtılma durumu.
+ *
+ * ── Üst başlık ne zaman "gönderildi" sayılır? ──
+ * Kendi görevi varsa (başlığın kendisi güne gönderilmişse) ondan
+ * okunur. Yoksa ÇOCUKLARINDAN: hepsi gönderilmiş/bitmişse gönderildi,
+ * hepsi bitmişse bitti. Tek bir çocuk gönderildi diye başlığın üstünü
+ * çizmek, geri kalan dokunulmamış kalemleri gizlerdi — `goalTreeProgress`
+ * modülünün "tek önemsiz kalem yirmi kalemi örtmesin" ilkesi.
+ */
+export function nodeDispatch(
+  nodes: readonly GoalNode[],
+  tasks: readonly Task[],
+): Map<string, NodeDispatch> {
+  const own = sentTasksByNode(tasks);
+  const out = new Map<string, NodeDispatch>();
+
+  const visit = (entry: GoalTreeNode): NodeDispatch => {
+    const children = entry.children.map(visit);
+    const mine = own.get(entry.node.id) ?? [];
+
+    let result: NodeDispatch;
+    if (mine.length > 0) {
+      const open = mine.filter((t) => !t.done);
+      result =
+        open.length === 0
+          ? { state: "done", day: null }
+          : // `sentTasksByNode` tarihe göre sıralı, tarihsizler sonda.
+            { state: "sent", day: open[0]!.dueDate };
+    } else if (
+      children.length > 0 &&
+      children.every((c) => c.state !== "none")
+    ) {
+      const pending = children.filter((c) => c.state === "sent");
+      const days = pending
+        .map((c) => c.day)
+        .filter((d): d is DateStr => d !== null)
+        .sort();
+      result =
+        pending.length === 0
+          ? { state: "done", day: null }
+          : { state: "sent", day: days[0] ?? null };
+    } else {
+      result = { state: "none", day: null };
+    }
+
+    out.set(entry.node.id, result);
+    return result;
+  };
+
+  for (const root of buildGoalTree(nodes)) visit(root);
   return out;
 }

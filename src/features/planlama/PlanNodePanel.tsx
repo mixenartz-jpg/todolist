@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Chevron } from "@/components/Chevron";
 import { cn } from "@/lib/ui/cn";
+import type { DateStr } from "@/lib/date/types";
+import { formatRelativeDay } from "@/lib/ui/tr";
 import type { Task } from "@/features/tasks/types";
-import { goalTreeProgress } from "./nodeprogress";
+import { nodeDispatch } from "./nodeprogress";
 import { useGoalNodes } from "./nodeQueries";
 import { buildGoalTree, flattenGoalTree } from "./tree";
 import type { PlanGoal } from "./types";
@@ -15,6 +17,8 @@ interface PlanNodePanelProps {
   /** Ayın hedefleri — panel bunlardan birini seçtiriyor. */
   goals: readonly PlanGoal[];
   tasks: readonly Task[];
+  /** Gönderilen günün etiketi için ("Bugün", "Yarın"…). */
+  today: DateStr;
   /** Şu an yerleştirilmeyi bekleyen düğüm; null → kip kapalı. */
   selectedNodeId: string | null;
   onSelect: (nodeId: string | null) => void;
@@ -57,6 +61,7 @@ interface PlanNodePanelProps {
 export function PlanNodePanel({
   goals,
   tasks,
+  today,
   selectedNodeId,
   onSelect,
   onSelectGoal,
@@ -87,10 +92,13 @@ export function PlanNodePanel({
   const nodesQuery = useGoalNodes(open ? effectiveGoalId : null);
   const nodes = useMemo(() => nodesQuery.data ?? [], [nodesQuery.data]);
 
-  const progress = useMemo(
-    () => goalTreeProgress(nodes, tasks),
-    [nodes, tasks],
-  );
+  /*
+   * Hangi kalem güne gönderildi? Gönderilen kalemin üstü çizilir ve
+   * yanında günü yazar; bitmişse ✓. Eskiden yalnızca %100 BİTEN kalem
+   * çiziliyordu: kullanıcı neyi dağıttığını, neyin hâlâ beklediğini
+   * ayırt edemiyor ve aynı kalemi iki kez gönderebiliyordu.
+   */
+  const dispatch = useMemo(() => nodeDispatch(nodes, tasks), [nodes, tasks]);
 
   // Panelde katlama YOK: ağacın tamamı görünür olmalı ki kullanıcı
   // dağıtacağını arayabilsin. Düzenleme ağaç sayfasının işi.
@@ -164,11 +172,13 @@ export function PlanNodePanel({
               ) : (
                 <ul className="flex flex-col gap-0.5">
                   {flat.map((item) => {
-                    const entry = progress.get(item.node.id);
-                    const done =
-                      entry !== undefined &&
-                      entry.ratio !== null &&
-                      entry.ratio >= 1;
+                    const status = dispatch.get(item.node.id);
+                    const sent = status !== undefined && status.state !== "none";
+                    const done = status?.state === "done";
+                    const dayText =
+                      status?.state === "sent"
+                        ? formatRelativeDay(status.day, today)
+                        : null;
 
                     return (
                       <li key={item.node.id}>
@@ -188,18 +198,41 @@ export function PlanNodePanel({
                             paddingLeft: `calc(${item.level - 1} * 0.75rem + 0.375rem)`,
                           }}
                           className={cn(
-                            "w-full rounded py-1 pr-1.5 text-left text-[length:var(--text-xs)]",
+                            "flex w-full items-start gap-1.5 rounded py-1 pr-1.5 text-left text-[length:var(--text-xs)]",
                             "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-quart)]",
                             selectedNodeId === item.node.id
                               ? "bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
                               : "hover:bg-[var(--color-surface-2)]",
-                            // Bitmiş kalem soluk ama LİSTEDE KALIR:
-                            // kullanıcı neyi bitirdiğini görmek istiyor
-                            // (week_goals'ın completed_at gerekçesi).
-                            done && "text-[var(--color-ink-3)] line-through",
                           )}
                         >
-                          {item.node.title}
+                          {/* Gönderilen kalem soluk ve çizili ama LİSTEDE
+                              KALIR: kullanıcı neyi dağıttığını görmek
+                              istiyor (week_goals'ın completed_at
+                              gerekçesi). */}
+                          <span
+                            className={cn(
+                              "min-w-0 flex-1",
+                              sent && "text-[var(--color-ink-3)] line-through",
+                            )}
+                          >
+                            {item.node.title}
+                          </span>
+
+                          {/* Belirteç çizginin DIŞINDA: günün de üstü
+                              çizilseydi okunmazdı. Ekran okuyucu çizgiyi
+                              görmez; durumu bu metin söyler. */}
+                          {dayText !== null && (
+                            <span className="tabular shrink-0 whitespace-nowrap text-[length:var(--text-2xs)] text-[var(--color-accent)]">
+                              <span className="sr-only">Gönderildi: </span>
+                              {dayText}
+                            </span>
+                          )}
+                          {done && (
+                            <span className="shrink-0 text-[length:var(--text-2xs)] text-[var(--color-good)]">
+                              <span aria-hidden>✓</span>
+                              <span className="sr-only">Tamamlandı</span>
+                            </span>
+                          )}
                         </button>
                       </li>
                     );

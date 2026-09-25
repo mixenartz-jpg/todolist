@@ -5,7 +5,7 @@
  * eşleşsin diye 0. eleman boştur (Pzt=1 … Paz=7).
  */
 
-import { toParts } from "@/lib/date/date";
+import { addDays, toParts } from "@/lib/date/date";
 import type { DateStr, IsoWeekday } from "@/lib/date/types";
 
 export const MONTHS = [
@@ -64,6 +64,18 @@ export function formatLongDate(date: DateStr): string {
 export function formatShortDate(date: DateStr): string {
   const { month, day } = toParts(date);
   return `${day} ${MONTHS[month]}`;
+}
+
+/**
+ * "Bugün", "Yarın", "Dün", yoksa "5 Ağustos". null → "Tarihsiz"
+ * (havuzdaki görev).
+ */
+export function formatRelativeDay(date: DateStr | null, today: DateStr): string {
+  if (date === null) return "Tarihsiz";
+  if (date === today) return "Bugün";
+  if (date === addDays(today, 1)) return "Yarın";
+  if (date === addDays(today, -1)) return "Dün";
+  return formatShortDate(date);
 }
 
 /** "Ağustos 2026" */

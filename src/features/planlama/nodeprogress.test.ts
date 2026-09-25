@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { goalNode, planGoal, task } from "@/features/testing/fixtures";
 import { goalProgress } from "./rollup";
-import { goalTreeProgress, sentTasksByNode, treeRootRatio } from "./nodeprogress";
+import {
+  goalTreeProgress,
+  nodeDispatch,
+  sentTasksByNode,
+  treeRootRatio,
+} from "./nodeprogress";
 
 /** Bir düğüme bağlı n görev üretir, ilk `done` tanesi tamamlanmış. */
 function tasksFor(nodeId: string, total: number, done: number) {
@@ -221,5 +226,58 @@ describe("sentTasksByNode", () => {
   it("çocukların görevleri ataya TOPLANMAZ", () => {
     const map = sentTasksByNode([task({ id: "c1", nodeId: "child" })]);
     expect(map.has("parent")).toBe(false);
+  });
+});
+
+describe("nodeDispatch", () => {
+  const parent = goalNode({ id: "p", title: "Logaritma" });
+  const a = goalNode({ id: "a", parentId: "p", sortOrder: 0 });
+  const b = goalNode({ id: "b", parentId: "p", sortOrder: 1 });
+  const nodes = [parent, a, b];
+
+  it("görevi olmayan kalem gönderilmemiştir", () => {
+    const map = nodeDispatch(nodes, []);
+    expect(map.get("a")).toEqual({ state: "none", day: null });
+    expect(map.get("p")).toEqual({ state: "none", day: null });
+  });
+
+  it("gönderilen kalem en erken bitmemiş günü taşır", () => {
+    const map = nodeDispatch(nodes, [
+      task({ nodeId: "a", dueDate: "2026-09-29" }),
+      task({ nodeId: "a", dueDate: "2026-09-26" }),
+      task({ nodeId: "a", dueDate: "2026-09-24", done: true }),
+    ]);
+    expect(map.get("a")).toEqual({ state: "sent", day: "2026-09-26" });
+  });
+
+  it("görevlerinin hepsi bitmişse done", () => {
+    const map = nodeDispatch(nodes, [task({ nodeId: "a", dueDate: "2026-09-24", done: true })]);
+    expect(map.get("a")!.state).toBe("done");
+  });
+
+  it("üst başlık tek çocuk gönderildi diye çizilmez", () => {
+    const map = nodeDispatch(nodes, [task({ nodeId: "a", dueDate: "2026-09-26" })]);
+    expect(map.get("p")!.state).toBe("none");
+  });
+
+  it("bütün çocuklar gönderilince üst başlık da gönderilmiştir", () => {
+    const map = nodeDispatch(nodes, [
+      task({ nodeId: "a", dueDate: "2026-09-28" }),
+      task({ nodeId: "b", dueDate: "2026-09-26", done: true }),
+    ]);
+    expect(map.get("p")).toEqual({ state: "sent", day: "2026-09-28" });
+  });
+
+  it("bütün çocuklar bitince üst başlık done", () => {
+    const map = nodeDispatch(nodes, [
+      task({ nodeId: "a", done: true }),
+      task({ nodeId: "b", done: true }),
+    ]);
+    expect(map.get("p")!.state).toBe("done");
+  });
+
+  it("başlığın kendisi gönderildiyse çocuklara bakılmaz", () => {
+    const map = nodeDispatch(nodes, [task({ nodeId: "p", dueDate: "2026-09-27" })]);
+    expect(map.get("p")).toEqual({ state: "sent", day: "2026-09-27" });
   });
 });
