@@ -4,7 +4,7 @@ import { memo, useRef, useState, type ReactNode } from "react";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { formatShortDate } from "@/lib/ui/tr";
-import { EstimateChip, EstimatePicker } from "./EstimatePicker";
+import { EstimateAddButton, EstimateChip, EstimatePicker } from "./EstimatePicker";
 import { isPendingTask } from "./pending";
 import { isOverdue } from "./queries";
 import { normalizeTitleInput, shouldPersistTitle, TASK_TITLE_MAX } from "./rename";
@@ -265,7 +265,7 @@ export const TaskItem = memo(function TaskItem({
           )}
         </div>
 
-        {task.estimateMinutes !== null && (
+        {task.estimateMinutes !== null ? (
           <span className="mt-0.5 flex">
             <EstimateChip
               minutes={task.estimateMinutes}
@@ -278,6 +278,34 @@ export const TaskItem = memo(function TaskItem({
               }
             />
           </span>
+        ) : (
+          onSetEstimate &&
+          !pending && (
+            /*
+             * Tahmini olmayan satırda süre vermenin yolu: çipin
+             * YERİNDE soluk bir "+ süre".
+             *
+             * Eskiden sağdaki simge kümesinde, yalnızca üzerine
+             * gelince beliren bir saat simgesiydi ve bitmiş görevde
+             * hiç yoktu — kullanıcı özelliği bulamadı. Açık işte artık
+             * hep görünür. Bitmiş işte üzerine gelince görünür: geçmiş
+             * bir haftanın her satırında "+ süre" yazması kalabalık
+             * olurdu, ama bitmiş işe süre yazmak "bugün ne kadar
+             * çalıştım" toplamının tek kaynağı olduğu için kapatılmadı.
+             */
+            <span
+              className={cn(
+                "mt-0.5 flex",
+                task.done && !estimating && "revealTarget opacity-0",
+              )}
+            >
+              <EstimateAddButton
+                taskTitle={task.title}
+                pressed={estimating}
+                onClick={() => setEstimating((open) => !open)}
+              />
+            </span>
+          )
         )}
         </div>
 
@@ -316,7 +344,7 @@ export const TaskItem = memo(function TaskItem({
           /* Bölme açıkken simgeler GÖRÜNÜR kalır: kullanıcı fareyi
              panele indirdiğinde satırdan çıkmış sayılır ve kapatma
              düğmesi altından kaybolurdu. */
-          expanded || estimating ? "opacity-100" : "opacity-0",
+          expanded ? "opacity-100" : "opacity-0",
         )}
       >
         {panel && onExpand && !pending && (
@@ -331,27 +359,6 @@ export const TaskItem = memo(function TaskItem({
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
               <circle cx="8" cy="8" r="5.75" stroke="currentColor" strokeWidth="1.3" />
               <circle cx="8" cy="8" r="2.25" stroke="currentColor" strokeWidth="1.3" />
-            </svg>
-          </IconButton>
-        )}
-
-        {/* Tahmini olmayan satırda süre vermenin yolu. Tahmin varsa
-            çipin kendisi düğme — ikinci bir simge gereksiz olurdu. */}
-        {onSetEstimate && task.estimateMinutes === null && !task.done && !pending && (
-          <IconButton
-            label={`${task.title}: tahmini süre ekle`}
-            pressed={estimating}
-            onClick={() => setEstimating((open) => !open)}
-          >
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
-              <circle cx="8" cy="8" r="5.75" stroke="currentColor" strokeWidth="1.3" />
-              <path
-                d="M8 5v3.2l2 1.3"
-                stroke="currentColor"
-                strokeWidth="1.3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
             </svg>
           </IconButton>
         )}

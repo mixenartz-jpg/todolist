@@ -159,3 +159,33 @@ export function EstimateChip({
     </button>
   );
 }
+
+/** Tahmini olmayan satırdaki soluk "+ süre" düğmesi — seçiciyi açar. */
+export function EstimateAddButton({
+  taskTitle,
+  pressed,
+  onClick,
+}: {
+  taskTitle: string;
+  pressed: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={pressed}
+      aria-label={`${taskTitle}: tahmini süre ekle`}
+      className={cn(
+        "shrink-0 whitespace-nowrap rounded-full border border-dashed px-2 py-0.5",
+        "text-[length:var(--text-xs)] font-medium",
+        "transition-colors duration-[var(--duration-fast)]",
+        pressed
+          ? "border-[var(--color-accent)] text-[var(--color-ink-2)]"
+          : "border-[var(--color-line-2)] text-[var(--color-ink-3)] hover:border-[var(--color-accent)] hover:text-[var(--color-ink-2)]",
+      )}
+    >
+      + süre
+    </button>
+  );
+}

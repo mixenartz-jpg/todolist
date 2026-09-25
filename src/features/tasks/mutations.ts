@@ -11,6 +11,7 @@ import {
 } from "@/features/planlama/reorder";
 import { pendingTaskId } from "./pending";
 import { toTask } from "./queries";
+import { splitEstimateFromTitle } from "./estimate";
 import type { Task, TaskDraft } from "./types";
 
 const TOGGLE_KEY = ["toggleTask"] as const;
@@ -102,10 +103,14 @@ export function useCreateTask(onError?: (message: string) => void) {
 
     mutationFn: async (draft: TaskDraft) => {
       const supabase = createClient();
+      const { title, estimateMinutes } = splitEstimateFromTitle(draft.title);
       const { data, error } = await supabase
         .from("tasks")
         .insert({
-          title: draft.title.trim(),
+          title,
+          // Adın sonuna yazılan süre ("Paragraf 30dk") — bkz.
+          // `splitEstimateFromTitle`. Yalnız VARSA yazılır.
+          ...(estimateMinutes !== null && { estimate_minutes: estimateMinutes }),
           due_date: draft.dueDate,
           note: draft.note,
           // Verilmediyse null — sütunun varsayılanı da bu, ama açıkça
@@ -124,9 +129,10 @@ export function useCreateTask(onError?: (message: string) => void) {
       await qc.cancelQueries({ queryKey: qk.tasks() });
       const previous = qc.getQueryData<Task[]>(qk.tasks());
 
+      const split = splitEstimateFromTitle(draft.title);
       const optimistic: Task = {
         id: pendingTaskId(),
-        title: draft.title.trim(),
+        title: split.title,
         dueDate: draft.dueDate,
         done: false,
         note: draft.note,
@@ -154,7 +160,7 @@ export function useCreateTask(onError?: (message: string) => void) {
         // Yeni görev rengini KATEGORİDEN devralır ve kategorisi de yok:
         // nötr çizilir. Renk sonradan verilen ikinci bir harekettir.
         colorSlot: null,
-        estimateMinutes: null,
+        estimateMinutes: split.estimateMinutes,
       };
 
       qc.setQueryData<Task[]>(qk.tasks(), (tasks) =>

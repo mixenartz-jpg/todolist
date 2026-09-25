@@ -106,3 +106,39 @@ export function parseEstimateInput(input: string): number | null {
   }
   return total;
 }
+
+/**
+ * Yeni görevin adının SONUNA yazılmış süreyi ayırır.
+ *
+ *   "Paragraf rutini 30dk"     → { title: "Paragraf rutini", 30 }
+ *   "TYT denemesi 2 saat"      → { title: "TYT denemesi", 120 }
+ *   "Geometri 1 sa 20 dk"      → { title: "Geometri", 80 }
+ *   "Paragraf | 30 Soru"       → süre yok (birim yok)
+ *   "Deneme (30 Soru ~ 40dk)"  → süre yok (sonda parantez var)
+ *
+ * Birim ZORUNLU: "TYT Deneme 2" gibi bir addaki sayı süre değildir.
+ * Yalnızca SONDAKİ ifade okunur — ortadaki "40 dk" adın parçasıdır.
+ * Süre çıkarılınca ad boş kalıyorsa hiçbir şey ayrılmaz ("30dk" adlı
+ * bir görev, adsız kalmaktan iyidir).
+ */
+export function splitEstimateFromTitle(input: string): {
+  title: string;
+  estimateMinutes: number | null;
+} {
+  const text = input.trim();
+  const match = text.match(
+    /^(.*?\S)\s+(?:(\d+(?:[.,]\d+)?)\s*(?:saat|sa|s)(?:\s*(\d+)\s*(?:dakika|dak|dk))?|(\d+)\s*(?:dakika|dak|dk))\.?$/i,
+  );
+  if (!match) return { title: text, estimateMinutes: null };
+
+  const [, rest, hours, extraMinutes, minutesOnly] = match;
+  const total =
+    hours !== undefined
+      ? Math.round(Number(hours.replace(",", ".")) * 60 + Number(extraMinutes ?? 0))
+      : Number(minutesOnly);
+
+  if (!Number.isFinite(total) || total < ESTIMATE_MIN || total > ESTIMATE_MAX) {
+    return { title: text, estimateMinutes: null };
+  }
+  return { title: rest.trim(), estimateMinutes: total };
+}

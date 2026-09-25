@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import type { DateStr } from "@/lib/date/types";
+import { formatEstimate, splitEstimateFromTitle } from "./estimate";
 
 interface TaskQuickAddProps {
   /** Yeni görevin tarihi. null → tarihsiz. */
@@ -20,6 +21,12 @@ interface TaskQuickAddProps {
  */
 export function TaskQuickAdd({ dueDate, pending = false, onAdd }: TaskQuickAddProps) {
   const [title, setTitle] = useState("");
+  /*
+   * Adın sonuna yazılan süre ("Paragraf 30dk") kaydederken ayrılıyor
+   * (bkz. `useCreateTask`). Burada yalnızca ÖNİZLENİYOR: kullanıcı
+   * "30dk"nın adın parçası kalmayacağını yazarken görsün.
+   */
+  const detected = splitEstimateFromTitle(title).estimateMinutes;
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -31,39 +38,52 @@ export function TaskQuickAdd({ dueDate, pending = false, onAdd }: TaskQuickAddPr
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-center gap-2">
-      <div className="relative flex-1">
-        <span
-          aria-hidden
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-3)]"
-        >
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
-            <path
-              d="M8 3.5v9M3.5 8h9"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
-        </span>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-1">
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <span
+            aria-hidden
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-3)]"
+          >
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M8 3.5v9M3.5 8h9"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </span>
 
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          maxLength={200}
-          placeholder={dueDate ? "Görev ekle" : "Tarihsiz görev ekle"}
-          className="h-11 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] pl-9 pr-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-line-3)]"
-        />
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={200}
+            placeholder={
+              dueDate ? "Görev ekle (ör. Paragraf 30dk)" : "Tarihsiz görev ekle"
+            }
+            className="h-11 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] pl-9 pr-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-line-3)]"
+          />
+        </div>
+
+        {title.trim() && (
+          <button
+            type="submit"
+            disabled={pending}
+            className="h-11 shrink-0 rounded-xl bg-[var(--color-accent)] px-4 font-medium text-[var(--color-on-accent)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
+          >
+            Ekle
+          </button>
+        )}
       </div>
 
-      {title.trim() && (
-        <button
-          type="submit"
-          disabled={pending}
-          className="h-11 shrink-0 rounded-xl bg-[var(--color-accent)] px-4 font-medium text-[var(--color-on-accent)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
+      {detected !== null && (
+        <p
+          aria-live="polite"
+          className="px-3 text-[length:var(--text-xs)] text-[var(--color-ink-3)]"
         >
-          Ekle
-        </button>
+          Tahmini süre: {formatEstimate(detected)}
+        </p>
       )}
     </form>
   );

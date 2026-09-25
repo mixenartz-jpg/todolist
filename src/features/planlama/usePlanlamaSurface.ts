@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { isDateStr, startOfMonth, todayStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import {
+  alignToScale,
   anchorForScale,
   scaleFromParam,
   scaleToParam,
@@ -117,15 +118,17 @@ export function usePlanlamaSurface(): PlanlamaSurface {
    * zorundadır, yoksa `eachDay(anchor, endOfIsoWeek(anchor))` yedi
    * günden az üretir ve ızgara eksik çizilir.
    *
-   * Hizalamayı `anchorForScale` yapıyor: o fonksiyon yazılmış ve
-   * testliydi ama HİÇBİR EKRAN ÇAĞIRMIYORDU. Çağrıldığı yer burası.
+   * Hizalamayı `alignToScale` yapıyor (bkz. aşağıdaki not).
    */
   const base = rawAnchor !== null && isDateStr(rawAnchor) ? rawAnchor : today;
 
-  const anchor = useMemo(
-    () => anchorForScale(base, scale, today),
-    [base, scale, today],
-  );
+  /*
+   * `alignToScale`, `anchorForScale` DEĞİL: ikincisinin "bugün bu
+   * aydaysa bugünün haftası" kuralı yalnızca ölçek değişiminde
+   * geçerli (`setScale`). Burada çalıştığında hafta ölçeğinde bugünün
+   * ayı içindeki her hafta bugüne çekiliyordu (gerekçe range.ts).
+   */
+  const anchor = useMemo(() => alignToScale(base, scale), [base, scale]);
 
   /*
    * Ay çapası HİZALANMAMIŞ tarihten türetilir, `anchor`'dan DEĞİL.
