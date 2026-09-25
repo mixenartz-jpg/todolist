@@ -329,6 +329,7 @@ export function PlanlamaScreen() {
               <PlanNodePanel
                 goals={goalsQuery.data ?? []}
                 tasks={tasksQuery.data ?? []}
+                today={today}
                 selectedNodeId={isPlacingNode(placing) ? placing.id : null}
                 onSelectGoal={handlePanelGoal}
                 onSelect={(id) =>

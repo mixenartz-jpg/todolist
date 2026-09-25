@@ -4,13 +4,12 @@ import { useState } from "react";
 import { Button } from "@/components/Button";
 import { Chevron } from "@/components/Chevron";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { addDays } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { formatEstimate } from "@/features/tasks/estimate";
 import type { Task } from "@/features/tasks/types";
 import { cn } from "@/lib/ui/cn";
 import { slotVar } from "@/lib/ui/colors";
-import { formatPercent, formatShortDate } from "@/lib/ui/tr";
+import { formatPercent, formatRelativeDay } from "@/lib/ui/tr";
 import { GoalNodeForm } from "./GoalNodeForm";
 import { NodeSendToDay } from "./NodeSendToDay";
 import type { NodeProgress } from "./nodeprogress";
@@ -425,7 +424,7 @@ function SentTasks({
         Gönderildi:
       </span>
       {tasks.map((task) => {
-        const day = dayLabel(task.dueDate, today);
+        const day = formatRelativeDay(task.dueDate, today);
         const text =
           task.estimateMinutes === null
             ? day
@@ -469,15 +468,6 @@ function SentTasks({
       })}
     </div>
   );
-}
-
-/** "Bugün", "Yarın", "Dün", ya da kısa tarih; tarihsiz görev havuzdadır. */
-function dayLabel(date: DateStr | null, today: DateStr): string {
-  if (date === null) return "Tarihsiz";
-  if (date === today) return "Bugün";
-  if (date === addDays(today, 1)) return "Yarın";
-  if (date === addDays(today, -1)) return "Dün";
-  return formatShortDate(date);
 }
 
 function RowButton({
