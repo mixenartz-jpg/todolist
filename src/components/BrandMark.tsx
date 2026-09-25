@@ -102,12 +102,12 @@ export function BrandMark({
      * Yazı yedeği. `aria-label` YOK: metnin kendisi zaten okunuyor,
      * etiket eklemek ekran okuyucuda çift okumaya yol açardı.
      *
-     * Vurgu rengi (`--color-accent`, açık mavi). Metin normalde beyaz
-     * kalır (bkz. globals.css mürekkep kuralı); marka imzası bunun
-     * bilinçli tek istisnasıdır ve zeminde 8.7:1 ile eşiği aşar.
+     * Beyaz (`--color-ink`) — logo görselinin kendisi de beyaz; yedek
+     * yazı onunla aynı rengi taşımazsa logo yüklenemediğinde marka
+     * başka bir renkte görünürdü.
      */
     <span
-      className="font-hand font-bold leading-none text-[var(--color-accent)]"
+      className="font-hand font-bold leading-none text-[var(--color-ink)]"
       /* Yedek, logonun çizileceği yüksekliğe yaklaşır: el yazısı
          gövdesi punto değerinin ~%80'i kadar yer kaplar. */
       style={{ fontSize: `${Math.round(height * 0.8)}px` }}
