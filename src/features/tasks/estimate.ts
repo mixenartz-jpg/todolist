@@ -58,6 +58,29 @@ export function totalEstimate(
   return any ? total : null;
 }
 
+/** Bir günün tahmini yükü: planlanan ve bitirilen süre, dakika. */
+export interface DayLoad {
+  /** Tahmini olan TÜM görevlerin toplamı. */
+  planned: number;
+  /** Bunların BİTMİŞ olanlarının toplamı — "bugün ne kadar çalıştım". */
+  done: number;
+}
+
+/**
+ * Günün yükü. Hiçbir görevde tahmin yoksa null (bkz. `totalEstimate`).
+ *
+ * Bitmiş ama tahmini olmayan görev `done`'a GİRMEZ: kaç dakika
+ * sürdüğünü bilmiyoruz ve sıfır saymak da bir tahmin uydurmaktır.
+ */
+export function dayLoad(
+  tasks: readonly { estimateMinutes: number | null; done: boolean }[],
+): DayLoad | null {
+  const planned = totalEstimate(tasks);
+  if (planned === null) return null;
+  const done = totalEstimate(tasks.filter((t) => t.done)) ?? 0;
+  return { planned, done };
+}
+
 /**
  * "Özel" kutusunun girdisini dakikaya çevirir; geçersizse null.
  *

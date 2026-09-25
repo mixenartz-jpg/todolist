@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatEstimate, parseEstimateInput, totalEstimate } from "./estimate";
+import { dayLoad, formatEstimate, parseEstimateInput, totalEstimate } from "./estimate";
 
 describe("formatEstimate", () => {
   it("bir saatin altı dakikadır", () => {
@@ -56,5 +56,29 @@ describe("totalEstimate", () => {
   it("hiç tahmin yoksa null", () => {
     expect(totalEstimate([{ estimateMinutes: null }])).toBeNull();
     expect(totalEstimate([])).toBeNull();
+  });
+});
+
+describe("dayLoad", () => {
+  it("planlananı ve bitirileni ayrı toplar", () => {
+    expect(
+      dayLoad([
+        { estimateMinutes: 30, done: true },
+        { estimateMinutes: 120, done: false },
+        { estimateMinutes: 60, done: true },
+        { estimateMinutes: null, done: true },
+      ]),
+    ).toEqual({ planned: 210, done: 90 });
+  });
+
+  it("hiçbiri bitmediyse yapılan 0", () => {
+    expect(dayLoad([{ estimateMinutes: 45, done: false }])).toEqual({
+      planned: 45,
+      done: 0,
+    });
+  });
+
+  it("tahmin yoksa null", () => {
+    expect(dayLoad([{ estimateMinutes: null, done: true }])).toBeNull();
   });
 });

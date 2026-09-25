@@ -5,6 +5,7 @@ import { isoWeekday } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { formatLongDate, WEEKDAYS_LONG } from "@/lib/ui/tr";
 import { orderForDay } from "@/features/tasks/dayorder";
+import { DayLoad } from "@/features/tasks/DayLoad";
 import { TaskItem } from "@/features/tasks/TaskItem";
 import type { Task } from "@/features/tasks/types";
 import { CategoryDot } from "./CategoryDot";
@@ -94,6 +95,7 @@ export function PlanDaySheet({
               {WEEKDAYS_LONG[isoWeekday(date)]}
               {date === today && " · bugün"}
             </p>
+            <DayLoad tasks={tasks} className="mt-1.5" />
           </div>
 
           <button

@@ -21,6 +21,8 @@ import { CategoryDot } from "@/features/planlama/CategoryDot";
 import { usePlanGoals } from "@/features/planlama/queries";
 import { TaskDetails } from "@/features/tasks/TaskDetails";
 import { TaskItem } from "@/features/tasks/TaskItem";
+import { DayLoad } from "@/features/tasks/DayLoad";
+import { useTodayFocusSeconds } from "@/features/zen/sessions";
 import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
 import { orderForDay } from "@/features/tasks/dayorder";
 import { useCategories, categoryMap } from "@/features/planlama/queries";
@@ -92,6 +94,12 @@ export function TodayScreen() {
   const setTaskGoal = useSetTaskGoal(toast.show);
   const setTaskColor = useSetTaskColor(toast.show);
   const setTaskEstimate = useSetTaskEstimate(toast.show);
+  /*
+   * Odak sayacının ölçtüğü GERÇEK süre — tahminlerin yanında durur.
+   * Odak ekranıyla aynı sorgu anahtarı: orada biten bir tur, buraya
+   * dönüldüğünde önbellekten güncel gelir.
+   */
+  const focusToday = useTodayFocusSeconds(today);
   const setTaskNote = useSetTaskNote(toast.show);
 
   /**
@@ -308,7 +316,17 @@ export function TodayScreen() {
               </section>
 
               <section>
-                <SectionHeading sectionKey="today.tasks" onError={toast.show} />
+                <SectionHeading
+                  sectionKey="today.tasks"
+                  onError={toast.show}
+                  trailing={
+                    <DayLoad
+                      tasks={dayTasks}
+                      focusSeconds={focusToday.data}
+                      className="ml-auto"
+                    />
+                  }
+                />
 
                 {dayTasks.length > 0 && (
                   <ul className="mb-2.5 flex flex-col gap-1.5">
