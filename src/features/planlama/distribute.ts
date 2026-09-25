@@ -43,6 +43,12 @@ export interface NodeTaskDraft {
   goalId: string;
   title: string;
   dueDate: DateStr;
+  /**
+   * Tahmini süre, dakika (0023). Tek kalemi "Güne" panelinden
+   * gönderirken seçilebilir; toplu dağıtım (`planDistribution`)
+   * vermez.
+   */
+  estimateMinutes?: number | null;
 }
 
 export interface DistributionPlan {

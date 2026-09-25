@@ -318,6 +318,10 @@ export function useDistributeNodes(onError?: (message: string) => void) {
           note: null,
           goal_id: draft.goalId,
           node_id: draft.nodeId,
+          // Yalnız VARSA yazılır — `useCreateTask` ile aynı desen.
+          ...(draft.estimateMinutes != null && {
+            estimate_minutes: draft.estimateMinutes,
+          }),
         })),
       );
 
@@ -342,7 +346,7 @@ export function useDistributeNodes(onError?: (message: string) => void) {
         goalId: draft.goalId,
         nodeId: draft.nodeId,
         colorSlot: null,
-        estimateMinutes: null,
+        estimateMinutes: draft.estimateMinutes ?? null,
       }));
 
       qc.setQueryData<Task[]>(qk.tasks(), (tasks) => [

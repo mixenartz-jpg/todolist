@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { goalNode, planGoal, task } from "@/features/testing/fixtures";
 import { goalProgress } from "./rollup";
-import { goalTreeProgress, treeRootRatio } from "./nodeprogress";
+import { goalTreeProgress, sentTasksByNode, treeRootRatio } from "./nodeprogress";
 
 /** Bir düğüme bağlı n görev üretir, ilk `done` tanesi tamamlanmış. */
 function tasksFor(nodeId: string, total: number, done: number) {
@@ -195,5 +195,31 @@ describe("goalProgress ile tutarlılık", () => {
     const fromGoal = goalProgress(goal, tasks).ratio;
 
     expect(fromTree).toBe(fromGoal);
+  });
+});
+
+describe("sentTasksByNode", () => {
+  it("görevleri kalemine göre gruplar, kalemsizleri atlar", () => {
+    const map = sentTasksByNode([
+      task({ id: "a", nodeId: "n1", dueDate: "2026-09-26" }),
+      task({ id: "b", nodeId: "n2", dueDate: "2026-09-25" }),
+      task({ id: "c", nodeId: null, dueDate: "2026-09-25" }),
+    ]);
+    expect([...map.keys()].sort()).toEqual(["n1", "n2"]);
+    expect(map.get("n1")!.map((t) => t.id)).toEqual(["a"]);
+  });
+
+  it("tarihe göre sıralar, tarihsizler sonda", () => {
+    const map = sentTasksByNode([
+      task({ id: "x", nodeId: "n1", dueDate: null }),
+      task({ id: "late", nodeId: "n1", dueDate: "2026-10-02" }),
+      task({ id: "early", nodeId: "n1", dueDate: "2026-09-26" }),
+    ]);
+    expect(map.get("n1")!.map((t) => t.id)).toEqual(["early", "late", "x"]);
+  });
+
+  it("çocukların görevleri ataya TOPLANMAZ", () => {
+    const map = sentTasksByNode([task({ id: "c1", nodeId: "child" })]);
+    expect(map.has("parent")).toBe(false);
   });
 });

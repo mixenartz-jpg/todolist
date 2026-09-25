@@ -7,13 +7,14 @@ import { ScreenBody } from "@/components/Screen";
 import { Toast, useToast } from "@/components/Toast";
 import { startOfMonth, todayStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
+import { useDeleteTask } from "@/features/tasks/mutations";
 import { useTasks } from "@/features/tasks/queries";
 import { GoalNodeForm } from "./GoalNodeForm";
 import { GoalTreeHeader } from "./GoalTreeHeader";
 import { GoalTreeView } from "./GoalTreeView";
 import { NodeBulkSend } from "./NodeBulkSend";
 import { planDistribution } from "./distribute";
-import { goalTreeProgress, treeRootRatio } from "./nodeprogress";
+import { goalTreeProgress, sentTasksByNode, treeRootRatio } from "./nodeprogress";
 import {
   useCreateGoalNode,
   useDeleteGoalNode,
@@ -67,6 +68,8 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
   const moveNode = useMoveGoalNode(toast.show);
   const reorderNodes = useReorderGoalNodes(toast.show);
   const distribute = useDistributeNodes(toast.show);
+  // "Geri al": kalemden doğan görevi siler (iyimser — çip anında gider).
+  const deleteTask = useDeleteTask(toast.show);
 
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
@@ -82,6 +85,9 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
     () => goalTreeProgress(nodes, tasks),
     [nodes, tasks],
   );
+
+  /** Kalem → KENDİ görevleri: satırdaki "Gönderildi" çipleri. */
+  const sentTasks = useMemo(() => sentTasksByNode(tasks), [tasks]);
 
   const ratio = useMemo(
     () => treeRootRatio(progress, nodes),
@@ -122,7 +128,11 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
     return next;
   }
 
-  function sendToDay(nodeIds: readonly string[], date: DateStr) {
+  function sendToDay(
+    nodeIds: readonly string[],
+    date: DateStr,
+    estimateMinutes: number | null = null,
+  ) {
     const chosen = nodes.filter((n) => nodeIds.includes(n.id));
     const plan = planDistribution(
       chosen,
@@ -130,7 +140,9 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
       goalId,
     );
     if (plan.drafts.length === 0) return;
-    distribute.mutate({ drafts: plan.drafts });
+    distribute.mutate({
+      drafts: plan.drafts.map((draft) => ({ ...draft, estimateMinutes })),
+    });
   }
 
   return (
@@ -232,7 +244,15 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
               sortOrder: nextSiblingOrder(nodes, parentId),
             })
           }
-          onSend={(id, date) => sendToDay([id], date)}
+          onSend={(id, date, estimateMinutes) =>
+            sendToDay([id], date, estimateMinutes)
+          }
+          sentTasks={sentTasks}
+          onRecall={(taskId) =>
+            deleteTask.mutate(taskId, {
+              onSuccess: () => toast.show("Görev geri alındı.", "success"),
+            })
+          }
           onReorder={(id, delta) => {
             const patches = reorderSiblings(nodes, id, delta);
             if (patches.length === 0) return;

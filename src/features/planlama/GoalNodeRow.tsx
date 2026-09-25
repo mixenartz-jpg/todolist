@@ -4,10 +4,13 @@ import { useState } from "react";
 import { Button } from "@/components/Button";
 import { Chevron } from "@/components/Chevron";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { addDays } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
+import { formatEstimate } from "@/features/tasks/estimate";
+import type { Task } from "@/features/tasks/types";
 import { cn } from "@/lib/ui/cn";
 import { slotVar } from "@/lib/ui/colors";
-import { formatPercent } from "@/lib/ui/tr";
+import { formatPercent, formatShortDate } from "@/lib/ui/tr";
 import { GoalNodeForm } from "./GoalNodeForm";
 import { NodeSendToDay } from "./NodeSendToDay";
 import type { NodeProgress } from "./nodeprogress";
@@ -34,7 +37,14 @@ interface GoalNodeRowProps {
   onAddChild: () => void;
   onDelete: () => void;
   onMove: (parentId: string | null) => void;
-  onSend: (date: DateStr) => void;
+  onSend: (date: DateStr, estimateMinutes: number | null) => void;
+  /**
+   * Bu kalemin KENDİ görevleri — "nereye gönderildi" çipleri
+   * (bkz. `sentTasksByNode`). Çocukların görevleri burada YOK.
+   */
+  sentTasks: readonly Task[];
+  /** Gönderilmiş (bitmemiş) bir görevi geri al — görevi siler. */
+  onRecall: (taskId: string) => void;
   onReorder: (delta: -1 | 1) => void;
   /** Sürükleme başlatıcısı (Faz 6); verilmezse satır sürüklenemez. */
   onDragStart?: () => void;
@@ -81,6 +91,8 @@ export function GoalNodeRow({
   onDelete,
   onMove,
   onSend,
+  sentTasks,
+  onRecall,
   onReorder,
   onDragStart,
   children,
@@ -199,6 +211,13 @@ export function GoalNodeRow({
                 measured={measured}
                 ratio={ratio}
               />
+
+              <SentTasks
+                tasks={sentTasks}
+                title={node.title}
+                today={today}
+                onRecall={onRecall}
+              />
             </>
           )}
         </div>
@@ -265,8 +284,8 @@ export function GoalNodeRow({
         <NodeSendToDay
           today={today}
           pending={pending}
-          onSend={(date) => {
-            onSend(date);
+          onSend={(date, estimateMinutes) => {
+            onSend(date, estimateMinutes);
             setSending(false);
           }}
           onCancel={() => setSending(false)}
@@ -377,6 +396,88 @@ function NodeProgressLine({
       </span>
     </div>
   );
+}
+
+/**
+ * "Nereye gönderildi" çipleri: her görev için gün, varsa süre.
+ *
+ * Bitmemiş görevin çipinde × vardır ve görevi o günden GERİ ALIR
+ * (görev silinir, kalem "henüz dağıtılmadı"ya döner). Bitmiş görevde
+ * yok: tamamlanmış iş bir kayıttır ve arşivden, günlük toplamlardan
+ * sessizce silinmemeli.
+ */
+function SentTasks({
+  tasks,
+  title,
+  today,
+  onRecall,
+}: {
+  tasks: readonly Task[];
+  title: string;
+  today: DateStr;
+  onRecall: (taskId: string) => void;
+}) {
+  if (tasks.length === 0) return null;
+
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-1">
+      <span className="text-[length:var(--text-2xs)] text-[var(--color-ink-3)]">
+        Gönderildi:
+      </span>
+      {tasks.map((task) => {
+        const day = dayLabel(task.dueDate, today);
+        const text =
+          task.estimateMinutes === null
+            ? day
+            : `${day} · ${formatEstimate(task.estimateMinutes)}`;
+
+        return (
+          <span
+            key={task.id}
+            className={cn(
+              "tabular inline-flex items-center gap-1 rounded-full border py-0.5 pl-2 text-[length:var(--text-2xs)]",
+              task.done
+                ? "border-transparent bg-[var(--color-surface-3)] pr-2 text-[var(--color-ink-3)]"
+                : "border-[var(--color-line-2)] bg-[var(--color-surface)] pr-0.5 text-[var(--color-ink-2)]",
+            )}
+          >
+            {task.done && <span aria-hidden>✓</span>}
+            <span>
+              {task.done && <span className="sr-only">Tamamlandı: </span>}
+              {text}
+            </span>
+            {!task.done && (
+              <button
+                type="button"
+                onClick={() => onRecall(task.id)}
+                aria-label={`${title}: ${day} gününden geri al`}
+                title="Geri al"
+                className="grid size-4 place-items-center rounded-full text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-danger)]"
+              >
+                <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden>
+                  <path
+                    d="M1.5 1.5l5 5M6.5 1.5l-5 5"
+                    stroke="currentColor"
+                    strokeWidth="1.3"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            )}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/** "Bugün", "Yarın", "Dün", ya da kısa tarih; tarihsiz görev havuzdadır. */
+function dayLabel(date: DateStr | null, today: DateStr): string {
+  if (date === null) return "Tarihsiz";
+  if (date === today) return "Bugün";
+  if (date === addDays(today, 1)) return "Yarın";
+  if (date === addDays(today, -1)) return "Dün";
+  return formatShortDate(date);
 }
 
 function RowButton({
