@@ -308,6 +308,7 @@ export function PlanlamaScreen() {
                       onDelete={actions.onDelete}
                       onRename={actions.onRename}
                       onUnschedule={actions.onUnschedule}
+                      onSetEstimate={actions.onSetEstimate}
                       onReorder={actions.onReorder}
                     />
                   ))}
@@ -373,6 +374,7 @@ export function PlanlamaScreen() {
           onDelete={actions.onDelete}
           onRename={actions.onRename}
           onUnschedule={actions.onUnschedule}
+                      onSetEstimate={actions.onSetEstimate}
           onReorder={actions.onReorder}
         />
       )}

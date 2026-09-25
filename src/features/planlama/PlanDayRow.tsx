@@ -7,6 +7,8 @@ import { cn } from "@/lib/ui/cn";
 import { formatShortDate, WEEKDAYS_SHORT } from "@/lib/ui/tr";
 import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
 import type { Task } from "@/features/tasks/types";
+import { DayLoad } from "@/features/tasks/DayLoad";
+import { dayLoad } from "@/features/tasks/estimate";
 import { PlanTaskList } from "./PlanTaskList";
 import type { PlanBucket } from "./range";
 import type { Category } from "./types";
@@ -85,6 +87,7 @@ interface PlanDayRowProps {
   onDelete: (task: Task) => void;
   onRename: (task: Task, title: string) => void;
   onUnschedule: (task: Task) => void;
+  onSetEstimate: (task: Task, minutes: number | null) => void;
   onReorder: (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => void;
 }
 
@@ -108,6 +111,7 @@ export function PlanDayRow({
   onDelete,
   onRename,
   onUnschedule,
+  onSetEstimate,
   onReorder,
 }: PlanDayRowProps) {
   const day = toParts(bucket.date).day;
@@ -119,6 +123,7 @@ export function PlanDayRow({
    * tonda basılır; ayın nerede bölündüğünü gösteren ritim budur. */
   const isWeekend = weekday >= 6;
   const isEmpty = bucket.tasks.length === 0;
+  const hasLoad = dayLoad(bucket.tasks) !== null;
 
   // Yıl DEĞİL "5 Ağustos": yıl zaten başlıkta ve her satırda tekrar
   // etmek ekran okuyucuyu boğardı.
@@ -238,26 +243,46 @@ export function PlanDayRow({
           düğme ve aynı hedefe iki işlev bindirmek, hangisinin
           olacağını tahmin edilemez kılardı.
         */}
-        {!isEmpty && (
-          <button
-            type="button"
-            onClick={() => onToggleCollapsed(bucket.date)}
-            aria-expanded={!collapsed}
-            aria-label={
-              collapsed ? `${dayName}: ${summary} göster` : `${dayName}: görevleri gizle`
-            }
-            className="planDayCollapse"
-          >
-            <Chevron open={!collapsed} />
-            {/* Kapalıyken özet görünür: satır "boş" sanılmasın.
-                Açıkken gereksiz — görevler zaten ortada. */}
-            {collapsed && (
-              <span aria-hidden className="tabular">
-                {summary}
-              </span>
-            )}
-          </button>
-        )}
+        {/*
+          Özet satırı: katlama oku solda, günün tahmini yükü sağda.
+          Yük katlı günde de görünür — "bu gün ne kadar dolu" sorusu
+          tam da görevler gizliyken sorulur. Açık günde ok mutlak
+          konumlu (planlama.css), satırda yalnızca yük kalır; tahmin
+          yoksa `DayLoad` hiçbir şey çizmez.
+
+          Tahmin yoksa kap `contents`: açık günde içinde yalnızca
+          mutlak konumlu ok kalır ve kutu olarak dursaydı, sıfır
+          yükseklikte olsa bile `.planDayField`'ın flex boşluğunu yiyip
+          tahmini olmayan HER günü bir tık uzatırdı.
+        */}
+        <div
+          className={
+            hasLoad ? "flex items-center justify-between gap-2" : "contents"
+          }
+        >
+          {!isEmpty && (
+            <button
+              type="button"
+              onClick={() => onToggleCollapsed(bucket.date)}
+              aria-expanded={!collapsed}
+              aria-label={
+                collapsed ? `${dayName}: ${summary} göster` : `${dayName}: görevleri gizle`
+              }
+              className="planDayCollapse"
+            >
+              <Chevron open={!collapsed} />
+              {/* Kapalıyken özet görünür: satır "boş" sanılmasın.
+                  Açıkken gereksiz — görevler zaten ortada. */}
+              {collapsed && (
+                <span aria-hidden className="tabular">
+                  {summary}
+                </span>
+              )}
+            </button>
+          )}
+
+          <DayLoad tasks={bucket.tasks} compact className="ml-auto" />
+        </div>
 
         {!collapsed && (
           <PlanTaskList
@@ -269,6 +294,7 @@ export function PlanDayRow({
             onDelete={onDelete}
             onRename={onRename}
             onUnschedule={onUnschedule}
+            onSetEstimate={onSetEstimate}
             onReorder={onReorder}
           />
         )}

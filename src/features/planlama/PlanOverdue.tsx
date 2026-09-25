@@ -52,6 +52,7 @@ export function PlanOverdue({
             // Tek dokunuşluk çözüm yolu: gecikmeyi bugüne al.
             onDefer={() => actions.reschedule(task.id, today)}
             onRename={(title) => actions.onRename(task, title)}
+            onSetEstimate={(minutes) => actions.onSetEstimate(task, minutes)}
           />
         ))}
       </ul>

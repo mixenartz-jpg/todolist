@@ -73,6 +73,15 @@ export interface TaskRow {
    * devralınır (0013). `smallint`, supabase-js'e number gelir.
    */
   color_slot: number | null;
+  /**
+   * Tahmini süre, dakika (0023). null → tahmin yok.
+   *
+   * Opsiyonel (`?`), çünkü migration ELLE çalıştırılıyor (README):
+   * kod ondan önce yayına çıkarsa `select("*")` bu alanı hiç
+   * döndürmez ve tip bunu söylemek zorunda — `toTask` `?? null` ile
+   * düşürür.
+   */
+  estimate_minutes?: number | null;
   created_at: string;
 }
 

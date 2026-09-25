@@ -5,6 +5,7 @@ import { isoWeekday } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { formatLongDate, WEEKDAYS_LONG } from "@/lib/ui/tr";
 import { orderForDay } from "@/features/tasks/dayorder";
+import { DayLoad } from "@/features/tasks/DayLoad";
 import { TaskItem } from "@/features/tasks/TaskItem";
 import type { Task } from "@/features/tasks/types";
 import { CategoryDot } from "./CategoryDot";
@@ -30,6 +31,7 @@ interface PlanDaySheetProps {
   onDelete: (task: Task) => void;
   onRename: (task: Task, title: string) => void;
   onUnschedule: (task: Task) => void;
+  onSetEstimate: (task: Task, minutes: number | null) => void;
   onReorder: (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => void;
 }
 
@@ -58,6 +60,7 @@ export function PlanDaySheet({
   onDelete,
   onRename,
   onUnschedule,
+  onSetEstimate,
   onReorder,
 }: PlanDaySheetProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -92,6 +95,7 @@ export function PlanDaySheet({
               {WEEKDAYS_LONG[isoWeekday(date)]}
               {date === today && " · bugün"}
             </p>
+            <DayLoad tasks={tasks} className="mt-1.5" />
           </div>
 
           <button
@@ -139,6 +143,7 @@ export function PlanDaySheet({
                   onDelete={() => onDelete(task)}
                   onRename={(title) => onRename(task, title)}
                   onDefer={() => onUnschedule(task)}
+                  onSetEstimate={(minutes) => onSetEstimate(task, minutes)}
                   /*
                    * Kategori seçici ve sıra düğmeleri aynı yuvayı
                    * paylaşır. Seçici TAMAMLANMIŞ görevde de durur:

@@ -123,6 +123,7 @@ interface TaskOptions {
   /** Görevi bir plan düğümüne bağlar (0022). */
   nodeId?: string | null;
   colorSlot?: number | null;
+  estimateMinutes?: number | null;
 }
 
 /**
@@ -149,6 +150,7 @@ export function task(options: TaskOptions = {}): Task {
     goalId: options.goalId ?? null,
     nodeId: options.nodeId ?? null,
     colorSlot: options.colorSlot ?? null,
+    estimateMinutes: options.estimateMinutes ?? null,
   };
 }
 

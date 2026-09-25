@@ -154,6 +154,7 @@ export function useCreateTask(onError?: (message: string) => void) {
         // Yeni görev rengini KATEGORİDEN devralır ve kategorisi de yok:
         // nötr çizilir. Renk sonradan verilen ikinci bir harekettir.
         colorSlot: null,
+        estimateMinutes: null,
       };
 
       qc.setQueryData<Task[]>(qk.tasks(), (tasks) =>
@@ -347,6 +348,46 @@ export function useSetTaskColor(onError?: (message: string) => void) {
       const previous = qc.getQueryData<Task[]>(qk.tasks());
       qc.setQueryData<Task[]>(qk.tasks(), (tasks) =>
         tasks?.map((t) => (t.id === id ? { ...t, colorSlot } : t)),
+      );
+      return { previous };
+    },
+
+    onError: (error, _vars, context) => {
+      qc.setQueryData(qk.tasks(), context?.previous);
+      onError?.(errorText(error));
+    },
+
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.tasks() }),
+  });
+}
+
+/**
+ * Görevin tahmini süresini ayarlar — optimistic. `null` tahmini siler.
+ */
+export function useSetTaskEstimate(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      estimateMinutes,
+    }: {
+      id: string;
+      estimateMinutes: number | null;
+    }) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("tasks")
+        .update({ estimate_minutes: estimateMinutes })
+        .eq("id", id);
+      if (error) throw error;
+    },
+
+    onMutate: async ({ id, estimateMinutes }) => {
+      await qc.cancelQueries({ queryKey: qk.tasks() });
+      const previous = qc.getQueryData<Task[]>(qk.tasks());
+      qc.setQueryData<Task[]>(qk.tasks(), (tasks) =>
+        tasks?.map((t) => (t.id === id ? { ...t, estimateMinutes } : t)),
       );
       return { previous };
     },

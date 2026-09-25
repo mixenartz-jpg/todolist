@@ -4,6 +4,7 @@ import { memo, useRef, useState, type ReactNode } from "react";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { formatShortDate } from "@/lib/ui/tr";
+import { EstimateChip, EstimatePicker } from "./EstimatePicker";
 import { isPendingTask } from "./pending";
 import { isOverdue } from "./queries";
 import { normalizeTitleInput, shouldPersistTitle, TASK_TITLE_MAX } from "./rename";
@@ -64,6 +65,12 @@ interface TaskItemProps {
    * okunur (bkz. CategoryDot).
    */
   marker?: ReactNode;
+  /**
+   * Tahmini süreyi ayarla (0023). Verilirse süre çipi tıklanabilir
+   * olur ve tahmini olmayan satırda saat simgesi çizilir; verilmezse
+   * çip yalnızca bir etikettir.
+   */
+  onSetEstimate?: (minutes: number | null) => void;
 }
 
 export const TaskItem = memo(function TaskItem({
@@ -78,9 +85,17 @@ export const TaskItem = memo(function TaskItem({
   expanded = false,
   onExpand,
   marker,
+  onSetEstimate,
 }: TaskItemProps) {
   const overdue = isOverdue(task, today);
   const [editingTitle, setEditingTitle] = useState(false);
+  /*
+   * Süre seçici açık mı? Durum SATIRDA, `expanded` gibi çağıranda
+   * değil: seçici tek dokunuşla kapanıyor ve Planlama'nın dar
+   * sütunlarında açılır bölme hiç yok — her çağıranın ayrı bir durum
+   * tutması, süreyi yalnızca Bugün ekranında ayarlanabilir kılardı.
+   */
+  const [estimating, setEstimating] = useState(false);
 
   /*
    * Henüz yazılmamış görev ETKİLEŞİME KAPALI.
@@ -176,9 +191,13 @@ export const TaskItem = memo(function TaskItem({
       </button>
 
       <div className="min-w-0 flex-1">
+        {/* Süre çipi başlık satırının SAĞINDA ama üstü çizili kabın
+            DIŞINDA: `line-through` flex çocuklarına da yayılır ve
+            bitmiş işin "30 dak"ı da çizilirdi. */}
+        <div className="flex items-start gap-2">
         <div
           className={cn(
-            "flex gap-2 text-[length:var(--text-base)]",
+            "flex min-w-0 flex-1 gap-2 text-[length:var(--text-base)]",
             // Başlık artık her yerde sarabildiği için hiza da her yerde
             // tepeden: `items-baseline` sarmalı metinde tabanı SON
             // satıra göre hesaplar ve saat çipi metnin ortasında asılı
@@ -246,6 +265,31 @@ export const TaskItem = memo(function TaskItem({
           )}
         </div>
 
+        {task.estimateMinutes !== null && (
+          <span className="mt-0.5 flex">
+            <EstimateChip
+              minutes={task.estimateMinutes}
+              done={task.done}
+              taskTitle={task.title}
+              onClick={
+                onSetEstimate && !pending
+                  ? () => setEstimating((open) => !open)
+                  : undefined
+              }
+            />
+          </span>
+        )}
+        </div>
+
+        {estimating && onSetEstimate && (
+          <EstimatePicker
+            taskTitle={task.title}
+            value={task.estimateMinutes}
+            onChange={onSetEstimate}
+            onClose={() => setEstimating(false)}
+          />
+        )}
+
         {extra}
 
         {/* Açılır bölme satırın altında, İÇERİDE: `<li>`nin dışına
@@ -272,7 +316,7 @@ export const TaskItem = memo(function TaskItem({
           /* Bölme açıkken simgeler GÖRÜNÜR kalır: kullanıcı fareyi
              panele indirdiğinde satırdan çıkmış sayılır ve kapatma
              düğmesi altından kaybolurdu. */
-          expanded ? "opacity-100" : "opacity-0",
+          expanded || estimating ? "opacity-100" : "opacity-0",
         )}
       >
         {panel && onExpand && !pending && (
@@ -287,6 +331,27 @@ export const TaskItem = memo(function TaskItem({
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
               <circle cx="8" cy="8" r="5.75" stroke="currentColor" strokeWidth="1.3" />
               <circle cx="8" cy="8" r="2.25" stroke="currentColor" strokeWidth="1.3" />
+            </svg>
+          </IconButton>
+        )}
+
+        {/* Tahmini olmayan satırda süre vermenin yolu. Tahmin varsa
+            çipin kendisi düğme — ikinci bir simge gereksiz olurdu. */}
+        {onSetEstimate && task.estimateMinutes === null && !task.done && !pending && (
+          <IconButton
+            label={`${task.title}: tahmini süre ekle`}
+            pressed={estimating}
+            onClick={() => setEstimating((open) => !open)}
+          >
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
+              <circle cx="8" cy="8" r="5.75" stroke="currentColor" strokeWidth="1.3" />
+              <path
+                d="M8 5v3.2l2 1.3"
+                stroke="currentColor"
+                strokeWidth="1.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </IconButton>
         )}
