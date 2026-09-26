@@ -21,6 +21,13 @@ interface PlanTaskListProps {
   onUnschedule: (task: Task) => void;
   onSetEstimate: (task: Task, minutes: number | null) => void;
   onReorder: (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => void;
+  /** Taşınmak üzere seçili görevin kimliği (yerleştirme kipi). */
+  movingId?: string | null;
+  /** Görevi başka güne taşımak için seç / seçimi bırak. */
+  onMove?: (task: Task) => void;
+  /** Görev sürüklenmeye başladı / sürükleme bitti. */
+  onDragTaskStart?: (task: Task) => void;
+  onDragTaskEnd?: () => void;
 }
 
 /**
@@ -53,6 +60,10 @@ export function PlanTaskList({
   onUnschedule,
   onSetEstimate,
   onReorder,
+  movingId = null,
+  onMove,
+  onDragTaskStart,
+  onDragTaskEnd,
 }: PlanTaskListProps) {
   const ordered = orderForDay(tasks);
 
@@ -84,6 +95,16 @@ export function PlanTaskList({
             // değil — o zaten sıradaki güne tıklamaktır.
             onDefer={() => onUnschedule(task)}
             onSetEstimate={(minutes) => onSetEstimate(task, minutes)}
+            /*
+             * Başka güne taşıma: düğme tıkla-yerleştir kipini açar,
+             * sürükleme onun fareyle kısayolu. İkisi de bırakmayı
+             * ekranın `handlePlace`'ine düşürür — havuzdaki görevle
+             * aynı yol.
+             */
+            onMove={onMove && (() => onMove(task))}
+            moving={movingId === task.id}
+            onDragStart={onDragTaskStart && (() => onDragTaskStart(task))}
+            onDragEnd={onDragTaskEnd}
             extra={
               ordered.length > 1 && !task.done ? (
                 <ReorderButtons

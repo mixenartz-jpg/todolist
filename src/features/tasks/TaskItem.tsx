@@ -71,6 +71,17 @@ interface TaskItemProps {
    * çip yalnızca bir etikettir.
    */
   onSetEstimate?: (minutes: number | null) => void;
+  /**
+   * Başka güne taşı — tıkla-yerleştir kipini açar/kapatır (Planlama).
+   * Verilirse satır aynı zamanda SÜRÜKLENEBİLİR olur: sürükleme bu
+   * yolun fareyle kısayolu, dokunma ve klavye düğmeyi kullanır.
+   */
+  onMove?: () => void;
+  /** Satır şu an taşınmak üzere seçili mi (düğmenin basılı hâli). */
+  moving?: boolean;
+  /** Sürükleme başladı / bitti. `onMove` ile birlikte verilir. */
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
 }
 
 export const TaskItem = memo(function TaskItem({
@@ -86,6 +97,10 @@ export const TaskItem = memo(function TaskItem({
   onExpand,
   marker,
   onSetEstimate,
+  onMove,
+  moving = false,
+  onDragStart,
+  onDragEnd,
 }: TaskItemProps) {
   const overdue = isOverdue(task, today);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -121,12 +136,32 @@ export const TaskItem = memo(function TaskItem({
    */
   const canRename = Boolean(onRename) && !task.done && !pending;
 
+  /*
+   * Ad düzenlenirken sürükleme KAPALI: yoksa metin kutusunda seçim
+   * yapmaya çalışan fare satırı sürüklemeye başlardı.
+   */
+  const canDrag = Boolean(onDragStart) && !pending && !editingTitle;
+
   return (
     <li
       aria-busy={pending || undefined}
+      draggable={canDrag || undefined}
+      onDragStart={
+        canDrag
+          ? (event) => {
+              /* Firefox veri yazılmadan sürüklemeyi başlatmıyor. */
+              event.dataTransfer.setData("text/plain", task.title);
+              event.dataTransfer.effectAllowed = "move";
+              onDragStart?.();
+            }
+          : undefined
+      }
+      onDragEnd={canDrag ? onDragEnd : undefined}
       className={cn(
         "rowEnter revealOnHover flex rounded-xl border px-3 py-2.5",
         pending && "opacity-60",
+        canDrag && "cursor-grab active:cursor-grabbing",
+        moving && "ring-2 ring-[var(--color-ink-3)]",
         // `items-start`, `items-center` DEĞİL: başlık iki satıra
         // sarabiliyor ve ortalama, kutucuğu ile simgeleri metnin
         // ortasında asılı bırakırdı. Tepeden hizalanınca kutucuk her
@@ -344,7 +379,7 @@ export const TaskItem = memo(function TaskItem({
           /* Bölme açıkken simgeler GÖRÜNÜR kalır: kullanıcı fareyi
              panele indirdiğinde satırdan çıkmış sayılır ve kapatma
              düğmesi altından kaybolurdu. */
-          expanded ? "opacity-100" : "opacity-0",
+          expanded || moving ? "opacity-100" : "opacity-0",
         )}
       >
         {panel && onExpand && !pending && (
@@ -359,6 +394,25 @@ export const TaskItem = memo(function TaskItem({
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
               <circle cx="8" cy="8" r="5.75" stroke="currentColor" strokeWidth="1.3" />
               <circle cx="8" cy="8" r="2.25" stroke="currentColor" strokeWidth="1.3" />
+            </svg>
+          </IconButton>
+        )}
+
+        {onMove && !pending && (
+          <IconButton
+            label={`${task.title}: başka güne taşı`}
+            pressed={moving}
+            onClick={onMove}
+          >
+            {/* Dört yönlü ok: "yerini değiştir". */}
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
+              <path
+                d="M8 2.5v11M2.5 8h11M6.3 4.2L8 2.5l1.7 1.7M6.3 11.8L8 13.5l1.7-1.7M4.2 6.3L2.5 8l1.7 1.7M11.8 6.3L13.5 8l-1.7 1.7"
+                stroke="currentColor"
+                strokeWidth="1.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </IconButton>
         )}

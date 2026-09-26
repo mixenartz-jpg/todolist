@@ -195,7 +195,10 @@ export function PlanlamaScreen() {
     if (placing === null) return;
 
     if (isPlacingTask(placing)) {
-      actions.reschedule(placing.id, date);
+      // Kendi gününe bırakılan görev için yazma yok: aynı tarihi
+      // yeniden yazmak boşuna bir ağ turu ve iyimser titreme olurdu.
+      const task = (tasksQuery.data ?? []).find((t) => t.id === placing.id);
+      if (task?.dueDate !== date) actions.reschedule(placing.id, date);
       setPlacing(null);
       return;
     }
@@ -310,6 +313,29 @@ export function PlanlamaScreen() {
                       onUnschedule={actions.onUnschedule}
                       onSetEstimate={actions.onSetEstimate}
                       onReorder={actions.onReorder}
+                      /*
+                       * Günler arası taşıma: görev satırı da havuzdaki
+                       * görev gibi yerleştirme kipine girer. Düğme
+                       * aç/kapa; sürükleme başlarken kipe girer, bırakma
+                       * olmadan biterse kipten çıkar — fareyi günün
+                       * dışında bırakan kullanıcı yarım kalmış bir
+                       * kipte takılmasın.
+                       */
+                      movingId={isPlacingTask(placing) ? placing.id : null}
+                      onMove={(task) =>
+                        setPlacing((current) =>
+                          isPlacingTask(current) && current.id === task.id
+                            ? null
+                            : { kind: "task", id: task.id },
+                        )
+                      }
+                      onDragTaskStart={(task) =>
+                        setPlacing({ kind: "task", id: task.id })
+                      }
+                      onDragTaskEnd={() => {
+                        setPlacing(null);
+                        setDragOverDate(null);
+                      }}
                     />
                   ))}
                 </PlanSheet>
