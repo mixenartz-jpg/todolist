@@ -89,6 +89,11 @@ interface PlanDayRowProps {
   onUnschedule: (task: Task) => void;
   onSetEstimate: (task: Task, minutes: number | null) => void;
   onReorder: (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => void;
+  /** Taşınmak üzere seçili görev (bkz. PlanTaskList). */
+  movingId?: string | null;
+  onMove?: (task: Task) => void;
+  onDragTaskStart?: (task: Task) => void;
+  onDragTaskEnd?: () => void;
 }
 
 export function PlanDayRow({
@@ -113,6 +118,10 @@ export function PlanDayRow({
   onUnschedule,
   onSetEstimate,
   onReorder,
+  movingId,
+  onMove,
+  onDragTaskStart,
+  onDragTaskEnd,
 }: PlanDayRowProps) {
   const day = toParts(bucket.date).day;
   const weekday = isoWeekday(bucket.date);
@@ -296,6 +305,10 @@ export function PlanDayRow({
             onUnschedule={onUnschedule}
             onSetEstimate={onSetEstimate}
             onReorder={onReorder}
+            movingId={movingId}
+            onMove={onMove}
+            onDragTaskStart={onDragTaskStart}
+            onDragTaskEnd={onDragTaskEnd}
           />
         )}
 
