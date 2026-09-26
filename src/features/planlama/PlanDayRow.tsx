@@ -107,7 +107,7 @@ export function PlanDayRow({
   onDragOver,
   addPending,
   inScope,
-  collapsed,
+  collapsed: collapsedProp,
   onToggleCollapsed,
   onOpenDay,
   onPlace,
@@ -133,6 +133,13 @@ export function PlanDayRow({
   const isWeekend = weekday >= 6;
   const isEmpty = bucket.tasks.length === 0;
   const hasLoad = dayLoad(bucket.tasks) !== null;
+  /*
+   * Boş gün KATLANMAZ: katlanacak görev yok, katlama oku da çizilmiyor
+   * ve katlı sayılsaydı ekleme kutusu gizlenip güne iş eklemenin yolu
+   * kalmazdı. Varsayılan kural geçmiş ve ileri günleri katlı getirdiği
+   * için (foldrule.ts) bu durum artık sık.
+   */
+  const collapsed = collapsedProp && !isEmpty;
 
   // Yıl DEĞİL "5 Ağustos": yıl zaten başlıkta ve her satırda tekrar
   // etmek ekran okuyucuyu boğardı.
@@ -189,9 +196,7 @@ export function PlanDayRow({
         isWeekend && "planDayRowWeekend",
         !inScope && "planDayRowOutside",
         isEmpty && "planDayRowEmpty",
-        // `!isEmpty` şart: boş günde katlanacak bir şey yok ve
-        // `collapsed` bayrağı orada anlamsız kalır.
-        collapsed && !isEmpty && "planDayRowCollapsed",
+        collapsed && "planDayRowCollapsed",
         placing && "planDayRowTarget",
         dragOver && "planDayRowTarget",
       )}

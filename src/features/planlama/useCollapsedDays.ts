@@ -6,12 +6,13 @@ import type { DateStr } from "@/lib/date/types";
 /*
  * Katlanmış günlerin kümesi — ay ve hafta ölçeğinin ortak durumu.
  *
- * ── Neden KATLI olanlar tutuluyor, açık olanlar değil? ──
- * Varsayılan AÇIK olduğu için kapalı kümesi boş başlar ve yalnızca
- * kullanıcının dokunduğu günleri taşır. Tersi olsaydı küme neredeyse
- * tüm ayı tutardı ve her yeni gün, oluşturulur oluşturulmaz kümeye
- * eklenmek zorunda kalırdı. `JournalScreen`'in `openIds`'i ile aynı
- * gerekçe, tersine çevrilmiş hâli.
+ * ── Neden varsayılandan SAPMALAR tutuluyor? ──
+ * Varsayılan artık gün başına değişiyor: geçmiş günler ve bugünden
+ * sonraki ilkinin ötesi KAPALI gelir (kural `foldrule.ts`'te). Küme
+ * yalnızca kullanıcının dokunduğu, yani varsayılanı TERSİNE çevirdiği
+ * günleri taşır; katlı mı sorusu "varsayılan XOR dokunuldu mu"dur.
+ * Böylece küme boş başlar ve bugün değişince (gece yarısı) varsayılan
+ * kendiliğinden kayar.
  *
  * ── Neden satırda değil, burada? ──
  * Bir ay 42 satır çiziyor. Her satırın kendi `useState`'i olsaydı ay
@@ -31,11 +32,15 @@ import type { DateStr } from "@/lib/date/types";
  * sıfırlanır (aşağıdaki efekt).
  */
 export interface CollapsedDays {
-  collapsedDays: ReadonlySet<DateStr>;
+  isCollapsed: (date: DateStr) => boolean;
   toggleCollapsed: (date: DateStr) => void;
 }
 
-export function useCollapsedDays(anchor: DateStr): CollapsedDays {
+export function useCollapsedDays(
+  anchor: DateStr,
+  /** Kullanıcı dokunmadıysa gün katlı mı? (bkz. foldrule.ts) */
+  isDefaultCollapsed: (date: DateStr) => boolean,
+): CollapsedDays {
   /*
    * Aralık değişince küme sıfırlanır — "değişen anahtardan türetme"
    * kalıbıyla, efekt İÇİNDE `setState` ile DEĞİL.
@@ -61,7 +66,12 @@ export function useCollapsedDays(anchor: DateStr): CollapsedDays {
 
   // Render sırasında karşılaştırma: `anchor` değiştiyse küme boş
   // başlar ve o karede zaten doğru değerle boyanır.
-  const collapsedDays = state.anchor === anchor ? state.days : EMPTY;
+  const flipped = state.anchor === anchor ? state.days : EMPTY;
+
+  const isCollapsed = useCallback(
+    (date: DateStr) => isDefaultCollapsed(date) !== flipped.has(date),
+    [isDefaultCollapsed, flipped],
+  );
 
   const toggleCollapsed = useCallback(
     (date: DateStr) => {
@@ -78,7 +88,7 @@ export function useCollapsedDays(anchor: DateStr): CollapsedDays {
     [anchor],
   );
 
-  return { collapsedDays, toggleCollapsed };
+  return { isCollapsed, toggleCollapsed };
 }
 
 /** Paylaşılan boş küme — her render'da yeni nesne üretmemek için. */
