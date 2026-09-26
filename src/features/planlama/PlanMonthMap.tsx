@@ -1,12 +1,16 @@
 "use client";
 
+import { useState } from "react";
+import { Chevron } from "@/components/Chevron";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { formatWeekRange } from "@/lib/ui/tr";
+import { splitWeeks } from "./foldrule";
 import { enYogunHafta, type WeekSummary } from "./weekmap";
 
 interface PlanMonthMapProps {
   haftalar: readonly WeekSummary[];
+  today: DateStr;
   /** Haftaya basınca o haftaya götürür — çapayı taşır ve ölçeği çevirir. */
   onSelectWeek: (weekStart: DateStr) => void;
 }
@@ -26,8 +30,31 @@ interface PlanMonthMapProps {
  * bu: harita bir gezinme yüzeyi. İş yapmak için bir haftaya
  * basılır ve o haftanın günleri açılır.
  */
-export function PlanMonthMap({ haftalar, onSelectWeek }: PlanMonthMapProps) {
+export function PlanMonthMap({ haftalar, today, onSelectWeek }: PlanMonthMapProps) {
   const tavan = enYogunHafta(haftalar);
+
+  /*
+   * Geçmiş haftalar ve bir sonrakinin ötesi KAPALI gelir — hafta
+   * ölçeğindeki gün kuralının haritadaki karşılığı (foldrule.ts).
+   * Açık/kapalı durumu kalıcı değil: harita her açılışta sade gelir.
+   */
+  const { past, visible, later } = splitWeeks(haftalar, today);
+  const [pastOpen, setPastOpen] = useState(false);
+  const [laterOpen, setLaterOpen] = useState(false);
+
+  const renderList = (list: readonly WeekSummary[]) => (
+    <ul className="flex flex-col gap-1.5">
+      {list.map((hafta) => (
+        <li key={hafta.weekStart}>
+          <HaftaSatiri
+            hafta={hafta}
+            tavan={tavan}
+            onSelect={() => onSelectWeek(hafta.weekStart)}
+          />
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
     <div className="flex flex-col gap-2">
@@ -35,18 +62,57 @@ export function PlanMonthMap({ haftalar, onSelectWeek }: PlanMonthMapProps) {
         Bir haftaya bas, o haftaya git
       </p>
 
-      <ul className="flex flex-col gap-1.5">
-        {haftalar.map((hafta) => (
-          <li key={hafta.weekStart}>
-            <HaftaSatiri
-              hafta={hafta}
-              tavan={tavan}
-              onSelect={() => onSelectWeek(hafta.weekStart)}
-            />
-          </li>
-        ))}
-      </ul>
+      {past.length > 0 && (
+        <>
+          <FoldToggle
+            open={pastOpen}
+            label={`Geçmiş haftalar (${past.length})`}
+            onToggle={() => setPastOpen((o) => !o)}
+          />
+          {pastOpen && renderList(past)}
+        </>
+      )}
+
+      {visible.length > 0 && renderList(visible)}
+
+      {later.length > 0 && (
+        <>
+          <FoldToggle
+            open={laterOpen}
+            label={`Sonraki haftalar (${later.length})`}
+            onToggle={() => setLaterOpen((o) => !o)}
+          />
+          {laterOpen && renderList(later)}
+        </>
+      )}
     </div>
+  );
+}
+
+/** Kapalı hafta grubunun aç/kapa satırı. */
+function FoldToggle({
+  open,
+  label,
+  onToggle,
+}: {
+  open: boolean;
+  label: string;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      className={cn(
+        "flex w-full items-center gap-2 rounded-xl border border-dashed border-[var(--color-line)] px-3 py-2 text-left",
+        "text-[length:var(--text-sm)] text-[var(--color-ink-3)]",
+        "transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-ink-2)] hover:border-[var(--color-line-2)]",
+      )}
+    >
+      <Chevron open={open} />
+      <span className="tabular">{label}</span>
+    </button>
   );
 }
 

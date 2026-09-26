@@ -32,6 +32,7 @@ import { PlanSkeleton } from "./PlanSkeleton";
 import { usePlanlamaSurface } from "./usePlanlamaSurface";
 import { usePlanCategories } from "./usePlanCategories";
 import { useCollapsedDays } from "./useCollapsedDays";
+import { defaultCollapsed } from "./foldrule";
 import { weekSummaries } from "./weekmap";
 import { usePlanTaskActions } from "./usePlanTaskActions";
 import { isPlacingNode, isPlacingTask, type Placing } from "./placement";
@@ -67,7 +68,6 @@ export function PlanlamaScreen() {
     setCategory,
   } = usePlanlamaSurface();
   const actions = usePlanTaskActions(toast.show);
-  const { collapsedDays, toggleCollapsed } = useCollapsedDays(anchor);
 
   /**
    * Yerleştirilmeyi bekleyen şey — havuzdaki bir GÖREV ya da ağaçtaki
@@ -119,6 +119,19 @@ export function PlanlamaScreen() {
       scopeEnd: endOfMonth(anchor),
     };
   }, [anchor, scale]);
+
+  /*
+   * Geçmiş günler ve bugünden sonraki ilk günün ötesi KAPALI gelir;
+   * kullanıcı her birini tek tek açabilir (bkz. foldrule.ts).
+   */
+  const isDefaultCollapsed = useCallback(
+    (date: DateStr) => defaultCollapsed(date, today, dates),
+    [today, dates],
+  );
+  const { isCollapsed, toggleCollapsed } = useCollapsedDays(
+    anchor,
+    isDefaultCollapsed,
+  );
 
   /*
    * Filtre `buildPlanRange`e GİRERKEN uygulanır, çıkarken değil:
@@ -299,7 +312,7 @@ export function PlanlamaScreen() {
                       onDragOver={setDragOverDate}
                       addPending={actions.addPending}
                       inScope={bucket.inScope}
-                      collapsed={collapsedDays.has(bucket.date)}
+                      collapsed={isCollapsed(bucket.date)}
                       onToggleCollapsed={toggleCollapsed}
                       // Gün numarası yerleştirme modunda da paneli
                       // açar: yerleştirmenin kendi düğmesi var, aynı
@@ -341,7 +354,10 @@ export function PlanlamaScreen() {
                 </PlanSheet>
               ) : (
                 <PlanMonthMap
+                  // Ay değişince geçmiş/sonraki grupları yeniden kapalı.
+                  key={scopeStart}
                   haftalar={haftalar}
+                  today={today}
                   /*
                    * TEK çağrı: çapa ve ölçek birlikte yazılır.
                    * `setAnchor` ile `setScale`'i ardışık çağırmak,
