@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   endOfIsoWeek,
   endOfMonth,
+  startOfIsoWeek,
   startOfMonth,
   toParts,
 } from "@/lib/date/date";
@@ -17,7 +18,7 @@ import { goalProgress } from "./rollup";
 import { CategoryFilterMenu } from "./CategoryFilterMenu";
 import { daySummaries } from "./dayplan";
 import { useSetTaskCategory, useSetTaskGoal } from "./mutations";
-import { useMonthPlanDays, usePlanGoals } from "./queries";
+import { useMonthPlanDays, usePlanGoals, useWeekGoals } from "./queries";
 import { PlanBacklog } from "./PlanBacklog";
 import { PlanNodePanel } from "./PlanNodePanel";
 import { PlanGoalStrip } from "./PlanGoalStrip";
@@ -36,6 +37,7 @@ import { defaultCollapsed } from "./foldrule";
 import { weekSummaries } from "./weekmap";
 import { usePlanTaskActions } from "./usePlanTaskActions";
 import { isPlacingNode, isPlacingTask, type Placing } from "./placement";
+import type { NodeOwner } from "./types";
 import { planDistribution } from "./distribute";
 import { useDistributeNodes } from "./nodeMutations";
 import { useGoalNodes } from "./nodeQueries";
@@ -77,11 +79,14 @@ export function PlanlamaScreen() {
    * Escape davranışı demekti (gerekçe placement.ts'te).
    */
   const [placing, setPlacing] = useState<Placing>(null);
-  /** Panelde seçili hedef — yerleştirilen düğümün ağacını bulmak için. */
-  const [panelGoalId, setPanelGoalId] = useState<string | null>(null);
+  /**
+   * Panelde seçili ağacın sahibi (aylık ya da haftalık hedef) —
+   * yerleştirilen düğümün ağacını bulmak için.
+   */
+  const [panelOwner, setPanelOwner] = useState<NodeOwner | null>(null);
   // Kimliği kararlı: panelin effect'i her çizimde yeniden koşmasın.
   const handlePanelGoal = useCallback(
-    (id: string | null) => setPanelGoalId(id),
+    (owner: NodeOwner | null) => setPanelOwner(owner),
     [],
   );
   /** Sürüklemenin şu an üstünde durduğu gün (Faz 6). */
@@ -168,6 +173,20 @@ export function PlanlamaScreen() {
   const goalsQuery = usePlanGoals(startOfMonth(anchor));
 
   /*
+   * Haftanın hedefleri — ağaç panelinin seçicisi için (0025).
+   *
+   * Hafta ölçeğinde çapa zaten pazartesi. Ay ölçeğinde bugünün haftası
+   * (görüntülenen ay bugünün ayıysa), değilse ayın ilk haftası —
+   * `WeekGoalsSection` ile aynı kural.
+   */
+  const panelWeekStart = useMemo(() => {
+    if (scale === "week") return anchor;
+    const sameMonth = anchor.slice(0, 7) === today.slice(0, 7);
+    return startOfIsoWeek(sameMonth ? today : anchor);
+  }, [scale, anchor, today]);
+  const weekGoalsQuery = useWeekGoals(panelWeekStart);
+
+  /*
    * Hedef şeridinin satırları — ilerlemeleriyle.
    *
    * İlerleme `goalProgress`'ten geliyor ve o bağlı GÖREVLERE bakıyor;
@@ -201,8 +220,8 @@ export function PlanlamaScreen() {
    * doğuyor) — aynı anahtar, aynı önbellek girdisi, ikinci bir ağ
    * turu yok.
    */
-  const placingNodeGoalId = isPlacingNode(placing) ? panelGoalId : null;
-  const placingNodesQuery = useGoalNodes(placingNodeGoalId);
+  const placingNodeOwner = isPlacingNode(placing) ? panelOwner : null;
+  const placingNodesQuery = useGoalNodes(placingNodeOwner);
 
   function handlePlace(date: DateStr) {
     if (placing === null) return;
@@ -223,10 +242,20 @@ export function PlanlamaScreen() {
       return;
     }
 
+    /*
+     * Haftalık ağaçtan doğan görev, haftalık hedefin hizmet ettiği
+     * AYLIK hedefe bağlanır (0014) — yoksa hedefsiz. `tasks.goal_id`
+     * haftalık hedefe bakamıyor.
+     */
+    const taskGoalId =
+      node.planGoalId ??
+      (weekGoalsQuery.data ?? []).find((g) => g.id === node.weekGoalId)
+        ?.planGoalId ??
+      null;
     const plan = planDistribution(
       [node],
       { from: date, to: date, perDayCap: null },
-      node.planGoalId,
+      taskGoalId,
     );
     if (plan.drafts.length > 0) distribute.mutate({ drafts: plan.drafts });
     setPlacing(null);
@@ -370,6 +399,7 @@ export function PlanlamaScreen() {
 
               <PlanNodePanel
                 goals={goalsQuery.data ?? []}
+                weekGoals={weekGoalsQuery.data ?? []}
                 tasks={tasksQuery.data ?? []}
                 today={today}
                 selectedNodeId={isPlacingNode(placing) ? placing.id : null}

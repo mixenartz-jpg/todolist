@@ -10,12 +10,17 @@ import type { Task } from "@/features/tasks/types";
 import { nodeDispatch } from "./nodeprogress";
 import { useGoalNodes } from "./nodeQueries";
 import { buildGoalTree, flattenGoalTree } from "./tree";
-import type { PlanGoal } from "./types";
+import type { NodeOwner, PlanGoal, WeekGoal } from "./types";
 import "./planlama.css";
 
 interface PlanNodePanelProps {
   /** Ayın hedefleri — panel bunlardan birini seçtiriyor. */
   goals: readonly PlanGoal[];
+  /**
+   * Görüntülenen haftanın hedefleri (0025). Seçicide aylıklardan ÖNCE
+   * gelir: kullanıcının asıl planlama birimi hafta.
+   */
+  weekGoals: readonly WeekGoal[];
   tasks: readonly Task[];
   /** Gönderilen günün etiketi için ("Bugün", "Yarın"…). */
   today: DateStr;
@@ -30,7 +35,7 @@ interface PlanNodePanelProps {
    * olduğunu bilmeli. Panel kendi sorgusunu zaten `useGoalNodes` ile
    * açıyor; ekran aynı anahtarı kullanınca ikinci bir ağ turu olmuyor.
    */
-  onSelectGoal: (goalId: string | null) => void;
+  onSelectGoal: (owner: NodeOwner | null) => void;
   /** Sürükleme başlatıcısı (Faz 6). */
   onDragStart?: (nodeId: string) => void;
 }
@@ -60,6 +65,7 @@ interface PlanNodePanelProps {
  */
 export function PlanNodePanel({
   goals,
+  weekGoals,
   tasks,
   today,
   selectedNodeId,
@@ -68,28 +74,51 @@ export function PlanNodePanel({
   onDragStart,
 }: PlanNodePanelProps) {
   const [open, setOpen] = useState(false);
-  const [goalId, setGoalId] = useState<string | null>(null);
+  /** Seçicideki değer: `week:<id>` ya da `month:<id>`. */
+  const [choice, setChoice] = useState<string | null>(null);
 
   // Arşivlenmiş hedefler seçim listesinde YOK — `activeCategories`'in
   // gerekçesiyle aynı: artık takip edilmeyen bir hedefe yeni iş
-  // dağıtmak istenmez.
+  // dağıtmak istenmez. Haftalık hedefte arşiv yok; tamamlanan hedef
+  // de listede kalır (hâlâ geri almak ya da bakmak isteyebilir).
   const pickable = useMemo(
     () => goals.filter((g) => g.archivedAt === null),
     [goals],
   );
 
-  // Hedef seçilmemişse ilkine düş: panel açıldığında boş bir seçici
-  // göstermek, kullanıcıyı gereksiz bir adıma zorlardı.
-  const effectiveGoalId = goalId ?? pickable[0]?.id ?? null;
-  const goal = pickable.find((g) => g.id === effectiveGoalId);
+  const options = useMemo(
+    () => [
+      ...weekGoals.map((g) => ({ value: `week:${g.id}`, kind: "week" as const, id: g.id })),
+      ...pickable.map((g) => ({ value: `month:${g.id}`, kind: "month" as const, id: g.id })),
+    ],
+    [weekGoals, pickable],
+  );
+
+  // Hedef seçilmemişse (ya da seçilen artık yoksa) ilkine düş: panel
+  // açıldığında boş bir seçici göstermek, kullanıcıyı gereksiz bir
+  // adıma zorlardı.
+  const effective =
+    options.find((o) => o.value === choice) ?? options[0] ?? null;
+  const effectiveValue = effective?.value ?? null;
+  const ownerKind = effective?.kind ?? null;
+  const ownerId = effective?.id ?? null;
+
+  // Kimliği kararlı: effect her çizimde yeni nesneyle koşmasın.
+  const owner = useMemo<NodeOwner | null>(
+    () =>
+      ownerKind === null || ownerId === null
+        ? null
+        : { kind: ownerKind, id: ownerId },
+    [ownerKind, ownerId],
+  );
 
   // Açık ağacı ekrana bildir. Panel kapalıyken null: kapalı bir
   // panelin hedefi yerleştirme kipini yanıltmamalı.
   useEffect(() => {
-    onSelectGoal(open ? effectiveGoalId : null);
-  }, [open, effectiveGoalId, onSelectGoal]);
+    onSelectGoal(open ? owner : null);
+  }, [open, owner, onSelectGoal]);
 
-  const nodesQuery = useGoalNodes(open ? effectiveGoalId : null);
+  const nodesQuery = useGoalNodes(open ? owner : null);
   const nodes = useMemo(() => nodesQuery.data ?? [], [nodesQuery.data]);
 
   /*
@@ -121,29 +150,42 @@ export function PlanNodePanel({
 
       {open && (
         <>
-          {pickable.length === 0 ? (
+          {options.length === 0 ? (
             <p className="text-[length:var(--text-xs)] leading-relaxed text-[var(--color-ink-3)]">
-              Bu ayın hedefi yok. Önce bir hedef yaz, sonra onu
-              parçalara ayır.
+              Bu hafta ve bu ay için hedef yok. Önce bir hedef yaz,
+              sonra onu parçalara ayır.
             </p>
           ) : (
             <>
               <label className="mb-2 block">
                 <span className="sr-only">Hangi hedefin ağacı</span>
                 <select
-                  value={effectiveGoalId ?? ""}
+                  value={effectiveValue ?? ""}
                   onChange={(event) => {
-                    setGoalId(event.target.value);
+                    setChoice(event.target.value);
                     // Hedef değişince eski ağaçtaki seçim anlamsız.
                     onSelect(null);
                   }}
                   className="w-full rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] px-2 py-1 text-[length:var(--text-xs)]"
                 >
-                  {pickable.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.title}
-                    </option>
-                  ))}
+                  {weekGoals.length > 0 && (
+                    <optgroup label="Bu haftanın hedefleri">
+                      {weekGoals.map((g) => (
+                        <option key={g.id} value={`week:${g.id}`}>
+                          {g.title}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {pickable.length > 0 && (
+                    <optgroup label="Bu ayın hedefleri">
+                      {pickable.map((g) => (
+                        <option key={g.id} value={`month:${g.id}`}>
+                          {g.title}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </label>
 
@@ -160,9 +202,9 @@ export function PlanNodePanel({
               ) : flat.length === 0 ? (
                 <p className="text-[length:var(--text-xs)] leading-relaxed text-[var(--color-ink-3)]">
                   Bu hedef henüz parçalara ayrılmadı.{" "}
-                  {goal && (
+                  {owner && (
                     <Link
-                      href={`/planlama/hedefler/${goal.id}`}
+                      href={treeHref(owner)}
                       className="text-[var(--color-accent)] underline underline-offset-2"
                     >
                       Ağacını kur
@@ -285,4 +327,11 @@ export function PlanNodePanel({
       )}
     </section>
   );
+}
+
+/** Ağaç sayfasının adresi — sahip türüne göre (0025). */
+export function treeHref(owner: NodeOwner): string {
+  return owner.kind === "week"
+    ? `/planlama/hedefler/hafta/${owner.id}`
+    : `/planlama/hedefler/${owner.id}`;
 }

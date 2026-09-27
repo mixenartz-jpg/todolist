@@ -45,8 +45,14 @@ export interface DistributionTarget {
 /** Bir düğümden doğacak görevin taslağı. */
 export interface NodeTaskDraft {
   nodeId: string;
-  /** Görev hedefi de taşır — gerekçe 0022 (iki çözünürlük, tek küme). */
-  goalId: string;
+  /**
+   * Görev hedefi de taşır — gerekçe 0022 (iki çözünürlük, tek küme).
+   *
+   * null → haftalık ağaçtan doğan ve hiçbir aylık hedefe bağlı
+   * olmayan görev (0025): `tasks.goal_id` yalnızca aylık hedeflere
+   * bakıyor.
+   */
+  goalId: string | null;
   title: string;
   dueDate: DateStr;
   /**
@@ -84,7 +90,7 @@ export interface DistributionPlan {
 export function planDistribution(
   nodes: readonly GoalNode[],
   target: DistributionTarget,
-  goalId: string,
+  goalId: string | null,
 ): DistributionPlan {
   if (nodes.length === 0) return { drafts: [], overflow: [] };
 

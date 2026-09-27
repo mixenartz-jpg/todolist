@@ -26,7 +26,7 @@ import type { GoalNode, GoalNodeDraft } from "./types";
  * invalidate. Her hook `onError` geri çağrısıyla `useToast()`'a
  * bağlanır.
  *
- * ── Her hook neden `planGoalId` taşıyor? ──
+ * ── Her hook neden `ownerId` taşıyor? ──
  * Yazmak için değil — sunucu onu satırdan zaten biliyor. Geçersiz
  * kılma anahtarı hedef başına bölünmüş (`qk.goalNodesFor`) ve
  * `onSettled` doğru ağacı tazelemek için hedefi bilmek zorunda.
@@ -55,7 +55,10 @@ export function useCreateGoalNode(onError?: (message: string) => void) {
       const { data, error } = await supabase
         .from("goal_nodes")
         .insert({
-          plan_goal_id: draft.planGoalId,
+          // Sahip sütunlarından TAM OLARAK biri (0025 check'i).
+          ...(draft.owner.kind === "month"
+            ? { plan_goal_id: draft.owner.id }
+            : { week_goal_id: draft.owner.id }),
           parent_id: draft.parentId,
           title: draft.title.trim(),
           note: draft.note,
@@ -73,7 +76,7 @@ export function useCreateGoalNode(onError?: (message: string) => void) {
 
     onError: (error) => onError?.(errorText(error)),
 
-    onSettled: (_data, _error, draft) => invalidateTree(qc, draft.planGoalId),
+    onSettled: (_data, _error, draft) => invalidateTree(qc, draft.owner.id),
   });
 }
 
@@ -107,8 +110,8 @@ export function useEditGoalNode(onError?: (message: string) => void) {
       if (error) throw error;
     },
 
-    onMutate: async ({ planGoalId, id, title, note }) => {
-      const key = qk.goalNodesFor(planGoalId);
+    onMutate: async ({ ownerId, id, title, note }) => {
+      const key = qk.goalNodesFor(ownerId);
       await qc.cancelQueries({ queryKey: key });
       const previous = qc.getQueryData<GoalNode[]>(key);
 
@@ -126,7 +129,7 @@ export function useEditGoalNode(onError?: (message: string) => void) {
       onError?.(errorText(error));
     },
 
-    onSettled: (_data, _error, vars) => invalidateTree(qc, vars.planGoalId),
+    onSettled: (_data, _error, vars) => invalidateTree(qc, vars.ownerId),
   });
 }
 
@@ -152,8 +155,8 @@ export function useSetNodeRepeating(onError?: (message: string) => void) {
       if (error) throw error;
     },
 
-    onMutate: async ({ planGoalId, id, repeating }) => {
-      const key = qk.goalNodesFor(planGoalId);
+    onMutate: async ({ ownerId, id, repeating }) => {
+      const key = qk.goalNodesFor(ownerId);
       await qc.cancelQueries({ queryKey: key });
       const previous = qc.getQueryData<GoalNode[]>(key);
 
@@ -169,7 +172,7 @@ export function useSetNodeRepeating(onError?: (message: string) => void) {
       onError?.(errorText(error));
     },
 
-    onSettled: (_data, _error, vars) => invalidateTree(qc, vars.planGoalId),
+    onSettled: (_data, _error, vars) => invalidateTree(qc, vars.ownerId),
   });
 }
 
@@ -196,8 +199,8 @@ export function useDeleteGoalNode(onError?: (message: string) => void) {
       if (error) throw error;
     },
 
-    onMutate: async ({ planGoalId, id }) => {
-      const key = qk.goalNodesFor(planGoalId);
+    onMutate: async ({ ownerId, id }) => {
+      const key = qk.goalNodesFor(ownerId);
       await qc.cancelQueries({ queryKey: key });
       const previous = qc.getQueryData<GoalNode[]>(key);
 
@@ -218,7 +221,7 @@ export function useDeleteGoalNode(onError?: (message: string) => void) {
     },
 
     onSettled: (_data, _error, vars) => {
-      invalidateTree(qc, vars.planGoalId);
+      invalidateTree(qc, vars.ownerId);
       qc.invalidateQueries({ queryKey: qk.tasks() });
     },
   });
@@ -255,8 +258,8 @@ export function useMoveGoalNode(onError?: (message: string) => void) {
       if (error) throw error;
     },
 
-    onMutate: async ({ planGoalId, id, parentId, sortOrder }) => {
-      const key = qk.goalNodesFor(planGoalId);
+    onMutate: async ({ ownerId, id, parentId, sortOrder }) => {
+      const key = qk.goalNodesFor(ownerId);
       await qc.cancelQueries({ queryKey: key });
       const previous = qc.getQueryData<GoalNode[]>(key);
 
@@ -272,7 +275,7 @@ export function useMoveGoalNode(onError?: (message: string) => void) {
       onError?.(errorText(error));
     },
 
-    onSettled: (_data, _error, vars) => invalidateTree(qc, vars.planGoalId),
+    onSettled: (_data, _error, vars) => invalidateTree(qc, vars.ownerId),
   });
 }
 
@@ -284,7 +287,7 @@ export function useReorderGoalNodes(onError?: (message: string) => void) {
     mutationFn: async ({
       patches,
     }: {
-      planGoalId: string;
+      ownerId: string;
       patches: readonly SortOrderPatch[];
     }) => {
       if (patches.length === 0) return;
@@ -301,8 +304,8 @@ export function useReorderGoalNodes(onError?: (message: string) => void) {
       if (failed?.error) throw failed.error;
     },
 
-    onMutate: async ({ planGoalId, patches }) => {
-      const key = qk.goalNodesFor(planGoalId);
+    onMutate: async ({ ownerId, patches }) => {
+      const key = qk.goalNodesFor(ownerId);
       await qc.cancelQueries({ queryKey: key });
       const previous = qc.getQueryData<GoalNode[]>(key);
 
@@ -322,7 +325,7 @@ export function useReorderGoalNodes(onError?: (message: string) => void) {
       onError?.(errorText(error));
     },
 
-    onSettled: (_data, _error, vars) => invalidateTree(qc, vars.planGoalId),
+    onSettled: (_data, _error, vars) => invalidateTree(qc, vars.ownerId),
   });
 }
 
@@ -425,16 +428,19 @@ export function useDistributeNodes(onError?: (message: string) => void) {
  */
 function invalidateTree(
   qc: ReturnType<typeof useQueryClient>,
-  planGoalId: string,
+  ownerId: string,
 ): void {
-  qc.invalidateQueries({ queryKey: qk.goalNodesFor(planGoalId) });
+  qc.invalidateQueries({ queryKey: qk.goalNodesFor(ownerId) });
   qc.invalidateQueries({ queryKey: qk.goalNodes() });
 }
 
 /** Tek düğüme dokunan her yazmanın ortak değişkenleri. */
 interface NodeFieldVars {
-  /** Geçersiz kılma anahtarı için — yazılmıyor. */
-  planGoalId: string;
+  /**
+   * Ağacın sahibinin (aylık ya da haftalık hedef) kimliği — geçersiz
+   * kılma anahtarı için, yazılmıyor.
+   */
+  ownerId: string;
   id: string;
 }
 

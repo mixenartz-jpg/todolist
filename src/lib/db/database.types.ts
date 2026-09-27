@@ -181,7 +181,13 @@ export interface WeekGoalRow {
 export interface GoalNodeRow {
   id: string;
   user_id: string;
-  plan_goal_id: string;
+  /** 0025'ten beri null olabilir: ağaç haftalık hedefe ait. */
+  plan_goal_id: string | null;
+  /**
+   * Haftalık hedef sahibi (0025). Opsiyonel (`?`): migration elle
+   * çalıştırılıyor, öncesinde alan hiç gelmez.
+   */
+  week_goal_id?: string | null;
   /** null → hedefin doğrudan çocuğu (depth 1). */
   parent_id: string | null;
   /** 1..3. `smallint`, supabase-js'e number gelir. */
@@ -195,6 +201,16 @@ export interface GoalNodeRow {
    * `toGoalNode` `?? false` ile düşürür.
    */
   repeating?: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Ayın / haftanın amaç metni (0025). */
+export interface PeriodNoteRow {
+  user_id: string;
+  scale: "month" | "week";
+  period_start: string;
+  body: string;
   created_at: string;
   updated_at: string;
 }

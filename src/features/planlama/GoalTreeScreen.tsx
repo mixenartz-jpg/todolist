@@ -25,11 +25,13 @@ import {
   useSetNodeRepeating,
 } from "./nodeMutations";
 import { useGoalNodes } from "./nodeQueries";
-import { usePlanGoals } from "./queries";
+import { usePlanGoals, useWeekGoal } from "./queries";
 import { nextSiblingOrder, nodeEdit, reorderSiblings } from "./tree";
+import type { NodeOwner } from "./types";
 
 interface GoalTreeScreenProps {
-  goalId: string;
+  /** Ağacın sahibi: aylık ya da haftalık hedef (0025). */
+  owner: NodeOwner;
 }
 
 /**
@@ -55,13 +57,21 @@ interface GoalTreeScreenProps {
  * bulunamazsa başlık sade çiziliyor; hedef listesi zaten bu sayfaya
  * yalnızca o aydan giriliyor.
  */
-export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
+export function GoalTreeScreen({ owner }: GoalTreeScreenProps) {
   const toast = useToast();
   const today = todayStr();
+  const ownerId = owner.id;
+  const isWeek = owner.kind === "week";
 
-  const nodesQuery = useGoalNodes(goalId);
+  const nodesQuery = useGoalNodes(owner);
   const tasksQuery = useTasks();
   const goalsQuery = usePlanGoals(startOfMonth(today));
+  /*
+   * Haftalık hedef kimlikle TEK satır olarak çekiliyor: sayfa haftayı
+   * bilmiyor ve hafta başına bölünmüş listeyi tahminle aramak, geçen
+   * haftanın ağacını açan kullanıcıya sade başlık gösterirdi.
+   */
+  const weekGoalQuery = useWeekGoal(ownerId, isWeek);
 
   const createNode = useCreateGoalNode(toast.show);
   const editNode = useEditGoalNode(toast.show);
@@ -81,7 +91,19 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
 
   const nodes = useMemo(() => nodesQuery.data ?? [], [nodesQuery.data]);
   const tasks = useMemo(() => tasksQuery.data ?? [], [tasksQuery.data]);
-  const goal = goalsQuery.data?.find((g) => g.id === goalId);
+  const monthGoal = isWeek
+    ? undefined
+    : goalsQuery.data?.find((g) => g.id === ownerId);
+  const weekGoal = isWeek ? (weekGoalQuery.data ?? undefined) : undefined;
+  const goal = monthGoal ?? weekGoal;
+
+  /*
+   * Doğan görevin `goal_id`'si. Aylık ağaçta hedefin kendisi; haftalık
+   * ağaçta haftalık hedefin hizmet ettiği AYLIK hedef (0014) — böylece
+   * aylık kartın çubuğu haftanın işlerini de sayar. Bağımsız haftalık
+   * hedefte null: `tasks.goal_id` haftalık hedefe bakamıyor.
+   */
+  const taskGoalId = isWeek ? (weekGoal?.planGoalId ?? null) : ownerId;
 
   const progress = useMemo(
     () => goalTreeProgress(nodes, tasks),
@@ -143,7 +165,7 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
     const chosen = nodes.filter((n) => nodeIds.includes(n.id));
     const drafts = dates.flatMap(
       (date) =>
-        planDistribution(chosen, { from: date, to: date, perDayCap: null }, goalId)
+        planDistribution(chosen, { from: date, to: date, perDayCap: null }, taskGoalId)
           .drafts,
     );
     if (drafts.length === 0) return;
@@ -157,6 +179,11 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
       {goal ? (
         <GoalTreeHeader
           goal={goal}
+          kind={owner.kind}
+          // Haftalık hedefin sayacı ağaçtan OKUNMUYOR (kart kendi
+          // sayacını gösteriyor); "artık buradan okunuyor" uyarısı
+          // yalnızca aylık ağaçta doğru.
+          targetCount={monthGoal?.targetCount ?? null}
           nodeCount={nodes.length}
           taskTotal={totals.taskTotal}
           taskDone={totals.taskDone}
@@ -171,7 +198,7 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
             ← Hedefler
           </Link>
           <h1 className="mt-2 text-[length:var(--text-xl)] font-medium">
-            Hedef ağacı
+            {isWeek ? "Haftalık hedef ağacı" : "Hedef ağacı"}
           </h1>
         </header>
       )}
@@ -223,7 +250,7 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
           onSubmitChild={(values) => {
             if (addingUnder === null) return;
             createNode.mutate({
-              planGoalId: goalId,
+              owner,
               parentId: addingUnder,
               title: values.title,
               note: values.note,
@@ -240,12 +267,12 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
             const patch = nodeEdit(node, values);
             if (patch === null) return;
 
-            editNode.mutate({ planGoalId: goalId, id, ...patch });
+            editNode.mutate({ ownerId, id, ...patch });
           }}
-          onDelete={(id) => deleteNode.mutate({ planGoalId: goalId, id })}
+          onDelete={(id) => deleteNode.mutate({ ownerId, id })}
           onMove={(id, parentId) =>
             moveNode.mutate({
-              planGoalId: goalId,
+              ownerId,
               id,
               parentId,
               sortOrder: nextSiblingOrder(nodes, parentId),
@@ -258,7 +285,7 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
             const node = nodes.find((n) => n.id === id);
             if (!node) return;
             setRepeating.mutate({
-              planGoalId: goalId,
+              ownerId,
               id,
               repeating: !node.repeating,
             });
@@ -272,7 +299,7 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
           onReorder={(id, delta) => {
             const patches = reorderSiblings(nodes, id, delta);
             if (patches.length === 0) return;
-            reorderNodes.mutate({ planGoalId: goalId, patches });
+            reorderNodes.mutate({ ownerId, patches });
           }}
         />
       )}
@@ -285,7 +312,7 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
               placeholder="Hangi konu?"
               onSubmit={(values) =>
                 createNode.mutate({
-                  planGoalId: goalId,
+                  owner,
                   parentId: null,
                   title: values.title,
                   note: values.note,
@@ -312,7 +339,7 @@ export function GoalTreeScreen({ goalId }: GoalTreeScreenProps) {
         <NodeBulkSend
           nodes={selectedNodes}
           today={today}
-          goalId={goalId}
+          goalId={taskGoalId}
           pending={distribute.isPending}
           onClear={() => setSelected(new Set())}
           onDistribute={(drafts) => {

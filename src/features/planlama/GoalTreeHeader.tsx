@@ -6,7 +6,14 @@ import { formatPercent } from "@/lib/ui/tr";
 import type { PlanGoal } from "./types";
 
 interface GoalTreeHeaderProps {
-  goal: PlanGoal;
+  /** Aylık ya da haftalık hedef — başlık yalnızca ortak alanları okur. */
+  goal: Pick<PlanGoal, "title" | "note" | "colorSlot">;
+  kind: "month" | "week";
+  /**
+   * Ağaç yüzünden artık OKUNMAYAN sayısal hedef; null → uyarı yok.
+   * Haftalık hedefte hep null: onun sayacı ağaçtan bağımsız.
+   */
+  targetCount: number | null;
   nodeCount: number;
   taskTotal: number;
   taskDone: number;
@@ -31,6 +38,8 @@ interface GoalTreeHeaderProps {
  */
 export function GoalTreeHeader({
   goal,
+  kind,
+  targetCount,
   nodeCount,
   taskTotal,
   taskDone,
@@ -53,6 +62,9 @@ export function GoalTreeHeader({
         />
 
         <div className="min-w-0 flex-1">
+          <p className="text-[length:var(--text-2xs)] uppercase tracking-wide text-[var(--color-ink-3)]">
+            {kind === "week" ? "Haftalık hedef" : "Aylık hedef"}
+          </p>
           <h1 className="text-[length:var(--text-xl)] font-medium">
             {goal.title}
           </h1>
@@ -107,12 +119,12 @@ export function GoalTreeHeader({
             </>
           )}
 
-          {goal.targetCount !== null && (
+          {targetCount !== null && (
             /* Sayısal hedef ARTIK OKUNMUYOR. Sessiz bırakmak,
                kullanıcının girdiği bir sayının nereye gittiğini
                açıklamamak olurdu. */
             <p className="text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
-              Bu hedefin sayısal hedefi ({goal.targetCount}) var ama ağaç
+              Bu hedefin sayısal hedefi ({targetCount}) var ama ağaç
               kurulduğu için ilerleme artık buradan okunuyor.
             </p>
           )}

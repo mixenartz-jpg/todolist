@@ -15,7 +15,7 @@ interface NodeBulkSendProps {
   /** Seçili düğümler, EKRANDAKİ sırayla. */
   nodes: readonly GoalNode[];
   today: DateStr;
-  goalId: string;
+  goalId: string | null;
   pending: boolean;
   onClear: () => void;
   onDistribute: (drafts: readonly NodeTaskDraft[]) => void;

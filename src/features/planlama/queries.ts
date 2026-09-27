@@ -150,6 +150,31 @@ async function fetchWeekGoals(weekStart: DateStr): Promise<WeekGoal[]> {
   return (data as WeekGoalRow[]).map(toWeekGoal);
 }
 
+/**
+ * Tek haftalık hedef — ağaç sayfasının başlığı için (0025).
+ *
+ * Ağaç sayfası haftayı bilmiyor (adres yalnızca kimlik taşıyor) ve
+ * hafta başına bölünmüş `useWeekGoals` ile hedefi bulmak için hangi
+ * haftaya bakacağını tahmin etmesi gerekirdi. Kimlikle tek satır
+ * çekmek hem kesin hem ucuz.
+ */
+export function useWeekGoal(id: string, enabled = true) {
+  return useQuery({
+    queryKey: qk.weekGoal(id),
+    enabled,
+    queryFn: async (): Promise<WeekGoal | null> => {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("week_goals")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      if (error) throw error;
+      return data === null ? null : toWeekGoal(data as WeekGoalRow);
+    },
+  });
+}
+
 export function toWeekGoal(row: WeekGoalRow): WeekGoal {
   return {
     id: row.id,
