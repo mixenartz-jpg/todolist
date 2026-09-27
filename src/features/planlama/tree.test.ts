@@ -4,7 +4,9 @@ import {
   ancestorChain,
   buildGoalTree,
   canMoveNode,
+  collapsedExcept,
   flattenGoalTree,
+  focusPath,
   nextSiblingOrder,
   nodeEdit,
   reorderSiblings,
@@ -370,5 +372,38 @@ describe("nodeEdit", () => {
       title: "Eski",
       note: "Başka",
     });
+  });
+});
+
+describe("focusPath / collapsedExcept", () => {
+  it("açılan dalın yolu açık, öbür dallar kapalı", () => {
+    const nodes = [
+      ...kimya(),
+      goalNode({ id: "ph", parentId: "tepkime", depth: 2 }),
+    ];
+
+    const expanded = focusPath(nodes, "soru");
+    expect([...expanded].sort()).toEqual(["asit", "soru"]);
+
+    const collapsed = collapsedExcept(nodes, expanded);
+    expect([...collapsed]).toEqual(["tepkime"]);
+
+    const visible = flattenGoalTree(buildGoalTree(nodes), collapsed).map(
+      (f) => f.node.id,
+    );
+    expect(visible).toEqual(["asit", "konu", "soru", "bank", "tepkime"]);
+  });
+
+  it("hiçbir dal açık değilse yalnızca kökler görünür", () => {
+    const nodes = kimya();
+    const collapsed = collapsedExcept(nodes, new Set());
+    const visible = flattenGoalTree(buildGoalTree(nodes), collapsed).map(
+      (f) => f.node.id,
+    );
+    expect(visible).toEqual(["asit", "tepkime"]);
+  });
+
+  it("yapraklar kapalı kümeye girmez", () => {
+    expect(collapsedExcept(kimya(), new Set()).has("bank")).toBe(false);
   });
 });
