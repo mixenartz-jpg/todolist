@@ -11,6 +11,8 @@ interface PeriodNoteEditorProps {
   scale: "month" | "week";
   /** Ay → ayın 1'i, hafta → ISO pazartesisi. */
   periodStart: DateStr;
+  /** Etiket; verilmezse "Haftanın amacı" / "Ayın amacı". */
+  label?: string;
   onError?: (message: string) => void;
 }
 
@@ -28,6 +30,7 @@ interface PeriodNoteEditorProps {
 export function PeriodNoteEditor({
   scale,
   periodStart,
+  label: labelProp,
   onError,
 }: PeriodNoteEditorProps) {
   const { data } = usePeriodNote(scale, periodStart);
@@ -41,11 +44,19 @@ export function PeriodNoteEditor({
     setBody(data.body);
   }
 
-  const debouncedSave = useDebouncedCallback((next: string) => {
-    save.mutate({ scale, periodStart, body: next });
-  }, AUTOSAVE_DELAY_MS);
+  /*
+   * Dönem ÇAĞRIYLA taşınıyor, kapanıştan okunmuyor: hafta okla
+   * değişirken bekleyen bir yazma, en güncel kapanışla çalışıp eski
+   * haftanın metnini YENİ haftaya yazardı.
+   */
+  const debouncedSave = useDebouncedCallback(
+    (start: DateStr, next: string) => {
+      save.mutate({ scale, periodStart: start, body: next });
+    },
+    AUTOSAVE_DELAY_MS,
+  );
 
-  const label = scale === "week" ? "Haftanın amacı" : "Ayın amacı";
+  const label = labelProp ?? (scale === "week" ? "Haftanın amacı" : "Ayın amacı");
 
   return (
     <div className="mb-3">
@@ -57,7 +68,7 @@ export function PeriodNoteEditor({
           value={body}
           onChange={(event) => {
             setBody(event.target.value);
-            debouncedSave.call(event.target.value);
+            debouncedSave.call(periodStart, event.target.value);
           }}
           onBlur={() => debouncedSave.flush()}
           maxLength={PERIOD_NOTE_MAX}

@@ -26,7 +26,13 @@
  */
 
 import type { DateStr } from "@/lib/date/types";
-import { startOfIsoWeek, startOfMonth, toParts } from "@/lib/date/date";
+import {
+  addDays,
+  compareDates,
+  startOfIsoWeek,
+  startOfMonth,
+  toParts,
+} from "@/lib/date/date";
 import type { Task } from "@/features/tasks/types";
 
 /** Planın ölçeği: bir hafta mı, bir ay mı? */
@@ -250,4 +256,22 @@ export function scaleFromParam(raw: string | null): PlanScale {
  */
 export function scaleToParam(scale: PlanScale): string | null {
   return scale === DEFAULT_SCALE ? null : SCALE_MONTH_PARAM;
+}
+
+/**
+ * Bir haftanın hedefleri hangi AYIN hedefleriyle birlikte okunur?
+ *
+ * Hedefler ekranı haftadan haftaya geziniyor ve aylık hedefler o
+ * haftanın ayını göstermeli. İki ayı kesen haftada (28 Eyl – 4 Eki):
+ *
+ *   · Bugün o haftanın içindeyse BUGÜNÜN ayı — ayın son günlerinde
+ *     kullanıcı hâlâ bu ayın hedeflerine bakıyor.
+ *   · Değilse haftanın PERŞEMBESİNİN ayı (ISO kuralı: haftanın
+ *     çoğunluğu hangi aydaysa o ay).
+ */
+export function monthOfWeek(weekStart: DateStr, today: DateStr): DateStr {
+  const weekEnd = addDays(weekStart, 6);
+  const containsToday =
+    compareDates(today, weekStart) >= 0 && compareDates(today, weekEnd) <= 0;
+  return startOfMonth(containsToday ? today : addDays(weekStart, 3));
 }
