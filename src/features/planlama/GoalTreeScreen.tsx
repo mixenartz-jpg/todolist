@@ -26,7 +26,13 @@ import {
 } from "./nodeMutations";
 import { useGoalNodes } from "./nodeQueries";
 import { usePlanGoals, useWeekGoal } from "./queries";
-import { nextSiblingOrder, nodeEdit, reorderSiblings } from "./tree";
+import {
+  collapsedExcept,
+  focusPath,
+  nextSiblingOrder,
+  nodeEdit,
+  reorderSiblings,
+} from "./tree";
 import type { NodeOwner } from "./types";
 
 interface GoalTreeScreenProps {
@@ -83,13 +89,29 @@ export function GoalTreeScreen({ owner }: GoalTreeScreenProps) {
   const deleteTask = useDeleteTask(toast.show);
   const setRepeating = useSetNodeRepeating(toast.show);
 
-  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+  /*
+   * AÇIK dallar — kapalılar değil. Varsayılan hepsi kapalı (yalnızca
+   * konular görünür) ve bir dal açılınca öbürleri kapanır: kullanıcı
+   * tek dala odaklanıp ona eklemek istiyor (bkz. focusPath).
+   */
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [addingUnder, setAddingUnder] = useState<string | null>(null);
   const [addingRoot, setAddingRoot] = useState(false);
 
   const nodes = useMemo(() => nodesQuery.data ?? [], [nodesQuery.data]);
+  const collapsed = useMemo(
+    () => collapsedExcept(nodes, expanded),
+    [nodes, expanded],
+  );
+
+  /** Dalı aç ve öbürlerini kapat; o dala başka yerde açık ekleme formu da kapanır. */
+  function focusBranch(id: string) {
+    setExpanded(focusPath(nodes, id));
+    setAddingUnder((current) => (current === id ? current : null));
+    setAddingRoot(false);
+  }
   const tasks = useMemo(() => tasksQuery.data ?? [], [tasksQuery.data]);
   const monthGoal = isWeek
     ? undefined
@@ -224,28 +246,26 @@ export function GoalTreeScreen({ owner }: GoalTreeScreenProps) {
           selected={selected}
           focusedId={focusedId}
           addingUnder={addingUnder}
-          onToggleCollapse={(id) => setCollapsed((set) => toggle(set, id))}
-          onExpand={(id) =>
-            setCollapsed((set) => {
+          onToggleCollapse={(id) => {
+            if (expanded.has(id)) setExpanded((set) => toggle(set, id));
+            else focusBranch(id);
+          }}
+          onExpand={focusBranch}
+          onCollapse={(id) =>
+            setExpanded((set) => {
               const next = new Set(set);
               next.delete(id);
               return next;
             })
           }
-          onCollapse={(id) =>
-            setCollapsed((set) => new Set(set).add(id))
-          }
           onFocus={setFocusedId}
           onToggleSelect={(id) => setSelected((set) => toggle(set, id))}
           onAddChild={(id) => {
-            setAddingRoot(false);
+            // Eklenen dal açılır, öbürleri ve öbür ekleme formları
+            // kapanır — kapalı bir dala çocuk eklenirse form görünmez
+            // kalırdı.
+            focusBranch(id);
             setAddingUnder(id);
-            // Kapalı bir dala çocuk eklenirse form görünmez kalırdı.
-            setCollapsed((set) => {
-              const next = new Set(set);
-              next.delete(id);
-              return next;
-            });
           }}
           onSubmitChild={(values) => {
             if (addingUnder === null) return;
@@ -326,7 +346,9 @@ export function GoalTreeScreen({ owner }: GoalTreeScreenProps) {
           <Button
             size="sm"
             onClick={() => {
+              // Yeni konu: açık dallar kapanır, odak yeni başlıkta.
               setAddingUnder(null);
+              setExpanded(new Set());
               setAddingRoot(true);
             }}
           >

@@ -214,6 +214,39 @@ export function ancestorChain(
   return chain.reverse();
 }
 
+/**
+ * Odak: yalnızca verilen dalın YOLU açık kalır (kökten kendisine).
+ *
+ * Kullanıcı bir dalı açınca ya da altına ekleme başlatınca öbür dallar
+ * kendiliğinden kapanmalı — üç konuyu aynı anda açık tutmak ekranı
+ * uzatıyor ve "şu an neye ekliyorum" sorusunu bulanıklaştırıyordu.
+ * Açılan dalın atalarının da açık olması şart; yoksa dal görünmezdi.
+ */
+export function focusPath(nodes: readonly GoalNode[], id: string): Set<string> {
+  return new Set(ancestorChain(nodes, id).map((n) => n.id));
+}
+
+/**
+ * Açık küme → kapalı küme.
+ *
+ * Ekran AÇIK dalları tutuyor (varsayılan: hepsi kapalı, yalnızca kökler
+ * görünür); çizici ise kapalı kümeyi bekliyor (`flattenGoalTree`).
+ * Yalnızca çocuğu olan düğümler kapanabilir — yaprağı "kapalı" saymak
+ * klavye gezintisinde anlamsız bir durum doğururdu.
+ */
+export function collapsedExcept(
+  nodes: readonly GoalNode[],
+  expanded: ReadonlySet<string>,
+): Set<string> {
+  const out = new Set<string>();
+  for (const node of nodes) {
+    if (node.parentId !== null && !expanded.has(node.parentId)) {
+      out.add(node.parentId);
+    }
+  }
+  return out;
+}
+
 /** Taşımanın reddedilme sebebi. */
 export type MoveRejection = "not-found" | "cycle" | "too-deep";
 
