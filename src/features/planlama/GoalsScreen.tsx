@@ -18,6 +18,9 @@ import {
 import { goalMeasure } from "./goalmeasure";
 import { useGoalNodesFor } from "./nodeQueries";
 import { PlanlamaHeader } from "./PlanlamaHeader";
+import { monthOfWeek } from "./range";
+import { toParts } from "@/lib/date/date";
+import { formatMonthYear } from "@/lib/ui/tr";
 import { usePlanGoals } from "./queries";
 import { daysSinceGoalTask } from "./pace";
 import { goalProgress } from "./rollup";
@@ -54,15 +57,17 @@ export function GoalsScreen() {
    * geçmiş bir ayın hedefinde `goalPace` beklenen oranı 1'e kırpıyor.
    */
   /*
-   * `monthAnchor` — ham `anchor` DEĞİL.
+   * Ekran HAFTADAN HAFTAYA geziniyor: kullanıcının asıl planlama
+   * birimi hafta ve ay oklarıyla yalnızca ayın bir haftasına
+   * (bugününkine ya da ilkine) ulaşılabiliyordu — öbür haftalara
+   * hedef koymak imkânsızdı.
    *
-   * Bu ekran ay birimiyle çalışıyor (`usePlanGoals` ayın 1'ini
-   * bekliyor, hedefler `month` sütunuyla saklanıyor). Varsayılan
-   * ölçek haftaya çevrildiğinde `anchor` bir Pazartesi olmaya
-   * başladı; ham hâliyle kullanılsaydı sorgular yanlış anahtara
-   * gider ve yeni hedefler de o yanlış anahtarla YAZILIRDI.
+   * Aylık hedefler o haftanın AYINI gösterir (`monthOfWeek`). `anchor`
+   * yine ayın 1'i: `usePlanGoals` onu bekliyor ve hedefler `month`
+   * sütunuyla yazılıyor.
    */
-  const { today, monthAnchor: anchor, setAnchor } = usePlanlamaSurface();
+  const { today, weekAnchor: weekStart, setWeekAnchor } = usePlanlamaSurface();
+  const anchor = useMemo(() => monthOfWeek(weekStart, today), [weekStart, today]);
 
   const goalsQuery = usePlanGoals(anchor);
   const tasksQuery = useTasks();
@@ -122,11 +127,11 @@ export function GoalsScreen() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PlanlamaHeader
-        scale="month"
-        anchor={anchor}
+        scale="week"
+        anchor={weekStart}
         today={today}
         openTotal={0}
-        onAnchorChange={setAnchor}
+        onAnchorChange={setWeekAnchor}
       />
 
       <ScreenBody width="2xl">
@@ -136,8 +141,7 @@ export function GoalsScreen() {
           İlk bölüm olduğu için kendi üst boşluğu kapalı (`first`).
         */}
         <WeekGoalsSection
-          anchor={anchor}
-          today={today}
+          weekStart={weekStart}
           monthGoals={goals}
           tasks={tasksQuery.data ?? []}
           onError={toast.show}
@@ -158,7 +162,17 @@ export function GoalsScreen() {
           />
         </div>
 
-        <PeriodNoteEditor scale="month" periodStart={anchor} onError={toast.show} />
+        <PeriodNoteEditor
+          // Ay değişince baştan yüklensin: eski ayın metni yeni ayın
+          // verisi gelene kadar görünmesin.
+          key={anchor}
+          scale="month"
+          periodStart={anchor}
+          // Başlık haftayı gösteriyor; hangi ayın hedeflerine bakıldığı
+          // burada yazmalı.
+          label={`Ayın amacı · ${formatMonthYear(toParts(anchor).year, toParts(anchor).month)}`}
+          onError={toast.show}
+        />
 
         {goalsQuery.isPending ? (
           <div className="flex flex-col gap-2" aria-hidden>

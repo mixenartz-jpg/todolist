@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { startOfIsoWeek } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { Button } from "@/components/Button";
 import { SectionHeading } from "@/features/sections/SectionHeading";
@@ -23,9 +22,8 @@ import type { PlanGoal } from "./types";
 import "./planlama.css";
 
 interface WeekGoalsSectionProps {
-  /** Ayın çapası — bu haftanın hangi haftaya düştüğünü belirler. */
-  anchor: DateStr;
-  today: DateStr;
+  /** Görüntülenen haftanın pazartesisi — ekranın başlığı geziniyor. */
+  weekStart: DateStr;
   /** Ayın hedefleri — haftalık hedefin hangisine hizmet ettiği için. */
   monthGoals: readonly PlanGoal[];
   /** Ağaç ilerlemesi için — ağaçlar görevlerden ölçülüyor (nodeprogress.ts). */
@@ -57,23 +55,12 @@ interface WeekGoalsSectionProps {
  * var: "şu an neyi hedefliyorum" sorusu.
  */
 export function WeekGoalsSection({
-  anchor,
-  today,
+  weekStart,
   monthGoals,
   tasks,
   first = false,
   onError,
 }: WeekGoalsSectionProps) {
-  /*
-   * Hangi hafta? Görüntülenen ay BUGÜNÜN ayıysa bugünün haftası,
-   * değilse ayın ilk haftası. Geçmiş bir aya bakarken "bugünün
-   * haftası" o ayın dışına düşerdi.
-   */
-  const weekStart = useMemo(() => {
-    const sameMonth = anchor.slice(0, 7) === today.slice(0, 7);
-    return startOfIsoWeek(sameMonth ? today : anchor);
-  }, [anchor, today]);
-
   const goalsQuery = useWeekGoals(weekStart);
 
   const monthGoalById = useMemo(
@@ -136,7 +123,12 @@ export function WeekGoalsSection({
 
       {/* Haftanın amacı hedeflerin ÜSTÜNDE: önce "bu hafta ne için",
           sonra onu ölçen kalemler (0025). */}
-      <PeriodNoteEditor scale="week" periodStart={weekStart} onError={onError} />
+      <PeriodNoteEditor
+        key={weekStart}
+        scale="week"
+        periodStart={weekStart}
+        onError={onError}
+      />
 
       {goalsQuery.isPending ? (
         <div className="flex flex-col gap-2" aria-hidden>

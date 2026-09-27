@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { isDateStr, startOfMonth, todayStr } from "@/lib/date/date";
+import { isDateStr, startOfIsoWeek, startOfMonth, todayStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import {
   alignToScale,
@@ -52,9 +52,17 @@ export interface PlanlamaSurface {
    * dönüşümdür. Tek yerde türetiliyor.
    */
   monthAnchor: DateStr;
+  /**
+   * Çapanın ISO haftası (pazartesi) — ölçekten BAĞIMSIZ. Hedefler
+   * ekranı haftadan haftaya geziniyor; ay ölçeğinden gelindiğinde
+   * `anchor` ayın 1'i olurdu ve bugünün haftası kaybolurdu.
+   */
+  weekAnchor: DateStr;
   scale: PlanScale;
   category: CategoryFilter;
   setAnchor: (next: DateStr) => void;
+  /** Çapayı bir haftaya taşı, ölçeğe dokunmadan (Hedefler ekranı). */
+  setWeekAnchor: (weekStart: DateStr) => void;
   setScale: (next: PlanScale) => void;
   /**
    * Belirli bir haftaya git: çapayı oraya taşı VE ölçeği haftaya çevir.
@@ -141,6 +149,7 @@ export function usePlanlamaSurface(): PlanlamaSurface {
    * Pazartesi olduğundan o ekranlar için sonuç değişmiyor.
    */
   const monthAnchor = useMemo(() => startOfMonth(base), [base]);
+  const weekAnchor = useMemo(() => startOfIsoWeek(base), [base]);
 
   const rawCategory = params.get(CATEGORY_PARAM);
   const category: CategoryFilter =
@@ -218,6 +227,16 @@ export function usePlanlamaSurface(): PlanlamaSurface {
     [anchor, today, setParam],
   );
 
+  const setWeekAnchor = useCallback(
+    (weekStart: DateStr) => {
+      // Bu hafta → parametre silinir; adres çubuğunda gereksiz `?t=`
+      // kalmasın (setAnchor ile aynı gerekçe).
+      const isCurrent = weekStart === startOfIsoWeek(today);
+      setParam({ [ANCHOR_PARAM]: isCurrent ? null : weekStart });
+    },
+    [today, setParam],
+  );
+
   const goToWeek = useCallback(
     (weekStart: DateStr) => {
       /*
@@ -251,9 +270,11 @@ export function usePlanlamaSurface(): PlanlamaSurface {
     today,
     anchor,
     monthAnchor,
+    weekAnchor,
     scale,
     category,
     setAnchor,
+    setWeekAnchor,
     setScale,
     goToWeek,
     setCategory,

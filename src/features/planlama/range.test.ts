@@ -8,6 +8,7 @@ import {
   buildPlanRange,
   chunkWeeks,
   DEFAULT_SCALE,
+  monthOfWeek,
   scaleFromParam,
   scaleToParam,
 } from "./range";
@@ -446,5 +447,27 @@ describe("alignToScale — URL çapası", () => {
     expect(alignToScale(asDateStr("2026-09-10"), "week")).toBe(asDateStr("2026-09-07"));
     expect(alignToScale(asDateStr("2026-10-01"), "week")).toBe(asDateStr("2026-09-28"));
     expect(alignToScale(asDateStr("2026-10-17"), "month")).toBe(asDateStr("2026-10-01"));
+  });
+});
+
+describe("monthOfWeek", () => {
+  const d = (s: string) => asDateStr(s);
+
+  it("tek aydaki hafta o ayı verir", () => {
+    expect(monthOfWeek(d("2026-09-14"), d("2026-09-27"))).toBe("2026-09-01");
+  });
+
+  it("iki ayı kesen hafta, bugün içindeyse bugünün ayı", () => {
+    expect(monthOfWeek(d("2026-09-28"), d("2026-09-29"))).toBe("2026-09-01");
+    expect(monthOfWeek(d("2026-09-28"), d("2026-10-02"))).toBe("2026-10-01");
+  });
+
+  it("iki ayı kesen hafta, bugün dışındaysa perşembenin ayı", () => {
+    // Perşembe 1 Ekim.
+    expect(monthOfWeek(d("2026-09-28"), d("2026-09-20"))).toBe("2026-10-01");
+    // 29 Haz – 5 Tem: perşembe 2 Temmuz.
+    expect(monthOfWeek(d("2026-06-29"), d("2026-09-20"))).toBe("2026-07-01");
+    // 26 Oca – 1 Şub: perşembe 29 Ocak.
+    expect(monthOfWeek(d("2026-01-26"), d("2026-09-20"))).toBe("2026-01-01");
   });
 });
