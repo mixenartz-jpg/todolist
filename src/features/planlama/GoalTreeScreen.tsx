@@ -13,6 +13,7 @@ import { GoalNodeForm } from "./GoalNodeForm";
 import { GoalTreeHeader } from "./GoalTreeHeader";
 import { GoalTreeView } from "./GoalTreeView";
 import { NodeBulkSend } from "./NodeBulkSend";
+import { NodeWeekMovePanel } from "./NodeWeekMovePanel";
 import { planDistribution } from "./distribute";
 import { goalTreeProgress, sentTasksByNode, treeRootRatio } from "./nodeprogress";
 import {
@@ -20,6 +21,7 @@ import {
   useDeleteGoalNode,
   useDistributeNodes,
   useMoveGoalNode,
+  useMoveNodesToWeekGoal,
   useEditGoalNode,
   useReorderGoalNodes,
   useSetNodeRepeating,
@@ -27,6 +29,7 @@ import {
 import { useGoalNodes } from "./nodeQueries";
 import { usePlanGoals, useWeekGoal } from "./queries";
 import {
+  branchPackages,
   collapsedExcept,
   focusPath,
   nextSiblingOrder,
@@ -88,6 +91,9 @@ export function GoalTreeScreen({ owner }: GoalTreeScreenProps) {
   // "Geri al": kalemden doğan görevi siler (iyimser — çip anında gider).
   const deleteTask = useDeleteTask(toast.show);
   const setRepeating = useSetNodeRepeating(toast.show);
+  const moveToWeek = useMoveNodesToWeekGoal(toast.show);
+  /** Seçili dalların başka haftaya taşınma paneli açık mı? */
+  const [movingToWeek, setMovingToWeek] = useState(false);
 
   /*
    * AÇIK dallar — kapalılar değil. Varsayılan hepsi kapalı (yalnızca
@@ -357,7 +363,29 @@ export function GoalTreeScreen({ owner }: GoalTreeScreenProps) {
         )}
       </div>
 
-      {selectedNodes.length > 0 && (
+      {movingToWeek && weekGoal && selected.size > 0 ? (
+        <NodeWeekMovePanel
+          source={weekGoal}
+          packageCount={branchPackages(nodes, selected).roots.length}
+          pending={moveToWeek.isPending}
+          onCancel={() => setMovingToWeek(false)}
+          onMove={(target, weekLabel) => {
+            const { roots, ids } = branchPackages(nodes, selected);
+            moveToWeek.mutate(
+              { fromOwnerId: ownerId, roots, ids, target },
+              {
+                onSuccess: () =>
+                  toast.show(
+                    `${roots.length} dal ${weekLabel} haftasına taşındı.`,
+                    "success",
+                  ),
+              },
+            );
+            setSelected(new Set());
+            setMovingToWeek(false);
+          }}
+        />
+      ) : selectedNodes.length > 0 && (
         <NodeBulkSend
           nodes={selectedNodes}
           today={today}
@@ -369,6 +397,7 @@ export function GoalTreeScreen({ owner }: GoalTreeScreenProps) {
             setSelected(new Set());
           }}
           onError={toast.show}
+          onMoveToWeek={isWeek && weekGoal ? () => setMovingToWeek(true) : undefined}
         />
       )}
 

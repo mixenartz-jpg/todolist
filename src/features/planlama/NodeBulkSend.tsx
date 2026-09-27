@@ -20,6 +20,11 @@ interface NodeBulkSendProps {
   onClear: () => void;
   onDistribute: (drafts: readonly NodeTaskDraft[]) => void;
   onError: (message: string) => void;
+  /**
+   * Seçili dalları başka haftaya taşı. Yalnızca haftalık ağaçta
+   * verilir; aylık ağaçta düğme hiç çizilmez.
+   */
+  onMoveToWeek?: () => void;
 }
 
 /**
@@ -47,6 +52,7 @@ export function NodeBulkSend({
   onClear,
   onDistribute,
   onError,
+  onMoveToWeek,
 }: NodeBulkSendProps) {
   const [from, setFrom] = useState<string>(today);
   const [to, setTo] = useState<string>(addDays(today, 6));
@@ -124,6 +130,12 @@ export function NodeBulkSend({
       <Button type="submit" size="sm" variant="primary" disabled={capInvalid} loading={pending}>
         Dağıt
       </Button>
+
+      {onMoveToWeek && (
+        <Button type="button" size="sm" variant="secondary" onClick={onMoveToWeek}>
+          Başka haftaya taşı
+        </Button>
+      )}
 
       <Button type="button" size="sm" variant="ghost" onClick={onClear}>
         Seçimi bırak

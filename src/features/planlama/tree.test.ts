@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { goalNode } from "@/features/testing/fixtures";
 import {
   ancestorChain,
+  branchPackages,
   buildGoalTree,
   canMoveNode,
   collapsedExcept,
@@ -405,5 +406,28 @@ describe("focusPath / collapsedExcept", () => {
 
   it("yapraklar kapalı kümeye girmez", () => {
     expect(collapsedExcept(kimya(), new Set()).has("bank")).toBe(false);
+  });
+});
+
+describe("branchPackages", () => {
+  it("seçili dal altındaki her şeyle birlikte paketlenir", () => {
+    const { roots, ids } = branchPackages(kimya(), new Set(["asit"]));
+    expect(roots).toEqual(["asit"]);
+    expect(ids).toEqual(["asit", "konu", "soru", "bank"]);
+  });
+
+  it("seçili atası olan düğüm ayrı paket değil", () => {
+    const { roots } = branchPackages(kimya(), new Set(["soru", "asit", "bank"]));
+    expect(roots).toEqual(["asit"]);
+  });
+
+  it("birden çok dal ağaç sırasıyla gelir", () => {
+    const { roots, ids } = branchPackages(kimya(), new Set(["tepkime", "soru"]));
+    expect(roots).toEqual(["soru", "tepkime"]);
+    expect(ids).toEqual(["soru", "bank", "tepkime"]);
+  });
+
+  it("boş seçim boş paket", () => {
+    expect(branchPackages(kimya(), new Set())).toEqual({ roots: [], ids: [] });
   });
 });

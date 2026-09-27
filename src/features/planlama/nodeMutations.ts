@@ -5,6 +5,7 @@ import { qk } from "@/lib/query/keys";
 import { createClient } from "@/lib/supabase/client";
 import type { GoalNodeRow } from "@/lib/db/database.types";
 import type { Task } from "@/features/tasks/types";
+import type { DateStr } from "@/lib/date/types";
 import { pendingTaskId } from "@/features/tasks/pending";
 import type { NodeTaskDraft } from "./distribute";
 import { toGoalNode } from "./nodeQueries";
@@ -409,6 +410,146 @@ export function useDistributeNodes(onError?: (message: string) => void) {
     },
 
     onSettled: () => qc.invalidateQueries({ queryKey: qk.tasks() }),
+  });
+}
+
+/** Paketin gideceği haftalık hedef: var olan ya da yeni açılacak. */
+export type WeekMoveTarget =
+  | { kind: "existing"; weekGoalId: string }
+  | {
+      kind: "new";
+      weekStart: DateStr;
+      title: string;
+      colorSlot: number;
+      planGoalId: string | null;
+    };
+
+/**
+ * Dalları (paket hâlinde) BAŞKA BİR HAFTALIK HEDEFİN ağacına taşı.
+ *
+ * Kullanıcı bir haftaya yazdığı konuların bir kısmını öbür haftaya
+ * aktarıyor. Silip yeniden yazmak, dallardan doğmuş görevlerin
+ * `node_id` bağını koparırdı; taşıma satırları KORUYOR.
+ *
+ * ── Sıra neden önemli? ──
+ *   1. Paketin TÜM düğümlerinin sahibi değişir (`week_goal_id`). Bu
+ *      yazma `parent_id`'ye dokunmadığı için sahip trigger'ı
+ *      (0025, stamp_goal_node_depth) çalışmaz.
+ *   2. Sonra paket kökleri hedef ağacın KÖKÜ olur (`parent_id` null,
+ *      sona sıralı). Trigger derinliği 1 yapar, cascade trigger'ı
+ *      torunların derinliğini yayar (0022).
+ * Ters sırada, kök yeni sahibe geçtiği anda çocukları eski sahipte
+ * kalırdı ve trigger çocukların sonraki her taşınmasını reddederdi.
+ *
+ * İyimser: paket kaynak ağaçtan anında çıkar. Hedef ağaç tazelenerek
+ * gelir — o ağacın önbelleği çoğunlukla açık değil.
+ */
+export function useMoveNodesToWeekGoal(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      roots,
+      ids,
+      target,
+    }: {
+      /** Kaynak ağacın sahibi — iyimser yama ve tazeleme için. */
+      fromOwnerId: string;
+      roots: readonly string[];
+      ids: readonly string[];
+      target: WeekMoveTarget;
+    }) => {
+      if (roots.length === 0) return;
+      const supabase = createClient();
+
+      let targetId: string;
+      if (target.kind === "existing") {
+        targetId = target.weekGoalId;
+      } else {
+        const { data: last, error: lastError } = await supabase
+          .from("week_goals")
+          .select("sort_order")
+          .eq("week_start", target.weekStart)
+          .order("sort_order", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (lastError) throw lastError;
+
+        const { data: created, error: createError } = await supabase
+          .from("week_goals")
+          .insert({
+            week_start: target.weekStart,
+            title: target.title,
+            note: null,
+            target_count: null,
+            color_slot: target.colorSlot,
+            sort_order:
+              ((last as { sort_order: number } | null)?.sort_order ?? -1) + 1,
+            plan_goal_id: target.planGoalId,
+          })
+          .select("id")
+          .single();
+        if (createError) throw createError;
+        targetId = (created as { id: string }).id;
+      }
+
+      const { data: lastRoot, error: rootError } = await supabase
+        .from("goal_nodes")
+        .select("sort_order")
+        .eq("week_goal_id", targetId)
+        .is("parent_id", null)
+        .order("sort_order", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (rootError) throw rootError;
+      const base =
+        ((lastRoot as { sort_order: number } | null)?.sort_order ?? -1) + 1;
+
+      // 1. Sahip — bütün paket tek yazmada.
+      const { error: ownerError } = await supabase
+        .from("goal_nodes")
+        .update({ week_goal_id: targetId, plan_goal_id: null })
+        .in("id", ids);
+      if (ownerError) throw ownerError;
+
+      // 2. Kökler hedef ağacın sonuna.
+      const results = await Promise.all(
+        roots.map((id, index) =>
+          supabase
+            .from("goal_nodes")
+            .update({ parent_id: null, sort_order: base + index })
+            .eq("id", id),
+        ),
+      );
+      const failed = results.find((r) => r.error);
+      if (failed?.error) throw failed.error;
+    },
+
+    onMutate: async ({ fromOwnerId, ids }) => {
+      const key = qk.goalNodesFor(fromOwnerId);
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<GoalNode[]>(key);
+
+      const moving = new Set(ids);
+      qc.setQueryData<GoalNode[]>(key, (list) =>
+        list?.filter((n) => !moving.has(n.id)),
+      );
+
+      return { previous, key };
+    },
+
+    onError: (error, _vars, context) => {
+      if (context) qc.setQueryData(context.key, context.previous);
+      onError?.(errorText(error));
+    },
+
+    onSettled: (_data, _error, vars) => {
+      // Önek: kaynak ve hedef ağaç, Hedefler ekranının toplu sorgusu.
+      qc.invalidateQueries({ queryKey: qk.goalNodes() });
+      if (vars.target.kind === "new") {
+        qc.invalidateQueries({ queryKey: qk.weekGoals() });
+      }
+    },
   });
 }
 

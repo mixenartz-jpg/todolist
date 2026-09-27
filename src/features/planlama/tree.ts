@@ -247,6 +247,41 @@ export function collapsedExcept(
   return out;
 }
 
+/**
+ * Seçimden taşınacak PAKETLER (dallar).
+ *
+ * Kullanıcı hem "Asitler"i hem altındaki "Soru bankası"nı seçmiş
+ * olabilir; ikincisi zaten birincinin paketinin içinde. Kökler: atası
+ * seçili OLMAYAN seçili düğümler. `ids`: köklerin tüm alt ağaçları —
+ * seçilmemiş çocuklar da pakete dahil, dal bölünmeden taşınır.
+ *
+ * Sıra ağaçtaki GÖRÜNÜM sırası; hedef ağaçta da aynı dizilişle sona
+ * eklenirler.
+ */
+export function branchPackages(
+  nodes: readonly GoalNode[],
+  selected: ReadonlySet<string>,
+): { roots: string[]; ids: string[] } {
+  const order = flattenGoalTree(buildGoalTree(nodes), new Set()).map(
+    (f) => f.node.id,
+  );
+
+  const roots = order.filter(
+    (id) =>
+      selected.has(id) &&
+      !ancestorChain(nodes, id)
+        .slice(0, -1)
+        .some((a) => selected.has(a.id)),
+  );
+
+  const ids = new Set<string>();
+  for (const root of roots) {
+    for (const id of subtreeIds(nodes, root)) ids.add(id);
+  }
+
+  return { roots, ids: order.filter((id) => ids.has(id)) };
+}
+
 /** Taşımanın reddedilme sebebi. */
 export type MoveRejection = "not-found" | "cycle" | "too-deep";
 
