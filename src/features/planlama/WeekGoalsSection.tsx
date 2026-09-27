@@ -6,9 +6,13 @@ import { Button } from "@/components/Button";
 import { SectionHeading } from "@/features/sections/SectionHeading";
 import { WeekGoalCard } from "./WeekGoalCard";
 import { WeekGoalForm } from "./WeekGoalForm";
+import { WeekGoalMovePanel } from "./WeekGoalMovePanel";
+import { addDays } from "@/lib/date/date";
+import { formatWeekRange } from "@/lib/ui/tr";
 import {
   useCreateWeekGoal,
   useDeleteWeekGoal,
+  useMoveWeekGoals,
   useStepWeekGoal,
   useToggleWeekGoalDone,
   useUpdateWeekGoal,
@@ -31,6 +35,8 @@ interface WeekGoalsSectionProps {
   /** Ekranın ilk bölümü mü? Öyleyse üst boşluk yok. */
   first?: boolean;
   onError: (text: string) => void;
+  /** Başarı bildirimi (taşıma sonrası). */
+  onNotice?: (text: string) => void;
 }
 
 /**
@@ -60,6 +66,7 @@ export function WeekGoalsSection({
   tasks,
   first = false,
   onError,
+  onNotice,
 }: WeekGoalsSectionProps) {
   const goalsQuery = useWeekGoals(weekStart);
 
@@ -74,7 +81,10 @@ export function WeekGoalsSection({
   const toggleDone = useToggleWeekGoalDone(onError);
   const deleteGoal = useDeleteWeekGoal(onError);
 
+  const moveGoals = useMoveWeekGoals(onError);
+
   const [adding, setAdding] = useState(false);
+  const [moving, setMoving] = useState(false);
 
   const goals = useMemo(() => goalsQuery.data ?? [], [goalsQuery.data]);
 
@@ -190,7 +200,26 @@ export function WeekGoalsSection({
             </ul>
           )}
 
-          {adding ? (
+          {moving ? (
+            <WeekGoalMovePanel
+              goals={goals}
+              weekStart={weekStart}
+              pending={moveGoals.isPending}
+              onCancel={() => setMoving(false)}
+              onMove={(ids, to) => {
+                moveGoals.mutate(
+                  { ids, from: weekStart, to },
+                  {
+                    onSuccess: () =>
+                      onNotice?.(
+                        `${ids.length} hedef ${formatWeekRange(to, addDays(to, 6))} haftasına taşındı.`,
+                      ),
+                  },
+                );
+                setMoving(false);
+              }}
+            />
+          ) : adding ? (
             <div className="mt-2 rounded-xl border border-[var(--color-accent)] bg-[var(--color-surface)] p-3.5">
               <WeekGoalForm
                 weekStart={weekStart}
@@ -212,6 +241,18 @@ export function WeekGoalsSection({
               >
                 Haftalık hedef ekle
               </Button>
+              {/* Toplu taşıma: bitmeyenleri öbür haftaya aktarmak için.
+                  Hedef yokken taşınacak bir şey de yok. */}
+              {goals.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="ml-1"
+                  onClick={() => setMoving(true)}
+                >
+                  Başka haftaya taşı
+                </Button>
+              )}
             </div>
           )}
         </>

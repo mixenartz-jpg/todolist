@@ -813,6 +813,95 @@ export function useDeleteWeekGoal(onError?: (message: string) => void) {
   });
 }
 
+/**
+ * Haftalık hedefleri BAŞKA BİR HAFTAYA taşı — toplu, iyimser.
+ *
+ * Kullanıcı bir haftaya hedef koyup sonra "bunlar öbür haftaya
+ * kaldı" diyor. Silip yeniden yazmak ağaçlarını (0025) ve notlarını
+ * kaybettirirdi; taşıma yalnızca `week_start`'ı değiştiriyor, satırın
+ * kimliği ve ona bağlı ağaç olduğu gibi kalıyor.
+ *
+ * Hedef haftada sıraları EN SONA eklenir: orada zaten dizilmiş
+ * hedeflerin arasına karışmasınlar. Son sırayı sunucudan okuyoruz —
+ * hedef haftanın önbelleği hiç açılmamış olabilir.
+ */
+export function useMoveWeekGoals(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      ids,
+      to,
+    }: {
+      ids: readonly string[];
+      from: DateStr;
+      to: DateStr;
+    }) => {
+      if (ids.length === 0) return;
+      const supabase = createClient();
+
+      const { data: last, error: lastError } = await supabase
+        .from("week_goals")
+        .select("sort_order")
+        .eq("week_start", to)
+        .order("sort_order", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (lastError) throw lastError;
+
+      const base = ((last as { sort_order: number } | null)?.sort_order ?? -1) + 1;
+
+      const results = await Promise.all(
+        ids.map((id, index) =>
+          supabase
+            .from("week_goals")
+            .update({ week_start: to, sort_order: base + index })
+            .eq("id", id),
+        ),
+      );
+      const failed = results.find((r) => r.error);
+      if (failed?.error) throw failed.error;
+    },
+
+    onMutate: async ({ ids, from, to }) => {
+      const fromKey = qk.weekGoalsWeek(from);
+      const toKey = qk.weekGoalsWeek(to);
+      await qc.cancelQueries({ queryKey: fromKey });
+      await qc.cancelQueries({ queryKey: toKey });
+
+      const previousFrom = qc.getQueryData<WeekGoal[]>(fromKey);
+      const previousTo = qc.getQueryData<WeekGoal[]>(toKey);
+
+      const moving = new Set(ids);
+      const moved = (previousFrom ?? [])
+        .filter((g) => moving.has(g.id))
+        .map((g) => ({ ...g, weekStart: to }));
+
+      qc.setQueryData<WeekGoal[]>(fromKey, (list) =>
+        list?.filter((g) => !moving.has(g.id)),
+      );
+      // Hedef haftanın önbelleği varsa sona eklenir; yoksa açıldığında
+      // sunucudan gelir.
+      qc.setQueryData<WeekGoal[]>(toKey, (list) =>
+        list === undefined ? list : [...list, ...moved],
+      );
+
+      return { previousFrom, previousTo, fromKey, toKey };
+    },
+
+    onError: (error, _vars, context) => {
+      if (context) {
+        qc.setQueryData(context.fromKey, context.previousFrom);
+        qc.setQueryData(context.toKey, context.previousTo);
+      }
+      onError?.(errorText(error));
+    },
+
+    // Önek: iki hafta da, ağaç sayfasının tek hedef anahtarı da tazelenir.
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.weekGoals() }),
+  });
+}
+
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : "Kaydedilemedi, tekrar deneyin";
 }

@@ -145,6 +145,7 @@ export function GoalsScreen() {
           monthGoals={goals}
           tasks={tasksQuery.data ?? []}
           onError={toast.show}
+          onNotice={(text) => toast.show(text, "success")}
           first
         />
 
