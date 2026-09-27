@@ -17,5 +17,5 @@ export default async function Page({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <GoalTreeScreen goalId={id} />;
+  return <GoalTreeScreen owner={{ kind: "month", id }} />;
 }

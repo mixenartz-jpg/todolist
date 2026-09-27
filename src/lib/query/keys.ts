@@ -104,7 +104,13 @@ export const qk = {
    * boşaltıyor.
    */
   goalNodes: () => ["goal-nodes"] as const,
-  goalNodesFor: (planGoalId: string) => ["goal-nodes", planGoalId] as const,
+  /*
+   * Tek ağacın anahtarı — sahibi aylık ya da haftalık hedef (0025).
+   * Kimlikler iki tabloda da uuid ve çakışmıyor; ayrı bir "week"
+   * öneki gerekmiyor ve mutasyonlar iki ağaç türünü aynı yoldan
+   * tazeliyor.
+   */
+  goalNodesFor: (ownerId: string) => ["goal-nodes", ownerId] as const,
   /*
    * Birden çok hedefin ağaçları TEK sorguda — Hedefler ekranı her
    * kartın yüzdesini ağaçtan okumak zorunda ve kart başına sorgu, on
@@ -140,6 +146,19 @@ export const qk = {
    */
   weekGoals: () => ["week-goals"] as const,
   weekGoalsWeek: (weekStart: DateStr) => ["week-goals", weekStart] as const,
+  /*
+   * Tek haftalık hedef — ağaç sayfasının başlığı için. "one" sabiti
+   * `weekGoalsWeek` ile karışmasın diye; `weekGoals()` öneki haftalık
+   * hedef yazmalarında bunu da tazeliyor.
+   */
+  weekGoal: (id: string) => ["week-goals", "one", id] as const,
+
+  /*
+   * Dönem amacı (0025). "period-notes" tireli tek parça: `notes`
+   * önekinin altına girseydi gün notu yazmaları bunu da tazelerdi.
+   */
+  periodNote: (scale: "month" | "week", periodStart: DateStr) =>
+    ["period-notes", scale, periodStart] as const,
 
   /*
    * Alınacaklar (0015).

@@ -23,6 +23,7 @@ import { daysSinceGoalTask } from "./pace";
 import { goalProgress } from "./rollup";
 import { usePlanlamaSurface } from "./usePlanlamaSurface";
 import { WeekGoalsSection } from "./WeekGoalsSection";
+import { PeriodNoteEditor } from "./PeriodNoteEditor";
 import "./planlama.css";
 
 /**
@@ -129,17 +130,35 @@ export function GoalsScreen() {
       />
 
       <ScreenBody width="2xl">
-        <SectionHeading
-          sectionKey="planlama.goals"
+        {/*
+          Haftalık hedefler EN ÜSTTE: kullanıcının asıl planlama birimi
+          hafta; aylık hedefler haftaların hizmet ettiği genel yön.
+          İlk bölüm olduğu için kendi üst boşluğu kapalı (`first`).
+        */}
+        <WeekGoalsSection
+          anchor={anchor}
+          today={today}
+          monthGoals={goals}
+          tasks={tasksQuery.data ?? []}
           onError={toast.show}
-          trailing={
-            openGoals > 0 ? (
-              <span className="tabular text-[length:var(--text-sm)] text-[var(--color-ink-3)]">
-                {openGoals}
-              </span>
-            ) : undefined
-          }
+          first
         />
+
+        <div className="mt-[var(--stack-gap)]">
+          <SectionHeading
+            sectionKey="planlama.goals"
+            onError={toast.show}
+            trailing={
+              openGoals > 0 ? (
+                <span className="tabular text-[length:var(--text-sm)] text-[var(--color-ink-3)]">
+                  {openGoals}
+                </span>
+              ) : undefined
+            }
+          />
+        </div>
+
+        <PeriodNoteEditor scale="month" periodStart={anchor} onError={toast.show} />
 
         {goalsQuery.isPending ? (
           <div className="flex flex-col gap-2" aria-hidden>
@@ -235,13 +254,6 @@ export function GoalsScreen() {
                 </Button>
               </div>
             )}
-
-            <WeekGoalsSection
-              anchor={anchor}
-              today={today}
-              monthGoals={goals}
-              onError={toast.show}
-            />
           </>
         )}
       </ScreenBody>

@@ -15,6 +15,10 @@ import {
   useUpdateWeekGoal,
 } from "./mutations";
 import { useWeekGoals } from "./queries";
+import { useGoalNodesFor } from "./nodeQueries";
+import { goalTreeProgress, treeRootRatio } from "./nodeprogress";
+import { PeriodNoteEditor } from "./PeriodNoteEditor";
+import type { Task } from "@/features/tasks/types";
 import type { PlanGoal } from "./types";
 import "./planlama.css";
 
@@ -24,6 +28,10 @@ interface WeekGoalsSectionProps {
   today: DateStr;
   /** Ayın hedefleri — haftalık hedefin hangisine hizmet ettiği için. */
   monthGoals: readonly PlanGoal[];
+  /** Ağaç ilerlemesi için — ağaçlar görevlerden ölçülüyor (nodeprogress.ts). */
+  tasks: readonly Task[];
+  /** Ekranın ilk bölümü mü? Öyleyse üst boşluk yok. */
+  first?: boolean;
   onError: (text: string) => void;
 }
 
@@ -52,6 +60,8 @@ export function WeekGoalsSection({
   anchor,
   today,
   monthGoals,
+  tasks,
+  first = false,
   onError,
 }: WeekGoalsSectionProps) {
   /*
@@ -82,6 +92,28 @@ export function WeekGoalsSection({
   const goals = useMemo(() => goalsQuery.data ?? [], [goalsQuery.data]);
 
   /*
+   * Haftanın TÜM ağaçları tek sorguda (0025) — aylık kartların
+   * `useGoalNodesFor` gerekçesiyle aynı: kart başına sorgu yok.
+   */
+  const goalIds = useMemo(() => goals.map((g) => g.id), [goals]);
+  const nodesQuery = useGoalNodesFor(goalIds, "week");
+
+  /** Hedef kimliğinden ağaç özetine; ağacı olmayan hedef listede YOK. */
+  const trees = useMemo(() => {
+    const out = new Map<string, { nodeCount: number; ratio: number | null }>();
+    const nodes = nodesQuery.data ?? [];
+    for (const goal of goals) {
+      const mine = nodes.filter((n) => n.weekGoalId === goal.id);
+      if (mine.length === 0) continue;
+      out.set(goal.id, {
+        nodeCount: mine.length,
+        ratio: treeRootRatio(goalTreeProgress(mine, tasks), mine),
+      });
+    }
+    return out;
+  }, [goals, nodesQuery.data, tasks]);
+
+  /*
    * Sayaç AÇIK hedefleri sayar. Hepsini saysaydı hafta ilerledikçe
    * rakam hiç azalmaz ve ilerleme hissi kaybolurdu (aylık hedeflerin
    * sayacıyla aynı gerekçe).
@@ -89,7 +121,7 @@ export function WeekGoalsSection({
   const openGoals = goals.filter((goal) => goal.completedAt === null).length;
 
   return (
-    <section className="mt-[var(--stack-gap)]">
+    <section className={first ? undefined : "mt-[var(--stack-gap)]"}>
       <SectionHeading
         sectionKey="planlama.weekGoals"
         onError={onError}
@@ -101,6 +133,10 @@ export function WeekGoalsSection({
           ) : undefined
         }
       />
+
+      {/* Haftanın amacı hedeflerin ÜSTÜNDE: önce "bu hafta ne için",
+          sonra onu ölçen kalemler (0025). */}
+      <PeriodNoteEditor scale="week" periodStart={weekStart} onError={onError} />
 
       {goalsQuery.isPending ? (
         <div className="flex flex-col gap-2" aria-hidden>
@@ -119,6 +155,7 @@ export function WeekGoalsSection({
                 <WeekGoalCard
                   key={goal.id}
                   goal={goal}
+                  tree={trees.get(goal.id)}
                   parent={
                     goal.planGoalId === null
                       ? null

@@ -211,7 +211,9 @@ export function planGoal(options: PlanGoalOptions = {}): PlanGoal {
 interface GoalNodeOptions {
   id?: string;
   /** Ağacın hedefi; verilmezse "g1". */
-  planGoalId?: string;
+  planGoalId?: string | null;
+  /** Haftalık ağacın hedefi; verilmezse null. */
+  weekGoalId?: string | null;
   /** null → kök düğüm (depth 1). Varsayılan budur. */
   parentId?: string | null;
   /** Verilmezse `parentId`'den türetilir: kök 1, çocuk 2. */
@@ -235,7 +237,8 @@ export function goalNode(options: GoalNodeOptions = {}): GoalNode {
 
   return {
     id: options.id ?? `n${++counter}`,
-    planGoalId: options.planGoalId ?? "g1",
+    planGoalId: options.planGoalId === undefined ? "g1" : options.planGoalId,
+    weekGoalId: options.weekGoalId ?? null,
     parentId,
     depth: options.depth ?? (parentId === null ? 1 : 2),
     title: options.title ?? "Test başlığı",

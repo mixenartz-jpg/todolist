@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/Button";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { cn } from "@/lib/ui/cn";
@@ -20,6 +21,15 @@ interface WeekGoalCardProps {
    * açması demekti. Bağ yoksa ya da hedef silinmişse null.
    */
   parent: PlanGoal | null;
+  /**
+   * Hedefin ağacı (0025); ağaç yoksa undefined.
+   *
+   * `ratio` null → başlıklar yazılmış ama güne dağıtılmamış. Haftalık
+   * hedefin kendi sayacı ve kutusu ağaçtan BAĞIMSIZ kalır: tamamlanmayı
+   * kullanıcı işaretliyor, ağaç yalnızca planın ne kadarının yapıldığını
+   * gösteriyor.
+   */
+  tree?: { nodeCount: number; ratio: number | null };
   pending: boolean;
   onUpdate: (draft: WeekGoalDraft) => void;
   onStep: (doneCount: number) => void;
@@ -48,6 +58,7 @@ interface WeekGoalCardProps {
 export function WeekGoalCard({
   goal,
   parent,
+  tree,
   pending,
   onUpdate,
   onStep,
@@ -163,6 +174,15 @@ export function WeekGoalCard({
           )}
         </div>
 
+        {/* Ağaç sayfasına geçiş — aylık karttaki bağlantının ikizi (0025). */}
+        <Link
+          href={`/planlama/hedefler/hafta/${goal.id}`}
+          aria-label={`${goal.title}: ağacı aç`}
+          className="shrink-0 rounded-lg px-2 py-1 text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-quart)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-accent)]"
+        >
+          Ağaç
+        </Link>
+
         <Button
           size="sm"
           variant="ghost"
@@ -172,6 +192,15 @@ export function WeekGoalCard({
           Sil
         </Button>
       </div>
+
+      {tree && (
+        <p className="tabular mt-2 text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
+          {tree.nodeCount} başlık ·{" "}
+          {tree.ratio === null
+            ? "henüz güne dağıtılmadı"
+            : `${formatPercent(tree.ratio)} yapıldı`}
+        </p>
+      )}
 
       {/*
        * Sayaçsız hedefte bu blok HİÇ çizilmez. `GoalCard`'ın "henüz

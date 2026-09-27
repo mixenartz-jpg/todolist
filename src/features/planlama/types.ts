@@ -125,8 +125,13 @@ export interface WeekGoalDraft {
  */
 export interface GoalNode {
   id: string;
-  /** Ağacın ait olduğu aylık hedef. Her düğümde dolu (kök olmayanda da). */
-  planGoalId: string;
+  /**
+   * Ağacın ait olduğu aylık hedef. Her düğümde dolu (kök olmayanda da)
+   * — ağaç haftalık hedefe aitse null (0025).
+   */
+  planGoalId: string | null;
+  /** Ağacın ait olduğu haftalık hedef (0025); aylık ağaçta null. */
+  weekGoalId: string | null;
   /** Üst düğüm; null → hedefin doğrudan çocuğu. */
   parentId: string | null;
   /**
@@ -147,8 +152,20 @@ export interface GoalNode {
   repeating: boolean;
 }
 
+/**
+ * Ağacın sahibi (0025): aylık ya da haftalık hedef.
+ *
+ * Her düğümün TAM OLARAK BİR sahibi var (DB check'i). `id` iki tabloda
+ * da uuid ve çakışmıyor; önbellek anahtarı (`qk.goalNodesFor`) bu
+ * yüzden yalnızca kimlikle kurulabiliyor.
+ */
+export interface NodeOwner {
+  kind: "month" | "week";
+  id: string;
+}
+
 export interface GoalNodeDraft {
-  planGoalId: string;
+  owner: NodeOwner;
   /** null → hedefin doğrudan çocuğu (depth 1). */
   parentId: string | null;
   title: string;
@@ -160,6 +177,14 @@ export interface GoalNodeDraft {
    * İstemcinin göndereceği bir derinlik, ebeveyni görmediği için
    * yanlış olabilir ve check kısıtı onu ancak 3'ü aştığında yakalardı.
    */
+}
+
+/** Dönemin serbest amaç metni (0025): ayın ya da haftanın özeti. */
+export interface PeriodNote {
+  scale: "month" | "week";
+  /** Ay → ayın 1'i, hafta → ISO pazartesisi. */
+  periodStart: DateStr;
+  body: string;
 }
 
 /**
