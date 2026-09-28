@@ -78,6 +78,7 @@ export function joinRoutines(
       target: Number(r.target),
       unit: r.unit,
       startDate,
+      endDate: r.end_date ? asDateStr(r.end_date) : null,
       archivedAt: r.archived_at ? asDateStr(r.archived_at.slice(0, 10)) : null,
       sortOrder: r.sort_order,
       // Program satırı hiç yoksa (olmamalı, trigger garanti eder)

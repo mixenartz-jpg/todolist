@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { todayStr } from "@/lib/date/date";
 import { qk } from "@/lib/query/keys";
 import { createClient } from "@/lib/supabase/client";
+import type { DateStr } from "@/lib/date/types";
 import type { RoutineDraft, Schedule } from "./types";
 
 /** Yeni rutin oluşturur ve ilk program sürümünü yazar. */
@@ -24,6 +25,9 @@ export function useCreateRoutine() {
           target: draft.target,
           unit: draft.unit,
           start_date: today,
+          // Yalnız VARSA yazılır: 0026 çalıştırılmadan süresiz rutin
+          // eklemek bozulmasın.
+          ...(draft.endDate !== null && { end_date: draft.endDate }),
         })
         .select()
         .single();
@@ -67,6 +71,8 @@ export function useUpdateRoutine() {
       colorSlot: number;
       target: number;
       unit: string | null;
+      /** undefined → bitiş tarihine dokunulmaz; null → süresiz (0026). */
+      endDate?: DateStr | null;
     }) => {
       const supabase = createClient();
       const { error } = await supabase
@@ -77,6 +83,7 @@ export function useUpdateRoutine() {
           color_slot: input.colorSlot,
           target: input.target,
           unit: input.unit,
+          ...(input.endDate !== undefined && { end_date: input.endDate }),
         })
         .eq("id", input.id);
 

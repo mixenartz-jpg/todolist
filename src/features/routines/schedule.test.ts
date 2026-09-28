@@ -104,6 +104,13 @@ describe("isActiveOn — başlangıç ve arşiv kapıları", () => {
     expect(isActiveOn(r, d("2026-08-06"))).toBe(false);
   });
 
+  it("bitiş günü dahil aktif, sonrasında pasiftir (0026)", () => {
+    const r = routine({ startDate: "2026-09-28", endDate: "2026-10-04" });
+    expect(isActiveOn(r, d("2026-10-04"))).toBe(true);
+    expect(isActiveOn(r, d("2026-10-05"))).toBe(false);
+    expect(isDueOn(r, d("2026-10-05"))).toBe(false);
+  });
+
   it("arşivlenmemiş rutin gelecekte de aktiftir", () => {
     const r = routine({ startDate: "2026-01-01" });
     expect(isActiveOn(r, d("2030-01-01"))).toBe(true);

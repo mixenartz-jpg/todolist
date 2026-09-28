@@ -10,7 +10,8 @@ import { ListIcon } from "@/components/icons";
 import { todayStr } from "@/lib/date/date";
 import { cn } from "@/lib/ui/cn";
 import { slotVar } from "@/lib/ui/colors";
-import { formatProgress } from "@/lib/ui/tr";
+import { formatProgress, formatShortDate } from "@/lib/ui/tr";
+import type { DateStr } from "@/lib/date/types";
 import {
   useArchiveRoutine,
   useChangeSchedule,
@@ -42,7 +43,16 @@ export function RoutineList() {
   const archive = useArchiveRoutine();
   const remove = useDeleteRoutine();
 
-  const active = routines.filter((r) => r.archivedAt === null);
+  const today = todayStr();
+  /*
+   * Süresi biten (0026): son günü GEÇMİŞ, arşivlenmemiş rutin. Aktif
+   * listede durursa kullanıcı onu hâlâ sürüyor sanır; arşive karışırsa
+   * "vazgeçtiğim" ile "bitirdiğim" ayırt edilemez.
+   */
+  const isEnded = (r: RoutineWithSchedule) =>
+    r.endDate !== null && r.endDate < today;
+  const active = routines.filter((r) => r.archivedAt === null && !isEnded(r));
+  const ended = routines.filter((r) => r.archivedAt === null && isEnded(r));
   const archived = routines.filter((r) => r.archivedAt !== null);
 
   function handleCreate(draft: RoutineDraft) {
@@ -61,6 +71,8 @@ export function RoutineList() {
         colorSlot: draft.colorSlot,
         target: draft.target,
         unit: draft.unit,
+        // Yalnızca değiştiyse yazılır (migration öncesi düzenleme bozulmasın).
+        ...(draft.endDate !== routine.endDate && { endDate: draft.endDate }),
       },
       {
         onError: (error) => toast.show(errorText(error)),
@@ -149,6 +161,7 @@ export function RoutineList() {
                         target: routine.target,
                         unit: routine.unit,
                         schedule: scheduleAt(routine, todayStr()) ?? { kind: "daily" },
+                        endDate: routine.endDate,
                       }}
                       submitLabel="Kaydet"
                       pending={update.isPending || changeSchedule.isPending}
@@ -171,6 +184,72 @@ export function RoutineList() {
               </li>
             ))}
           </ul>
+        )}
+
+        {ended.length > 0 && (
+          <section className="mt-8">
+            <h2 className="mb-2 text-[length:var(--text-sm)] font-medium text-[var(--color-ink-3)]">
+              Süresi biten
+            </h2>
+            <p className="mb-3 text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
+              Son günü geçen rutinler artık zorunlu değil; geçmiş kayıtları
+              korunur. Devam ettirmek için süresini uzat.
+            </p>
+            <ul className="flex flex-col gap-2">
+              {ended.map((routine) => (
+                <li key={routine.id}>
+                  {editing === routine.id ? (
+                    <div className="rounded-xl border border-[var(--color-line-2)] bg-[var(--color-surface)] p-4">
+                      <RoutineForm
+                        initial={{
+                          name: routine.name,
+                          colorSlot: routine.colorSlot,
+                          target: routine.target,
+                          unit: routine.unit,
+                          schedule: scheduleAt(routine, today) ?? { kind: "daily" },
+                          endDate: routine.endDate,
+                        }}
+                        submitLabel="Kaydet"
+                        pending={update.isPending || changeSchedule.isPending}
+                        onSubmit={(draft) => handleUpdate(routine, draft)}
+                        onCancel={() => setEditing(null)}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 rounded-lg border border-[var(--color-line)] px-3.5 py-2.5 opacity-70">
+                      <span
+                        className="size-2.5 shrink-0 rounded-full"
+                        style={{ background: slotVar(routine.colorSlot) }}
+                      />
+                      <span className="mr-auto min-w-0">
+                        <span className="block truncate text-[length:var(--text-base)]">
+                          {routine.name}
+                        </span>
+                        <span className="text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
+                          {formatShortDate(routine.endDate as DateStr)} tarihinde bitti
+                        </span>
+                      </span>
+                      <Button size="sm" variant="ghost" onClick={() => setEditing(routine.id)}>
+                        Uzat
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          archive.mutate(
+                            { id: routine.id, archived: true },
+                            { onError: (error) => toast.show(errorText(error)) },
+                          )
+                        }
+                      >
+                        Arşivle
+                      </Button>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
 
         {archived.length > 0 && (
@@ -286,6 +365,8 @@ function RoutineRow({
           {schedule ? describeSchedule(schedule) : "Program yok"}
           {routine.target > 1 &&
             ` · ${formatProgress(routine.target, routine.target, routine.unit)}`}
+          {routine.endDate !== null &&
+            ` · ${formatShortDate(routine.endDate)} tarihine kadar`}
         </div>
       </div>
 
