@@ -18,6 +18,8 @@ export interface RoutineRow {
   target: number | string;
   unit: string | null;
   start_date: string;
+  /** Son gün, dahil (0026). Opsiyonel: migration öncesi alan hiç gelmez. */
+  end_date?: string | null;
   sort_order: number;
   archived_at: string | null;
   created_at: string;

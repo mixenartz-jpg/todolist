@@ -44,9 +44,11 @@ export function scheduleAt(
  *
  * `startDate` öncesi hayır (yeni rutin geçmişi kaçırılmış saymaz),
  * `archivedAt` ve sonrası hayır (arşiv geleceği kapatır, geçmişi değil).
+ * `endDate`'ten SONRA hayır — bitiş günü dahil (0026).
  */
 export function isActiveOn(r: RoutineWithSchedule, date: DateStr): boolean {
   if (compareDates(date, r.startDate) < 0) return false;
+  if (r.endDate !== null && compareDates(date, r.endDate) > 0) return false;
   if (r.archivedAt !== null && compareDates(date, r.archivedAt) >= 0) return false;
   return true;
 }

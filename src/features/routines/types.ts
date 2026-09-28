@@ -46,6 +46,11 @@ export interface RoutineWithSchedule {
   target: number;
   unit: string | null;
   startDate: DateStr;
+  /**
+   * Rutinin zorunlu olduğu SON gün, dahil (0026). null → süresiz.
+   * "Sadece bu hafta" rutini haftanın pazarında biter.
+   */
+  endDate: DateStr | null;
   archivedAt: DateStr | null;
   sortOrder: number;
   versions: ScheduleVersion[];
@@ -59,4 +64,6 @@ export interface RoutineDraft {
   target: number;
   unit: string | null;
   schedule: Schedule;
+  /** Son gün (dahil); null → süresiz. */
+  endDate: DateStr | null;
 }

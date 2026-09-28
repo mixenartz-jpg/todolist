@@ -353,6 +353,7 @@ function visibleInMonth(
   to: DateStr,
 ): boolean {
   if (r.startDate > to) return false;
+  if (r.endDate !== null && r.endDate < from) return false;
   if (r.archivedAt !== null && r.archivedAt <= from) return false;
   return true;
 }

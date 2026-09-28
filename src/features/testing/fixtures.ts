@@ -24,6 +24,8 @@ interface RoutineOptions {
   target?: number;
   unit?: string | null;
   startDate?: string;
+  /** Son gün (dahil); verilmezse süresiz. */
+  endDate?: string | null;
   archivedAt?: string | null;
   colorSlot?: number;
   sortOrder?: number;
@@ -48,6 +50,7 @@ export function routine(options: RoutineOptions = {}): RoutineWithSchedule {
     target: options.target ?? 1,
     unit: options.unit ?? null,
     startDate,
+    endDate: options.endDate ? asDateStr(options.endDate) : null,
     archivedAt: options.archivedAt ? asDateStr(options.archivedAt) : null,
     sortOrder: options.sortOrder ?? 0,
     versions,
