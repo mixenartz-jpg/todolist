@@ -32,6 +32,7 @@ interface PlanDaySheetProps {
   onRename: (task: Task, title: string) => void;
   onUnschedule: (task: Task) => void;
   onSetEstimate: (task: Task, minutes: number | null) => void;
+  onSetNote: (task: Task, note: string | null) => void;
   onReorder: (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => void;
 }
 
@@ -61,6 +62,7 @@ export function PlanDaySheet({
   onRename,
   onUnschedule,
   onSetEstimate,
+  onSetNote,
   onReorder,
 }: PlanDaySheetProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -144,6 +146,10 @@ export function PlanDaySheet({
                   onRename={(title) => onRename(task, title)}
                   onDefer={() => onUnschedule(task)}
                   onSetEstimate={(minutes) => onSetEstimate(task, minutes)}
+                  /* Panelde yer var: notsuz satırda da "Açıklama
+                     ekle" durur. Dar sütunlarda ekleme yolu burası. */
+                  onSetNote={(note) => onSetNote(task, note)}
+                  offerNote
                   /*
                    * Kategori seçici ve sıra düğmeleri aynı yuvayı
                    * paylaşır. Seçici TAMAMLANMIŞ görevde de durur:

@@ -354,6 +354,7 @@ export function PlanlamaScreen() {
                       onRename={actions.onRename}
                       onUnschedule={actions.onUnschedule}
                       onSetEstimate={actions.onSetEstimate}
+                      onSetNote={actions.onSetNote}
                       onReorder={actions.onReorder}
                       /*
                        * Günler arası taşıma: görev satırı da havuzdaki
@@ -448,6 +449,7 @@ export function PlanlamaScreen() {
           onRename={actions.onRename}
           onUnschedule={actions.onUnschedule}
                       onSetEstimate={actions.onSetEstimate}
+                      onSetNote={actions.onSetNote}
           onReorder={actions.onReorder}
         />
       )}

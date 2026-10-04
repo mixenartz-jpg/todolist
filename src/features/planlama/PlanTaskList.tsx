@@ -20,6 +20,7 @@ interface PlanTaskListProps {
   onRename: (task: Task, title: string) => void;
   onUnschedule: (task: Task) => void;
   onSetEstimate: (task: Task, minutes: number | null) => void;
+  onSetNote: (task: Task, note: string | null) => void;
   onReorder: (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => void;
   /** Taşınmak üzere seçili görevin kimliği (yerleştirme kipi). */
   movingId?: string | null;
@@ -59,6 +60,7 @@ export function PlanTaskList({
   onRename,
   onUnschedule,
   onSetEstimate,
+  onSetNote,
   onReorder,
   movingId = null,
   onMove,
@@ -95,6 +97,10 @@ export function PlanTaskList({
             // değil — o zaten sıradaki güne tıklamaktır.
             onDefer={() => onUnschedule(task)}
             onSetEstimate={(minutes) => onSetEstimate(task, minutes)}
+            /* Var olan açıklama dokununca düzenlenir; "Açıklama ekle"
+               düğmesi yok — dar sütunda her satırı uzatırdı. Ekleme
+               gün panelinden. */
+            onSetNote={(note) => onSetNote(task, note)}
             /*
              * Başka güne taşıma: düğme tıkla-yerleştir kipini açar,
              * sürükleme onun fareyle kısayolu. İkisi de bırakmayı

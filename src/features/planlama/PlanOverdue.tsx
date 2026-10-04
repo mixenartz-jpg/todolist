@@ -53,6 +53,7 @@ export function PlanOverdue({
             onDefer={() => actions.reschedule(task.id, today)}
             onRename={(title) => actions.onRename(task, title)}
             onSetEstimate={(minutes) => actions.onSetEstimate(task, minutes)}
+            onSetNote={(note) => actions.onSetNote(task, note)}
           />
         ))}
       </ul>
