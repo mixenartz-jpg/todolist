@@ -370,6 +370,9 @@ export function TodayScreen() {
                            * Popover'la birlikte silinseydi aynı gerileme
                            * ikinci kez yaşanırdı.
                            */
+                          onSetNote={(note) =>
+                            setTaskNote.mutate({ id: task.id, note })
+                          }
                           expanded={openTaskId === task.id}
                           onExpand={() => toggleOpen(task.id)}
                           panel={
@@ -381,9 +384,6 @@ export function TodayScreen() {
                               }
                               onSetColor={(colorSlot) =>
                                 setTaskColor.mutate({ id: task.id, colorSlot })
-                              }
-                              onSetNote={(note) =>
-                                setTaskNote.mutate({ id: task.id, note })
                               }
                             />
                           }
@@ -468,6 +468,9 @@ export function TodayScreen() {
                           onRename={(title) =>
                             renameTask.mutate({ id: task.id, title })
                           }
+                          onSetNote={(note) =>
+                            setTaskNote.mutate({ id: task.id, note })
+                          }
                           expanded={openTaskId === task.id}
                           onExpand={() => toggleOpen(task.id)}
                           panel={
@@ -479,9 +482,6 @@ export function TodayScreen() {
                               }
                               onSetColor={(colorSlot) =>
                                 setTaskColor.mutate({ id: task.id, colorSlot })
-                              }
-                              onSetNote={(note) =>
-                                setTaskNote.mutate({ id: task.id, note })
                               }
                             />
                           }

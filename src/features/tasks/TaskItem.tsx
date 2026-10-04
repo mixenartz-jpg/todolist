@@ -8,6 +8,7 @@ import { EstimateAddButton, EstimateChip, EstimatePicker } from "./EstimatePicke
 import { isPendingTask } from "./pending";
 import { isOverdue } from "./queries";
 import { normalizeTitleInput, shouldPersistTitle, TASK_TITLE_MAX } from "./rename";
+import { TaskNote } from "./TaskNote";
 import type { Task } from "./types";
 import "@/components/list-motion.css";
 
@@ -72,6 +73,22 @@ interface TaskItemProps {
    */
   onSetEstimate?: (minutes: number | null) => void;
   /**
+   * Açıklamayı yaz / sil. Verilirse açıklamaya dokununca yerinde
+   * düzenlenir; verilmezse açıklama salt okunur.
+   *
+   * Çağrılmadan ÖNCE girdi doğrulanır (bkz. `note.ts`): değişmemiş
+   * bir açıklama buraya hiç ulaşmaz, `null` bir SİLME emridir.
+   */
+  onSetNote?: (note: string | null) => void;
+  /**
+   * Notsuz satırda "Açıklama ekle" düğmesi HER ZAMAN dursun mu?
+   *
+   * Verilmezse düğme yalnızca bölme açıkken (`expanded`) çizilir. Dar
+   * sütunlarda (Planlama hafta/ay) her satıra bir düğme eklemek
+   * listeyi kalabalıklaştırırdı; orada ekleme gün panelinden yapılır.
+   */
+  offerNote?: boolean;
+  /**
    * Başka güne taşı — tıkla-yerleştir kipini açar/kapatır (Planlama).
    * Verilirse satır aynı zamanda SÜRÜKLENEBİLİR olur: sürükleme bu
    * yolun fareyle kısayolu, dokunma ve klavye düğmeyi kullanır.
@@ -97,6 +114,8 @@ export const TaskItem = memo(function TaskItem({
   onExpand,
   marker,
   onSetEstimate,
+  onSetNote,
+  offerNote = false,
   onMove,
   moving = false,
   onDragStart,
@@ -111,6 +130,7 @@ export const TaskItem = memo(function TaskItem({
    * tutması, süreyi yalnızca Bugün ekranında ayarlanabilir kılardı.
    */
   const [estimating, setEstimating] = useState(false);
+  const [editingNote, setEditingNote] = useState(false);
 
   /*
    * Henüz yazılmamış görev ETKİLEŞİME KAPALI.
@@ -140,7 +160,8 @@ export const TaskItem = memo(function TaskItem({
    * Ad düzenlenirken sürükleme KAPALI: yoksa metin kutusunda seçim
    * yapmaya çalışan fare satırı sürüklemeye başlardı.
    */
-  const canDrag = Boolean(onDragStart) && !pending && !editingTitle;
+  const canDrag =
+    Boolean(onDragStart) && !pending && !editingTitle && !editingNote;
 
   return (
     <li
@@ -344,6 +365,17 @@ export const TaskItem = memo(function TaskItem({
         )}
         </div>
 
+        {/* Açıklama başlığın HEMEN altında: başlığın devamı olarak
+            okunur. Bölmenin altına düşseydi bölme açıldığında
+            başlıktan kopardı. */}
+        <TaskNote
+          task={task}
+          editing={editingNote}
+          onEditingChange={setEditingNote}
+          onSetNote={pending ? undefined : onSetNote}
+          offerAdd={offerNote || expanded}
+        />
+
         {estimating && onSetEstimate && (
           <EstimatePicker
             taskTitle={task.title}
@@ -363,12 +395,6 @@ export const TaskItem = memo(function TaskItem({
         {overdue && task.dueDate && (
           <div className="mt-0.5 text-[length:var(--text-xs)] text-[var(--color-warn)]">
             {formatShortDate(task.dueDate)} tarihinden taşındı
-          </div>
-        )}
-
-        {task.note && !task.done && (
-          <div className="mt-0.5 truncate text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
-            {task.note}
           </div>
         )}
       </div>

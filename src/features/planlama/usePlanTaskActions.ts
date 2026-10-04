@@ -9,6 +9,7 @@ import {
   useReorderTasks,
   useRescheduleTask,
   useSetTaskEstimate,
+  useSetTaskNote,
   useToggleTask,
 } from "@/features/tasks/mutations";
 import type { Task } from "@/features/tasks/types";
@@ -41,6 +42,8 @@ export interface PlanTaskActions {
   onUnschedule: (task: Task) => void;
   /** Tahmini süre (0023); null siler. */
   onSetEstimate: (task: Task, minutes: number | null) => void;
+  /** Açıklama; null siler (bkz. `tasks/note.ts`). */
+  onSetNote: (task: Task, note: string | null) => void;
   onReorder: (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => void;
   /** Havuzdan bir güne yerleştirme ve "gecikmeyi bugüne al" için. */
   reschedule: (id: string, dueDate: DateStr | null) => void;
@@ -58,6 +61,7 @@ export function usePlanTaskActions(
   const renameTask = useRenameTask(onError);
   const reorderTasks = useReorderTasks(onError);
   const setEstimate = useSetTaskEstimate(onError);
+  const setNote = useSetTaskNote(onError);
 
   const onReorder = useCallback(
     (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => {
@@ -81,6 +85,7 @@ export function usePlanTaskActions(
       rescheduleTask.mutate({ id: task.id, dueDate: null }),
     onSetEstimate: (task, minutes) =>
       setEstimate.mutate({ id: task.id, estimateMinutes: minutes }),
+    onSetNote: (task, note) => setNote.mutate({ id: task.id, note }),
     onReorder,
     reschedule: (id, dueDate) => rescheduleTask.mutate({ id, dueDate }),
     addBacklog: (title) =>
