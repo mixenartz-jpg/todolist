@@ -8,7 +8,8 @@ import { endOfIsoWeek, todayStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { formatShortDate } from "@/lib/ui/tr";
 import { ScheduleEditor } from "./ScheduleEditor";
-import type { RoutineDraft, Schedule } from "./types";
+import { WeekOverview } from "./WeekOverview";
+import type { RoutineDraft, RoutineWithSchedule, Schedule } from "./types";
 
 /**
  * Rutinin süresi (0026).
@@ -28,6 +29,8 @@ interface RoutineFormProps {
   initial?: Partial<RoutineDraft>;
   submitLabel: string;
   pending?: boolean;
+  /** Haftalık görünümde gösterilecek diğer rutinler (düzenlenen hariç). */
+  otherRoutines?: readonly RoutineWithSchedule[];
   onSubmit: (draft: RoutineDraft) => void;
   onCancel: () => void;
 }
@@ -36,6 +39,7 @@ export function RoutineForm({
   initial,
   submitLabel,
   pending = false,
+  otherRoutines = [],
   onSubmit,
   onCancel,
 }: RoutineFormProps) {
@@ -97,6 +101,11 @@ export function RoutineForm({
       </label>
 
       <ScheduleEditor value={schedule} onChange={setSchedule} />
+
+      <WeekOverview
+        routines={otherRoutines}
+        draft={{ name, colorSlot, schedule }}
+      />
 
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-[length:var(--text-sm)] text-[var(--color-ink-2)]">

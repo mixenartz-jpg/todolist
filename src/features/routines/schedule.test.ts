@@ -9,7 +9,9 @@ import {
   isNumeric,
   normalizeVersions,
   obligationAt,
+  routinesByWeekday,
   scheduleAt,
+  scheduleWeekdays,
 } from "./schedule";
 
 const d = asDateStr;
@@ -260,5 +262,47 @@ describe("describeSchedule — Türkçe açıklama", () => {
     expect(describeSchedule({ kind: "flexible", count: 10, per: "month" })).toBe(
       "Ayda 10 kez",
     );
+  });
+});
+
+describe("routinesByWeekday — hangi gün hangi rutin", () => {
+  it("rutinleri programlarına göre günlere dağıtır, esnekleri ayırır", () => {
+    const daily = routine({ name: "Su" });
+    const mwf = routine({ name: "Spor", schedule: { kind: "weekdays", days: [5, 1, 3] } });
+    const flex = routine({ name: "Kitap", schedule: { kind: "flexible", count: 3, per: "week" } });
+
+    const { byDay, flexible } = routinesByWeekday([daily, mwf, flex], WED);
+
+    expect(byDay[1].map((r) => r.name)).toEqual(["Su", "Spor"]);
+    expect(byDay[2].map((r) => r.name)).toEqual(["Su"]);
+    expect(byDay[5].map((r) => r.name)).toEqual(["Su", "Spor"]);
+    expect(byDay[7].map((r) => r.name)).toEqual(["Su"]);
+    expect(flexible.map((r) => r.name)).toEqual(["Kitap"]);
+  });
+
+  it("arşivlenen ve süresi biten rutinleri saymaz", () => {
+    const archived = routine({ archivedAt: "2026-08-01" });
+    const ended = routine({ endDate: "2026-08-04" });
+    const endsToday = routine({ name: "Bugün biter", endDate: "2026-08-05" });
+
+    const { byDay } = routinesByWeekday([archived, ended, endsToday], WED);
+    expect(byDay[1].map((r) => r.name)).toEqual(["Bugün biter"]);
+  });
+
+  it("henüz başlamamış rutini başlangıç programıyla sayar", () => {
+    const future = routine({
+      startDate: "2026-09-01",
+      schedule: { kind: "weekdays", days: [2] },
+    });
+
+    const { byDay } = routinesByWeekday([future], WED);
+    expect(byDay[2]).toEqual([future]);
+    expect(byDay[1]).toEqual([]);
+  });
+
+  it("scheduleWeekdays programı günlere çevirir", () => {
+    expect(scheduleWeekdays({ kind: "daily" })).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(scheduleWeekdays({ kind: "weekdays", days: [5, 2] })).toEqual([2, 5]);
+    expect(scheduleWeekdays({ kind: "flexible", count: 2, per: "week" })).toEqual([]);
   });
 });
