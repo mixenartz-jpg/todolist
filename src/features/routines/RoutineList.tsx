@@ -128,6 +128,7 @@ export function RoutineList() {
             <RoutineForm
               submitLabel="Oluştur"
               pending={create.isPending}
+              otherRoutines={active}
               onSubmit={handleCreate}
               onCancel={() => setCreating(false)}
             />
@@ -165,6 +166,7 @@ export function RoutineList() {
                       }}
                       submitLabel="Kaydet"
                       pending={update.isPending || changeSchedule.isPending}
+                      otherRoutines={active.filter((r) => r.id !== routine.id)}
                       onSubmit={(draft) => handleUpdate(routine, draft)}
                       onCancel={() => setEditing(null)}
                     />
@@ -211,6 +213,7 @@ export function RoutineList() {
                         }}
                         submitLabel="Kaydet"
                         pending={update.isPending || changeSchedule.isPending}
+                        otherRoutines={active}
                         onSubmit={(draft) => handleUpdate(routine, draft)}
                         onCancel={() => setEditing(null)}
                       />

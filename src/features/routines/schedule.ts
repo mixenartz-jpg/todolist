@@ -6,8 +6,8 @@
  * taşınabilir.
  */
 
-import { compareDates, isoWeekday } from "@/lib/date/date";
-import type { DateStr } from "@/lib/date/types";
+import { compareDates, isoWeekday, maxDate } from "@/lib/date/date";
+import type { DateStr, IsoWeekday } from "@/lib/date/types";
 import type {
   Obligation,
   RoutineWithSchedule,
@@ -128,6 +128,49 @@ export function normalizeVersions(
   return [...byDate.values()].sort((a, b) =>
     compareDates(a.effectiveFrom, b.effectiveFrom),
   );
+}
+
+/** Programın gün düzeyinde zorunlu olduğu haftanın günleri. Esnek → boş. */
+export function scheduleWeekdays(s: Schedule): IsoWeekday[] {
+  switch (s.kind) {
+    case "daily":
+      return [1, 2, 3, 4, 5, 6, 7];
+    case "weekdays":
+      return [...s.days].sort((a, b) => a - b);
+    case "flexible":
+      return [];
+  }
+}
+
+/**
+ * Haftalık dağılım: hangi gün hangi rutinler var?
+ *
+ * `date` itibarıyla süren (arşivlenmemiş, süresi bitmemiş) rutinler,
+ * o tarihte geçerli programlarına göre haftanın günlerine dağıtılır.
+ * Henüz başlamamış rutin başlangıç günündeki programıyla sayılır.
+ * Esnek rutinlerin sabit günü yoktur; ayrı listede döner.
+ *
+ * `byDay[0]` kullanılmaz; `byDay[1]` Pazartesi … `byDay[7]` Pazar.
+ */
+export function routinesByWeekday<T extends RoutineWithSchedule>(
+  routines: readonly T[],
+  date: DateStr,
+): { byDay: T[][]; flexible: T[] } {
+  const byDay: T[][] = Array.from({ length: 8 }, () => []);
+  const flexible: T[] = [];
+
+  for (const r of routines) {
+    if (r.archivedAt !== null && compareDates(date, r.archivedAt) >= 0) continue;
+    if (r.endDate !== null && compareDates(date, r.endDate) > 0) continue;
+
+    const schedule = scheduleAt(r, maxDate(date, r.startDate));
+    if (schedule === null) continue;
+
+    if (schedule.kind === "flexible") flexible.push(r);
+    for (const day of scheduleWeekdays(schedule)) byDay[day].push(r);
+  }
+
+  return { byDay, flexible };
 }
 
 /** İnsan tarafından okunur program açıklaması (Türkçe). */
