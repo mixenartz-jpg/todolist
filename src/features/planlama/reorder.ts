@@ -1,11 +1,12 @@
 /**
  * Gün içi görev sıralaması — saf mantık.
  *
- * ── Neden SÜRÜKLE-BIRAK değil? ──
+ * ── Neden YALNIZCA sürükle-bırak değil? ──
  * `DayPicker`'daki gerekçenin aynısı: sürükleme dokunmada kaydırmayla
  * çakışır, klavyeyle karşılığı yoktur ve ekran okuyucuya hiçbir şey
- * söylemez. Yukarı/aşağı düğmeleri her girdi yönteminde aynı işi yapar
- * ve depoda bir sürükle-bırak kütüphanesi de yok.
+ * söylemez. Yukarı/aşağı düğmeleri her girdi yönteminde aynı işi yapar.
+ * Bugün ekranı fareyle sürüklemeyi (`planMoveTo`) bir KISAYOL olarak
+ * ekler; düğmeler yerinde kalır.
  *
  * ── Neden TÜM liste yeniden numaralanıyor? ──
  * Bir günde görev sayısı onlarla ölçülür. Kesirli aralık (a ile b
@@ -48,13 +49,34 @@ export function planReorder(
   const from = tasks.findIndex((t) => t.id === id);
   if (from === -1) return [];
 
-  const to = from + delta;
+  // Komşuyla takas, "bir sonraki/önceki konuma taşı" ile aynı şeydir.
+  return planMoveTo(tasks, id, from + delta);
+}
+
+/**
+ * Görevi listede `to` konumuna taşır — Bugün ekranındaki sürükle-bırak.
+ *
+ * `planReorder`'ın genellemesi: aradaki görevler bir sıra kayar.
+ * `to`, taşımadan SONRAKİ listede görevin duracağı konumdur; yani bir
+ * satırın üstüne bırakılan görev o satırın yerini alır (aşağıdan
+ * geliyorsa onun üstüne, yukarıdan geliyorsa altına düşer).
+ *
+ * Aynı yere ya da liste dışına taşıma ve listede olmayan `id` boş dizi
+ * döndürür. Dönen dizi yalnızca DEĞİŞEN satırları içerir.
+ */
+export function planMoveTo(
+  tasks: readonly Task[],
+  id: string,
+  to: number,
+): SortOrderPatch[] {
+  const from = tasks.findIndex((t) => t.id === id);
+  if (from === -1 || from === to) return [];
   if (to < 0 || to >= tasks.length) return [];
 
-  // Yerinde takas: yalnızca iki komşu yer değiştirir, aradaki hiçbir
-  // görev kaymaz. Kopya üzerinde çalışılır — girdi dizisi değişmez.
+  // Kopya üzerinde çalışılır — girdi dizisi değişmez.
   const next = [...tasks];
-  [next[from], next[to]] = [next[to], next[from]];
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved);
 
   const patches: SortOrderPatch[] = [];
   for (let i = 0; i < next.length; i++) {

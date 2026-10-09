@@ -99,6 +99,15 @@ interface TaskItemProps {
   /** Sürükleme başladı / bitti. `onMove` ile birlikte verilir. */
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  /**
+   * Satır bir BIRAKMA hedefi: üzerine sürüklenen görev bu satırın
+   * yerini alır (Bugün ekranında gün içi sıra). Verilmezse satır
+   * bırakmayı kabul etmez — Planlama'da bırakma hedefi gün satırıdır.
+   */
+  onDragOverRow?: () => void;
+  onDropRow?: () => void;
+  /** Bırakılınca görevin düşeceği kenar — çizgiyle gösterilir. */
+  dropEdge?: "top" | "bottom" | null;
 }
 
 export const TaskItem = memo(function TaskItem({
@@ -120,6 +129,9 @@ export const TaskItem = memo(function TaskItem({
   moving = false,
   onDragStart,
   onDragEnd,
+  onDragOverRow,
+  onDropRow,
+  dropEdge = null,
 }: TaskItemProps) {
   const overdue = isOverdue(task, today);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -178,11 +190,34 @@ export const TaskItem = memo(function TaskItem({
           : undefined
       }
       onDragEnd={canDrag ? onDragEnd : undefined}
+      onDragOver={
+        onDragOverRow
+          ? (event) => {
+              // `preventDefault` olmadan tarayıcı bırakmayı reddeder.
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "move";
+              onDragOverRow();
+            }
+          : undefined
+      }
+      onDrop={
+        onDropRow
+          ? (event) => {
+              event.preventDefault();
+              onDropRow();
+            }
+          : undefined
+      }
       className={cn(
         "rowEnter revealOnHover flex rounded-xl border px-3 py-2.5",
         pending && "opacity-60",
         canDrag && "cursor-grab active:cursor-grabbing",
         moving && "ring-2 ring-[var(--color-ink-3)]",
+        /* Bırakma çizgisi satırlar arasındaki boşluğa düşer: dolu bir
+           halka "bu satırın içine" gibi okunurdu, oysa görev ARAYA
+           giriyor. */
+        dropEdge === "top" && "shadow-[0_-3px_0_0_var(--color-accent)]",
+        dropEdge === "bottom" && "shadow-[0_3px_0_0_var(--color-accent)]",
         // `items-start`, `items-center` DEĞİL: başlık iki satıra
         // sarabiliyor ve ortalama, kutucuğu ile simgeleri metnin
         // ortasında asılı bırakırdı. Tepeden hizalanınca kutucuk her

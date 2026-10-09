@@ -18,6 +18,8 @@ import type { RoutineWithSchedule } from "@/features/routines/types";
 import { dayScore, periodProgress } from "@/features/stats/score";
 import { SectionHeading } from "@/features/sections/SectionHeading";
 import { CategoryDot } from "@/features/planlama/CategoryDot";
+import { ReorderButtons } from "@/features/planlama/ReorderButtons";
+import { planMoveTo, planReorder } from "@/features/planlama/reorder";
 import { usePlanGoals } from "@/features/planlama/queries";
 import { TaskDetails } from "@/features/tasks/TaskDetails";
 import { TaskItem } from "@/features/tasks/TaskItem";
@@ -31,6 +33,7 @@ import {
   useCreateTask,
   useDeleteTask,
   useRenameTask,
+  useReorderTasks,
   useRescheduleTask,
   useSetTaskColor,
   useSetTaskEstimate,
@@ -79,6 +82,14 @@ export function TodayScreen() {
    */
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
 
+  /*
+   * Gün içi sürükle-bırak: sürüklenen görev ve altında durulan satır.
+   * Yalnızca fare kısayolu — dokunma ve klavye aynı işi satırın
+   * bölmesindeki yukarı/aşağı düğmeleriyle yapar (bkz. reorder.ts).
+   */
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+
   const routinesQuery = useRoutines();
   const entriesQuery = useEntries(today, today);
   const tasksQuery = useTasks();
@@ -94,6 +105,7 @@ export function TodayScreen() {
   const setTaskGoal = useSetTaskGoal(toast.show);
   const setTaskColor = useSetTaskColor(toast.show);
   const setTaskEstimate = useSetTaskEstimate(toast.show);
+  const reorderTasks = useReorderTasks(toast.show);
   /*
    * Odak sayacının ölçtüğü GERÇEK süre — tahminlerin yanında durur.
    * Odak ekranıyla aynı sorgu anahtarı: orada biten bir tur, buraya
@@ -233,6 +245,36 @@ export function TodayScreen() {
     [entries, routinesQuery.data, tasksQuery.data, today],
   );
 
+  /*
+   * Sıra yamaları EKRANDAKİ listeden (`dayTasks`) hesaplanır: kullanıcı
+   * gördüğü satırı oynatıyor. Taşınan (dünden kalan) görevler de bu
+   * listede olduğu için onlar da numaralanır — sıraları zaten bugünün
+   * listesindeki yerleridir.
+   */
+  function handleReorder(id: string, delta: -1 | 1) {
+    const patches = planReorder(dayTasks, id, delta);
+    if (patches.length > 0) reorderTasks.mutate(patches);
+  }
+
+  function handleDrop(targetId: string) {
+    const from = draggingId;
+    setDraggingId(null);
+    setDragOverId(null);
+    if (from === null) return;
+
+    const to = dayTasks.findIndex((t) => t.id === targetId);
+    const patches = planMoveTo(dayTasks, from, to);
+    if (patches.length > 0) reorderTasks.mutate(patches);
+  }
+
+  /** Bırakma çizgisi: aşağı taşınan hedefin altına, yukarı taşınan üstüne. */
+  function dropEdgeOf(index: number): "top" | "bottom" | null {
+    if (draggingId === null || dayTasks[index].id !== dragOverId) return null;
+    const from = dayTasks.findIndex((t) => t.id === draggingId);
+    if (from === -1 || from === index) return null;
+    return from < index ? "bottom" : "top";
+  }
+
   const unfinished = useMemo(() => dayTasks.filter((t) => !t.done), [dayTasks]);
 
   const isLoading = routinesQuery.isPending;
@@ -330,7 +372,7 @@ export function TodayScreen() {
 
                 {dayTasks.length > 0 && (
                   <ul className="mb-2.5 flex flex-col gap-1.5">
-                    {dayTasks.map((task) => {
+                    {dayTasks.map((task, index) => {
                       const category =
                         task.categoryId === null
                           ? undefined
@@ -375,6 +417,43 @@ export function TodayScreen() {
                           }
                           expanded={openTaskId === task.id}
                           onExpand={() => toggleOpen(task.id)}
+                          /*
+                           * Sıra düğmeleri bölme AÇIKKEN: her satıra
+                           * kalıcı bir düğme sırası eklemek listeyi iki
+                           * kat uzatırdı. Fareyle sürüklemek kısa yol.
+                           */
+                          extra={
+                            openTaskId === task.id &&
+                            dayTasks.length > 1 &&
+                            !task.done ? (
+                              <ReorderButtons
+                                title={task.title}
+                                isFirst={index === 0}
+                                isLast={index === dayTasks.length - 1}
+                                onMove={(delta) => handleReorder(task.id, delta)}
+                              />
+                            ) : undefined
+                          }
+                          onDragStart={
+                            dayTasks.length > 1
+                              ? () => setDraggingId(task.id)
+                              : undefined
+                          }
+                          onDragEnd={() => {
+                            setDraggingId(null);
+                            setDragOverId(null);
+                          }}
+                          onDragOverRow={
+                            draggingId !== null
+                              ? () => setDragOverId(task.id)
+                              : undefined
+                          }
+                          onDropRow={
+                            draggingId !== null
+                              ? () => handleDrop(task.id)
+                              : undefined
+                          }
+                          dropEdge={dropEdgeOf(index)}
                           panel={
                             <TaskDetails
                               task={task}
