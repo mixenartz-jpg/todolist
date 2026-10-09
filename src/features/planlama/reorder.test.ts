@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { asDateStr } from "@/lib/date/date";
 import { task } from "@/features/testing/fixtures";
-import { applySortOrders, planReorder } from "./reorder";
+import { applySortOrders, planMoveTo, planReorder } from "./reorder";
 
 const DAY = asDateStr("2026-08-03");
 
@@ -89,6 +89,43 @@ describe("planReorder", () => {
       { id: "c", sortOrder: 1 },
       { id: "b", sortOrder: 2 },
     ]);
+  });
+});
+
+describe("planMoveTo", () => {
+  function fourTasks() {
+    return [...threeTasks(), task({ id: "d", dueDate: DAY, sortOrder: 3 })];
+  }
+
+  it("aşağı taşırken aradakiler bir sıra yukarı kayar", () => {
+    expect(planMoveTo(fourTasks(), "a", 2)).toEqual([
+      { id: "b", sortOrder: 0 },
+      { id: "c", sortOrder: 1 },
+      { id: "a", sortOrder: 2 },
+    ]);
+  });
+
+  it("yukarı taşırken aradakiler bir sıra aşağı kayar", () => {
+    expect(planMoveTo(fourTasks(), "d", 1)).toEqual([
+      { id: "d", sortOrder: 1 },
+      { id: "b", sortOrder: 2 },
+      { id: "c", sortOrder: 3 },
+    ]);
+  });
+
+  it("aynı yere taşımak boş döner", () => {
+    expect(planMoveTo(fourTasks(), "b", 1)).toEqual([]);
+  });
+
+  it("liste dışı konum ve bilinmeyen id boş döner", () => {
+    expect(planMoveTo(fourTasks(), "b", 4)).toEqual([]);
+    expect(planMoveTo(fourTasks(), "b", -1)).toEqual([]);
+    expect(planMoveTo(fourTasks(), "zzz", 0)).toEqual([]);
+  });
+
+  it("komşu konuma taşımak planReorder ile aynı sonucu verir", () => {
+    expect(planMoveTo(fourTasks(), "b", 2)).toEqual(planReorder(fourTasks(), "b", 1));
+    expect(planMoveTo(fourTasks(), "c", 1)).toEqual(planReorder(fourTasks(), "c", -1));
   });
 });
 
