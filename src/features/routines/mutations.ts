@@ -5,7 +5,8 @@ import { todayStr } from "@/lib/date/date";
 import { qk } from "@/lib/query/keys";
 import { createClient } from "@/lib/supabase/client";
 import type { DateStr } from "@/lib/date/types";
-import type { RoutineDraft, Schedule } from "./types";
+import type { SortOrderPatch } from "@/features/planlama/reorder";
+import type { RoutineDraft, RoutineWithSchedule, Schedule } from "./types";
 
 /** Yeni rutin oluşturur ve ilk program sürümünü yazar. */
 export function useCreateRoutine() {
@@ -16,9 +17,21 @@ export function useCreateRoutine() {
       const supabase = createClient();
       const today = todayStr();
 
+      /*
+       * Yeni rutin listenin SONUNA: veritabanı varsayılanı 0 ve
+       * kullanıcı listeyi bir kez sıraladıysa (0..n-1) yeni rutin
+       * baştan ikinci sıraya düşerdi.
+       */
+      const existing = qc.getQueryData<RoutineWithSchedule[]>(qk.routines()) ?? [];
+      const sortOrder =
+        existing.length === 0
+          ? 0
+          : Math.max(...existing.map((r) => r.sortOrder)) + 1;
+
       const { data: routine, error } = await supabase
         .from("routines")
         .insert({
+          sort_order: sortOrder,
           name: draft.name.trim(),
           icon: draft.icon,
           color_slot: draft.colorSlot,
@@ -161,5 +174,58 @@ export function useDeleteRoutine() {
       qc.invalidateQueries({ queryKey: qk.routines() });
       qc.invalidateQueries({ queryKey: qk.entries() });
     },
+  });
+}
+
+/**
+ * Rutin listesinin sırasını yazar — optimistic.
+ *
+ * Görevlerdeki `useReorderTasks` ile aynı kalıp: yamalar `planReorder`
+ * / `planMoveTo` ile hesaplanır, yalnızca değişen satırlar gelir ve
+ * paralel `update`'lerle yazılır. Sıra Bugün ekranına ve tabloya da
+ * yansır — hepsi `sort_order`'a göre okuyor.
+ */
+export function useReorderRoutines(onError?: (message: string) => void) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (patches: readonly SortOrderPatch[]) => {
+      if (patches.length === 0) return;
+
+      const supabase = createClient();
+      const results = await Promise.all(
+        patches.map(({ id, sortOrder }) =>
+          supabase.from("routines").update({ sort_order: sortOrder }).eq("id", id),
+        ),
+      );
+
+      const failed = results.find((r) => r.error);
+      if (failed?.error) throw failed.error;
+    },
+
+    onMutate: async (patches) => {
+      await qc.cancelQueries({ queryKey: qk.routines() });
+      const previous = qc.getQueryData<RoutineWithSchedule[]>(qk.routines());
+
+      const byId = new Map(patches.map((p) => [p.id, p.sortOrder]));
+      qc.setQueryData<RoutineWithSchedule[]>(qk.routines(), (routines) =>
+        routines
+          ?.map((r) => {
+            const sortOrder = byId.get(r.id);
+            return sortOrder === undefined ? r : { ...r, sortOrder };
+          })
+          // Kararlı sıralama: eşitlikte sunucunun `created_at` sırası korunur.
+          .sort((a, b) => a.sortOrder - b.sortOrder),
+      );
+
+      return { previous };
+    },
+
+    onError: (error, _vars, context) => {
+      qc.setQueryData(qk.routines(), context?.previous);
+      onError?.(error instanceof Error ? error.message : "Bir hata oluştu");
+    },
+
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.routines() }),
   });
 }

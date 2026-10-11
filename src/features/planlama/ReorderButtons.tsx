@@ -5,11 +5,11 @@ import { cn } from "@/lib/ui/cn";
 /**
  * Gün içinde sıra değiştirme: yukarı / aşağı.
  *
- * ── Neden SÜRÜKLE-BIRAK değil? ──
+ * ── Neden YALNIZCA sürükle-bırak değil? ──
  * `DayPicker`'daki gerekçenin aynısı: sürükleme dokunmada sayfa
- * kaydırmasıyla çakışır, klavyeyle karşılığı yoktur, ekran okuyucuya
- * hiçbir şey söylemez ve depoda bir sürükle-bırak kütüphanesi de yok.
- * İki düğme her girdi yönteminde aynı işi yapar.
+ * kaydırmasıyla çakışır, klavyeyle karşılığı yoktur ve ekran okuyucuya
+ * hiçbir şey söylemez. İki düğme her girdi yönteminde aynı işi yapar;
+ * fareyle sürükleme (Bugün, Planlama, Rutinler) bunun kısayoludur.
  *
  * Sınırdaki düğme GİZLENMEZ, devre dışı bırakılır: kaybolan bir
  * düğme satırın genişliğini değiştirir ve listedeki her satırda farklı
@@ -20,17 +20,20 @@ export function ReorderButtons({
   isFirst,
   isLast,
   onMove,
+  className = "mt-2",
 }: {
   title: string;
   isFirst: boolean;
   isLast: boolean;
   onMove: (delta: -1 | 1) => void;
+  /** Konum sınıfı; varsayılan başlığın altında duran satır. */
+  className?: string;
 }) {
   return (
     <div
       role="group"
       aria-label="Sırayı değiştir"
-      className="mt-2 flex items-center gap-1"
+      className={cn("flex items-center gap-1", className)}
     >
       <ArrowButton
         label={`${title}: yukarı taşı`}
