@@ -356,6 +356,7 @@ export function PlanlamaScreen() {
                       onSetEstimate={actions.onSetEstimate}
                       onSetNote={actions.onSetNote}
                       onReorder={actions.onReorder}
+                      onReorderTo={actions.onReorderTo}
                       /*
                        * Günler arası taşıma: görev satırı da havuzdaki
                        * görev gibi yerleştirme kipine girer. Düğme

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { DateStr } from "@/lib/date/types";
 import { orderForDay } from "@/features/tasks/dayorder";
 import { TaskItem } from "@/features/tasks/TaskItem";
@@ -22,6 +23,12 @@ interface PlanTaskListProps {
   onSetEstimate: (task: Task, minutes: number | null) => void;
   onSetNote: (task: Task, note: string | null) => void;
   onReorder: (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => void;
+  /**
+   * Sürükle-bırak ile gün İÇİNDE sıralama. Yalnızca sürüklenen görev
+   * bu günün listesindeyse satırlar bırakma hedefi olur; başka günden
+   * gelen görev gün satırına düşer ve o güne taşınır.
+   */
+  onReorderTo?: (dayTasks: readonly Task[], task: Task, to: number) => void;
   /** Taşınmak üzere seçili görevin kimliği (yerleştirme kipi). */
   movingId?: string | null;
   /** Görevi başka güne taşımak için seç / seçimi bırak. */
@@ -62,14 +69,25 @@ export function PlanTaskList({
   onSetEstimate,
   onSetNote,
   onReorder,
+  onReorderTo,
   movingId = null,
   onMove,
   onDragTaskStart,
   onDragTaskEnd,
 }: PlanTaskListProps) {
   const ordered = orderForDay(tasks);
+  /** Sürüklemenin üstünde durduğu satır — bırakma çizgisi için. */
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   if (ordered.length === 0) return null;
+
+  /*
+   * `movingId` hem düğmeyle açılan yerleştirme kipinde hem sürüklemede
+   * dolu; satırların `dragover`'ı yalnızca gerçek sürüklemede tetiklenir.
+   */
+  const draggedIndex =
+    movingId === null ? -1 : ordered.findIndex((t) => t.id === movingId);
+  const reorderable = onReorderTo !== undefined && draggedIndex !== -1;
 
   return (
     <ul className={className}>
@@ -110,7 +128,28 @@ export function PlanTaskList({
             onMove={onMove && (() => onMove(task))}
             moving={movingId === task.id}
             onDragStart={onDragTaskStart && (() => onDragTaskStart(task))}
-            onDragEnd={onDragTaskEnd}
+            onDragEnd={() => {
+              setDragOverId(null);
+              onDragTaskEnd?.();
+            }}
+            onDragOverRow={
+              reorderable ? () => setDragOverId(task.id) : undefined
+            }
+            onDropRow={
+              reorderable
+                ? () => {
+                    setDragOverId(null);
+                    onReorderTo(ordered, ordered[draggedIndex], index);
+                  }
+                : undefined
+            }
+            dropEdge={
+              reorderable && dragOverId === task.id && draggedIndex !== index
+                ? draggedIndex < index
+                  ? "bottom"
+                  : "top"
+                : null
+            }
             extra={
               ordered.length > 1 && !task.done ? (
                 <ReorderButtons

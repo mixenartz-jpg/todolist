@@ -21,6 +21,15 @@
 
 import type { Task } from "@/features/tasks/types";
 
+/**
+ * Sıralanabilen her satır: görev, rutin… Fonksiyonlar yalnızca bu iki
+ * alana bakar; böylece aynı mantık rutin listesinde de çalışır.
+ */
+export interface Sortable {
+  id: string;
+  sortOrder: number;
+}
+
 /** Sunucuya yazılacak tek bir sıra değişikliği. */
 export interface SortOrderPatch {
   id: string;
@@ -42,7 +51,7 @@ export interface SortOrderPatch {
  * diye okur.
  */
 export function planReorder(
-  tasks: readonly Task[],
+  tasks: readonly Sortable[],
   id: string,
   delta: -1 | 1,
 ): SortOrderPatch[] {
@@ -65,7 +74,7 @@ export function planReorder(
  * döndürür. Dönen dizi yalnızca DEĞİŞEN satırları içerir.
  */
 export function planMoveTo(
-  tasks: readonly Task[],
+  tasks: readonly Sortable[],
   id: string,
   to: number,
 ): SortOrderPatch[] {

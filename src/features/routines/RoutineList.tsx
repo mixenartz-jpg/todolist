@@ -17,8 +17,11 @@ import {
   useChangeSchedule,
   useCreateRoutine,
   useDeleteRoutine,
+  useReorderRoutines,
   useUpdateRoutine,
 } from "./mutations";
+import { ReorderButtons } from "@/features/planlama/ReorderButtons";
+import { planMoveTo, planReorder } from "@/features/planlama/reorder";
 import { useRoutines } from "./queries";
 import { RoutineForm } from "./RoutineForm";
 import { describeSchedule, scheduleAt } from "./schedule";
@@ -42,6 +45,15 @@ export function RoutineList() {
   const changeSchedule = useChangeSchedule();
   const archive = useArchiveRoutine();
   const remove = useDeleteRoutine();
+  const reorder = useReorderRoutines(toast.show);
+
+  /*
+   * Sürükle-bırak: sürüklenen rutin ve altında durulan satır. Fare
+   * kısayolu — dokunma ve klavye satırdaki yukarı/aşağı düğmelerini
+   * kullanır (bkz. planlama/reorder.ts).
+   */
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const today = todayStr();
   /*
@@ -90,6 +102,28 @@ export function RoutineList() {
         },
       },
     );
+  }
+
+  function handleDrop(targetId: string) {
+    const from = draggingId;
+    setDraggingId(null);
+    setDragOverId(null);
+    if (from === null) return;
+
+    const patches = planMoveTo(
+      active,
+      from,
+      active.findIndex((r) => r.id === targetId),
+    );
+    if (patches.length > 0) reorder.mutate(patches);
+  }
+
+  /** Bırakma çizgisi: aşağı taşınan hedefin altına, yukarı taşınan üstüne. */
+  function dropEdgeOf(index: number): "top" | "bottom" | null {
+    if (draggingId === null || active[index].id !== dragOverId) return null;
+    const from = active.findIndex((r) => r.id === draggingId);
+    if (from === -1 || from === index) return null;
+    return from < index ? "bottom" : "top";
   }
 
   if (isPending) {
@@ -151,40 +185,100 @@ export function RoutineList() {
           </EmptyState>
         ) : (
           <ul className="flex flex-col gap-2">
-            {active.map((routine) => (
-              <li key={routine.id}>
-                {editing === routine.id ? (
-                  <div className="rounded-xl border border-[var(--color-line-2)] bg-[var(--color-surface)] p-4">
-                    <RoutineForm
-                      initial={{
-                        name: routine.name,
-                        colorSlot: routine.colorSlot,
-                        target: routine.target,
-                        unit: routine.unit,
-                        schedule: scheduleAt(routine, todayStr()) ?? { kind: "daily" },
-                        endDate: routine.endDate,
-                      }}
-                      submitLabel="Kaydet"
-                      pending={update.isPending || changeSchedule.isPending}
-                      otherRoutines={active.filter((r) => r.id !== routine.id)}
-                      onSubmit={(draft) => handleUpdate(routine, draft)}
-                      onCancel={() => setEditing(null)}
+            {active.map((routine, index) => {
+              const draggable = editing !== routine.id && active.length > 1;
+              const edge = dropEdgeOf(index);
+
+              return (
+                <li
+                  key={routine.id}
+                  draggable={draggable || undefined}
+                  onDragStart={
+                    draggable
+                      ? (event) => {
+                          /* Firefox veri yazılmadan sürüklemeyi başlatmıyor. */
+                          event.dataTransfer.setData("text/plain", routine.name);
+                          event.dataTransfer.effectAllowed = "move";
+                          setDraggingId(routine.id);
+                        }
+                      : undefined
+                  }
+                  onDragEnd={() => {
+                    setDraggingId(null);
+                    setDragOverId(null);
+                  }}
+                  onDragOver={
+                    draggingId !== null
+                      ? (event) => {
+                          event.preventDefault();
+                          event.dataTransfer.dropEffect = "move";
+                          setDragOverId(routine.id);
+                        }
+                      : undefined
+                  }
+                  onDrop={
+                    draggingId !== null
+                      ? (event) => {
+                          event.preventDefault();
+                          handleDrop(routine.id);
+                        }
+                      : undefined
+                  }
+                  className={cn(
+                    "rounded-lg",
+                    draggable && "cursor-grab active:cursor-grabbing",
+                    /* Çizgi satırlar arasındaki boşluğa düşer (bkz. TaskItem). */
+                    edge === "top" && "shadow-[0_-3px_0_0_var(--color-accent)]",
+                    edge === "bottom" && "shadow-[0_3px_0_0_var(--color-accent)]",
+                  )}
+                >
+                  {editing === routine.id ? (
+                    <div className="rounded-xl border border-[var(--color-line-2)] bg-[var(--color-surface)] p-4">
+                      <RoutineForm
+                        initial={{
+                          name: routine.name,
+                          colorSlot: routine.colorSlot,
+                          target: routine.target,
+                          unit: routine.unit,
+                          schedule: scheduleAt(routine, todayStr()) ?? { kind: "daily" },
+                          endDate: routine.endDate,
+                        }}
+                        submitLabel="Kaydet"
+                        pending={update.isPending || changeSchedule.isPending}
+                        otherRoutines={active.filter((r) => r.id !== routine.id)}
+                        onSubmit={(draft) => handleUpdate(routine, draft)}
+                        onCancel={() => setEditing(null)}
+                      />
+                    </div>
+                  ) : (
+                    <RoutineRow
+                      routine={routine}
+                      reorder={
+                        active.length > 1 ? (
+                          <ReorderButtons
+                            title={routine.name}
+                            isFirst={index === 0}
+                            isLast={index === active.length - 1}
+                            className=""
+                            onMove={(delta) => {
+                              const patches = planReorder(active, routine.id, delta);
+                              if (patches.length > 0) reorder.mutate(patches);
+                            }}
+                          />
+                        ) : undefined
+                      }
+                      onEdit={() => setEditing(routine.id)}
+                      onArchive={() =>
+                        archive.mutate(
+                          { id: routine.id, archived: true },
+                          { onError: (error) => toast.show(errorText(error)) },
+                        )
+                      }
                     />
-                  </div>
-                ) : (
-                  <RoutineRow
-                    routine={routine}
-                    onEdit={() => setEditing(routine.id)}
-                    onArchive={() =>
-                      archive.mutate(
-                        { id: routine.id, archived: true },
-                        { onError: (error) => toast.show(errorText(error)) },
-                      )
-                    }
-                  />
-                )}
-              </li>
-            ))}
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
 
@@ -339,10 +433,13 @@ export function RoutineList() {
 
 function RoutineRow({
   routine,
+  reorder,
   onEdit,
   onArchive,
 }: {
   routine: RoutineWithSchedule;
+  /** Yukarı/aşağı düğmeleri — tek rutinde verilmez. */
+  reorder?: React.ReactNode;
   onEdit: () => void;
   onArchive: () => void;
 }) {
@@ -373,7 +470,8 @@ function RoutineRow({
         </div>
       </div>
 
-      <div className="revealTarget flex gap-1 opacity-0 transition-opacity duration-[var(--duration-fast)]">
+      <div className="revealTarget flex items-center gap-1 opacity-0 transition-opacity duration-[var(--duration-fast)]">
+        {reorder}
         <Button size="sm" variant="ghost" onClick={onEdit}>
           Düzenle
         </Button>

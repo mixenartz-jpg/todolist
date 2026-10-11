@@ -13,7 +13,7 @@ import {
   useToggleTask,
 } from "@/features/tasks/mutations";
 import type { Task } from "@/features/tasks/types";
-import { planReorder } from "./reorder";
+import { planMoveTo, planReorder } from "./reorder";
 
 /**
  * Izgara satırlarının ortak eylemleri.
@@ -45,6 +45,8 @@ export interface PlanTaskActions {
   /** Açıklama; null siler (bkz. `tasks/note.ts`). */
   onSetNote: (task: Task, note: string | null) => void;
   onReorder: (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => void;
+  /** Sürükle-bırak: görevi gün içinde `to` konumuna taşır. */
+  onReorderTo: (dayTasks: readonly Task[], task: Task, to: number) => void;
   /** Havuzdan bir güne yerleştirme ve "gecikmeyi bugüne al" için. */
   reschedule: (id: string, dueDate: DateStr | null) => void;
   /** Havuza tarihsiz görev ekler. */
@@ -71,6 +73,14 @@ export function usePlanTaskActions(
     [reorderTasks],
   );
 
+  const onReorderTo = useCallback(
+    (dayTasks: readonly Task[], task: Task, to: number) => {
+      const patches = planMoveTo(dayTasks, task.id, to);
+      if (patches.length > 0) reorderTasks.mutate(patches);
+    },
+    [reorderTasks],
+  );
+
   return {
     addPending: createTask.isPending,
     onAdd: (title, date) =>
@@ -87,6 +97,7 @@ export function usePlanTaskActions(
       setEstimate.mutate({ id: task.id, estimateMinutes: minutes }),
     onSetNote: (task, note) => setNote.mutate({ id: task.id, note }),
     onReorder,
+    onReorderTo,
     reschedule: (id, dueDate) => rescheduleTask.mutate({ id, dueDate }),
     addBacklog: (title) =>
       createTask.mutate({ title, dueDate: null, note: null }),

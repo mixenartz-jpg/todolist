@@ -90,6 +90,7 @@ interface PlanDayRowProps {
   onSetEstimate: (task: Task, minutes: number | null) => void;
   onSetNote: (task: Task, note: string | null) => void;
   onReorder: (dayTasks: readonly Task[], task: Task, delta: -1 | 1) => void;
+  onReorderTo?: (dayTasks: readonly Task[], task: Task, to: number) => void;
   /** Taşınmak üzere seçili görev (bkz. PlanTaskList). */
   movingId?: string | null;
   onMove?: (task: Task) => void;
@@ -120,6 +121,7 @@ export function PlanDayRow({
   onSetEstimate,
   onSetNote,
   onReorder,
+  onReorderTo,
   movingId,
   onMove,
   onDragTaskStart,
@@ -313,6 +315,7 @@ export function PlanDayRow({
             onSetEstimate={onSetEstimate}
             onSetNote={onSetNote}
             onReorder={onReorder}
+            onReorderTo={onReorderTo}
             movingId={movingId}
             onMove={onMove}
             onDragTaskStart={onDragTaskStart}

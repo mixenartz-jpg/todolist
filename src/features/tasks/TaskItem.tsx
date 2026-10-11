@@ -204,6 +204,9 @@ export const TaskItem = memo(function TaskItem({
         onDropRow
           ? (event) => {
               event.preventDefault();
+              // Planlama'da gün satırı da bir bırakma hedefi; satır
+              // içine bırakılan görev günün "buraya taşı"sını tetiklemesin.
+              event.stopPropagation();
               onDropRow();
             }
           : undefined
