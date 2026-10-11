@@ -41,6 +41,8 @@ export function useCreateRoutine() {
           // Yalnız VARSA yazılır: 0026 çalıştırılmadan süresiz rutin
           // eklemek bozulmasın.
           ...(draft.endDate !== null && { end_date: draft.endDate }),
+          // Aynı gerekçe (0027): kategorisiz rutin migration'sız da eklenir.
+          ...(draft.categoryId !== null && { category_id: draft.categoryId }),
         })
         .select()
         .single();
@@ -86,6 +88,8 @@ export function useUpdateRoutine() {
       unit: string | null;
       /** undefined → bitiş tarihine dokunulmaz; null → süresiz (0026). */
       endDate?: DateStr | null;
+      /** undefined → kategoriye dokunulmaz; null → kategorisiz (0027). */
+      categoryId?: string | null;
     }) => {
       const supabase = createClient();
       const { error } = await supabase
@@ -97,6 +101,7 @@ export function useUpdateRoutine() {
           target: input.target,
           unit: input.unit,
           ...(input.endDate !== undefined && { end_date: input.endDate }),
+          ...(input.categoryId !== undefined && { category_id: input.categoryId }),
         })
         .eq("id", input.id);
 
@@ -184,18 +189,37 @@ export function useDeleteRoutine() {
  * / `planMoveTo` ile hesaplanır, yalnızca değişen satırlar gelir ve
  * paralel `update`'lerle yazılır. Sıra Bugün ekranına ve tabloya da
  * yansır — hepsi `sort_order`'a göre okuyor.
+ *
+ * `move` verilirse rutin AYNI hareketle başka bir kategoriye de geçer
+ * (başka bir grubun satırına bırakıldığında). Tek mutation: kategori
+ * ve sıra ayrı ayrı yazılsaydı arada liste bir kez yanlış gruba
+ * zıplardı.
  */
 export function useReorderRoutines(onError?: (message: string) => void) {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (patches: readonly SortOrderPatch[]) => {
-      if (patches.length === 0) return;
-
+    mutationFn: async ({
+      patches,
+      move,
+    }: {
+      patches: readonly SortOrderPatch[];
+      move?: { id: string; categoryId: string | null };
+    }) => {
       const supabase = createClient();
+      const sortOf = new Map(patches.map((p) => [p.id, p.sortOrder]));
+      const ids = new Set([...sortOf.keys(), ...(move ? [move.id] : [])]);
+      if (ids.size === 0) return;
+
       const results = await Promise.all(
-        patches.map(({ id, sortOrder }) =>
-          supabase.from("routines").update({ sort_order: sortOrder }).eq("id", id),
+        [...ids].map((id) =>
+          supabase
+            .from("routines")
+            .update({
+              ...(sortOf.has(id) && { sort_order: sortOf.get(id) }),
+              ...(move?.id === id && { category_id: move.categoryId }),
+            })
+            .eq("id", id),
         ),
       );
 
@@ -203,7 +227,7 @@ export function useReorderRoutines(onError?: (message: string) => void) {
       if (failed?.error) throw failed.error;
     },
 
-    onMutate: async (patches) => {
+    onMutate: async ({ patches, move }) => {
       await qc.cancelQueries({ queryKey: qk.routines() });
       const previous = qc.getQueryData<RoutineWithSchedule[]>(qk.routines());
 
@@ -211,8 +235,9 @@ export function useReorderRoutines(onError?: (message: string) => void) {
       qc.setQueryData<RoutineWithSchedule[]>(qk.routines(), (routines) =>
         routines
           ?.map((r) => {
-            const sortOrder = byId.get(r.id);
-            return sortOrder === undefined ? r : { ...r, sortOrder };
+            const sortOrder = byId.get(r.id) ?? r.sortOrder;
+            const categoryId = move?.id === r.id ? move.categoryId : r.categoryId;
+            return { ...r, sortOrder, categoryId };
           })
           // Kararlı sıralama: eşitlikte sunucunun `created_at` sırası korunur.
           .sort((a, b) => a.sortOrder - b.sortOrder),

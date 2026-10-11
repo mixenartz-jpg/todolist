@@ -15,6 +15,7 @@ import { EMPTY_ENTRIES, useEntries } from "@/features/entries/queries";
 import { isActiveOn, isDueOn } from "@/features/routines/schedule";
 import { useRoutines } from "@/features/routines/queries";
 import type { RoutineWithSchedule } from "@/features/routines/types";
+import { orderByCategory } from "@/features/routines/groups";
 import { dayScore, periodProgress } from "@/features/stats/score";
 import { SectionHeading } from "@/features/sections/SectionHeading";
 import { CategoryDot } from "@/features/planlama/CategoryDot";
@@ -121,15 +122,24 @@ export function TodayScreen() {
    * bugün zaten işaretlenmiş olanlar. Sonuncusu önemli: zorunlu olmayan
    * bir günde bir şey yaptıysan listeden kaybolmamalı.
    */
+  const categoriesQuery = useCategories();
+
   const routines = useMemo(() => {
-    const all = routinesQuery.data ?? [];
+    /*
+     * Rutinler ekranındaki kategori gruplarının SIRASI (bkz.
+     * routines/groups.ts): orada "Matematik" üstteyse burada da üstte.
+     */
+    const all = orderByCategory(
+      routinesQuery.data ?? [],
+      categoriesQuery.data ?? [],
+    );
     return all.filter((r) => {
       if (!isActiveOn(r, today)) return false;
       if (isDueOn(r, today)) return true;
       if (valueOn(entries, r, today) > 0) return true;
       return periodProgress(entries, r, today) !== null;
     });
-  }, [routinesQuery.data, entries, today]);
+  }, [routinesQuery.data, categoriesQuery.data, entries, today]);
 
   const score = useMemo(
     () => dayScore(entries, routinesQuery.data ?? [], today),
@@ -183,7 +193,6 @@ export function TodayScreen() {
     return (focusGoalsQuery.data ?? []).find((g) => g.id === focus.goalId) ?? null;
   }, [focus, focusGoalsQuery.data]);
 
-  const categoriesQuery = useCategories();
   const categoryById = useMemo(
     () => categoryMap(categoriesQuery.data ?? []),
     [categoriesQuery.data],

@@ -24,14 +24,32 @@ import { ReorderButtons } from "@/features/planlama/ReorderButtons";
 import { planMoveTo, planReorder } from "@/features/planlama/reorder";
 import { useRoutines } from "./queries";
 import { RoutineForm } from "./RoutineForm";
+import { groupRoutines, planMoveToGroup, type RoutineGroup } from "./groups";
+import { CategoryManager } from "@/features/planlama/CategoryManager";
+import { CategoryDot } from "@/features/planlama/CategoryDot";
+import { useCategories } from "@/features/planlama/queries";
+import type { Category } from "@/features/planlama/types";
+
+/** Kategoriler yüklenene kadar kararlı boş dizi — her çizimde yenisi olmasın. */
+const EMPTY_CATEGORIES: readonly Category[] = [];
 import { describeSchedule, scheduleAt } from "./schedule";
 import type { RoutineDraft, RoutineWithSchedule } from "./types";
 import "@/components/list-motion.css";
 
 export function RoutineList() {
   const { data: routines = [], isPending } = useRoutines();
+  const categoriesQuery = useCategories();
+  const categories = categoriesQuery.data ?? EMPTY_CATEGORIES;
   const [editing, setEditing] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  /**
+   * Yeni rutin formu nerede açık? `null` → kapalı. Kategori kimliği
+   * formun ön seçimi: grubun "Rutin ekle"si o gruba ekler.
+   */
+  const [creating, setCreating] = useState<{ categoryId: string | null } | null>(
+    null,
+  );
+  /** Kategori yönetimi paneli açık mı? */
+  const [managing, setManaging] = useState(false);
   /** Silinmesi onay bekleyen rutin. Ad da tutulur: onay metni rutinin
    *  adını söylemeli, kullanıcı neyi sildiğini görmeli. */
   const [pendingDelete, setPendingDelete] = useState<{
@@ -48,9 +66,10 @@ export function RoutineList() {
   const reorder = useReorderRoutines(toast.show);
 
   /*
-   * Sürükle-bırak: sürüklenen rutin ve altında durulan satır. Fare
-   * kısayolu — dokunma ve klavye satırdaki yukarı/aşağı düğmelerini
-   * kullanır (bkz. planlama/reorder.ts).
+   * Sürükle-bırak: sürüklenen rutin ve altında durulan satır (ya da
+   * grup başlığı). Fare kısayolu — dokunma ve klavye satırdaki
+   * yukarı/aşağı düğmelerini, kategori değiştirmek için düzenleme
+   * formunu kullanır.
    */
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -67,9 +86,14 @@ export function RoutineList() {
   const ended = routines.filter((r) => r.archivedAt === null && isEnded(r));
   const archived = routines.filter((r) => r.archivedAt !== null);
 
+  const groups = groupRoutines(active, categories);
+  /* Hiç kategori yoksa tek grup "Kategorisiz"dir ve başlığı gürültü
+     olurdu: ekran kategorilerden önceki hâliyle aynı görünür. */
+  const showHeadings = !(groups.length === 1 && groups[0].category === null);
+
   function handleCreate(draft: RoutineDraft) {
     create.mutate(draft, {
-      onSuccess: () => setCreating(false),
+      onSuccess: () => setCreating(null),
       onError: (error) => toast.show(errorText(error)),
     });
   }
@@ -85,6 +109,9 @@ export function RoutineList() {
         unit: draft.unit,
         // Yalnızca değiştiyse yazılır (migration öncesi düzenleme bozulmasın).
         ...(draft.endDate !== routine.endDate && { endDate: draft.endDate }),
+        ...(draft.categoryId !== routine.categoryId && {
+          categoryId: draft.categoryId,
+        }),
       },
       {
         onError: (error) => toast.show(errorText(error)),
@@ -104,26 +131,65 @@ export function RoutineList() {
     );
   }
 
-  function handleDrop(targetId: string) {
+  /**
+   * Sürüklenen rutini `group`'un `index` konumuna bırakır. Aynı grupta
+   * yalnızca sıra değişir; başka gruptaysa kategori de değişir.
+   * `index` = grup uzunluğu → sona (başlığa bırakma).
+   */
+  function handleDrop(group: RoutineGroup<RoutineWithSchedule>, index: number) {
     const from = draggingId;
     setDraggingId(null);
     setDragOverId(null);
     if (from === null) return;
 
-    const patches = planMoveTo(
-      active,
-      from,
-      active.findIndex((r) => r.id === targetId),
-    );
-    if (patches.length > 0) reorder.mutate(patches);
+    const moved = active.find((r) => r.id === from);
+    if (moved === undefined) return;
+
+    const targetCategoryId = group.category?.id ?? null;
+    const sameGroup = group.routines.some((r) => r.id === from);
+
+    if (sameGroup) {
+      const to = Math.min(index, group.routines.length - 1);
+      const patches = planMoveTo(group.routines, from, to);
+      if (patches.length > 0) reorder.mutate({ patches });
+      return;
+    }
+
+    reorder.mutate({
+      patches: planMoveToGroup(group.routines, moved, index),
+      move: { id: from, categoryId: targetCategoryId },
+    });
   }
 
   /** Bırakma çizgisi: aşağı taşınan hedefin altına, yukarı taşınan üstüne. */
-  function dropEdgeOf(index: number): "top" | "bottom" | null {
-    if (draggingId === null || active[index].id !== dragOverId) return null;
-    const from = active.findIndex((r) => r.id === draggingId);
-    if (from === -1 || from === index) return null;
-    return from < index ? "bottom" : "top";
+  function dropEdgeOf(
+    group: RoutineGroup<RoutineWithSchedule>,
+    index: number,
+  ): "top" | "bottom" | null {
+    if (draggingId === null || group.routines[index].id !== dragOverId) return null;
+    const from = group.routines.findIndex((r) => r.id === draggingId);
+    if (from === index) return null;
+    // Başka gruptan gelen rutin hedefin yerini alır: üstüne düşer.
+    return from !== -1 && from < index ? "bottom" : "top";
+  }
+
+  function renderForm(initialCategoryId: string | null) {
+    return (
+      <div className="mb-2 rounded-xl border border-[var(--color-line-2)] bg-[var(--color-surface)] p-4">
+        <h2 className="mb-4 text-[length:var(--text-lg)] font-medium">
+          Yeni rutin
+        </h2>
+        <RoutineForm
+          initial={{ categoryId: initialCategoryId }}
+          submitLabel="Oluştur"
+          pending={create.isPending}
+          otherRoutines={active}
+          categories={categories}
+          onSubmit={handleCreate}
+          onCancel={() => setCreating(null)}
+        />
+      </div>
+    );
   }
 
   if (isPending) {
@@ -145,31 +211,54 @@ export function RoutineList() {
         title="Rutinler"
         width="2xl"
         actions={
-          !creating ? (
-            <Button variant="primary" size="sm" onClick={() => setCreating(true)}>
-              Yeni rutin
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-pressed={managing}
+              onClick={() => setManaging((open) => !open)}
+            >
+              Kategoriler
             </Button>
-          ) : undefined
+            {creating === null && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setCreating({ categoryId: null })}
+              >
+                Yeni rutin
+              </Button>
+            )}
+          </div>
         }
       />
 
       <ScreenBody width="2xl">
-        {creating && (
+        {/*
+          Kategoriler görevlerle ORTAK (0027): Planlama'daki "Matematik"
+          burada da aynı adla ve renkle görünür. Yönetici de aynı
+          bileşen — yeniden adlandırma, renk, arşiv, silme tek yerden.
+        */}
+        {managing && (
           <div className="mb-5 rounded-xl border border-[var(--color-line-2)] bg-[var(--color-surface)] p-4">
-            <h2 className="mb-4 text-[length:var(--text-lg)] font-medium">
-              Yeni rutin
+            <h2 className="mb-1 text-[length:var(--text-lg)] font-medium">
+              Kategoriler
             </h2>
-            <RoutineForm
-              submitLabel="Oluştur"
-              pending={create.isPending}
-              otherRoutines={active}
-              onSubmit={handleCreate}
-              onCancel={() => setCreating(false)}
-            />
+            <p className="mb-4 text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
+              Kategori aç, sonra içine rutin ekle. Kategoriler görevlerle
+              ortaktır.
+            </p>
+            <CategoryManager categories={categories} onError={toast.show} />
           </div>
         )}
 
-        {active.length === 0 && !creating ? (
+        {/* Başlıktaki "Yeni rutin" listenin ÜSTÜNDE açılır; grubun
+            kendi "Rutin ekle"si o grubun içinde. */}
+        {creating !== null &&
+          (!showHeadings || creating.categoryId === null) &&
+          renderForm(creating.categoryId)}
+
+        {active.length === 0 && categories.length === 0 && creating === null ? (
           <EmptyState
             icon={<ListIcon size={22} />}
             title="Henüz rutin yok"
@@ -178,41 +267,32 @@ export function RoutineList() {
             <Button
               variant="primary"
               className="mt-5"
-              onClick={() => setCreating(true)}
+              onClick={() => setCreating({ categoryId: null })}
             >
               Rutin ekle
             </Button>
           </EmptyState>
         ) : (
-          <ul className="flex flex-col gap-2">
-            {active.map((routine, index) => {
-              const draggable = editing !== routine.id && active.length > 1;
-              const edge = dropEdgeOf(index);
+          <div className="flex flex-col gap-6">
+            {groups.map((group) => {
+              const key = group.category?.id ?? "__none__";
+              const groupOver = draggingId !== null && dragOverId === `group:${key}`;
 
               return (
-                <li
-                  key={routine.id}
-                  draggable={draggable || undefined}
-                  onDragStart={
-                    draggable
-                      ? (event) => {
-                          /* Firefox veri yazılmadan sürüklemeyi başlatmıyor. */
-                          event.dataTransfer.setData("text/plain", routine.name);
-                          event.dataTransfer.effectAllowed = "move";
-                          setDraggingId(routine.id);
-                        }
-                      : undefined
-                  }
-                  onDragEnd={() => {
-                    setDraggingId(null);
-                    setDragOverId(null);
-                  }}
+                <section
+                  key={key}
+                  aria-label={group.category?.name ?? "Kategorisiz"}
+                  /*
+                   * Grup da bir bırakma hedefi: başlığa ya da boşluğa
+                   * bırakılan rutin grubun SONUNA eklenir. Boş bir
+                   * kategoriye rutin taşımanın tek sürükleme yolu bu.
+                   */
                   onDragOver={
                     draggingId !== null
                       ? (event) => {
                           event.preventDefault();
                           event.dataTransfer.dropEffect = "move";
-                          setDragOverId(routine.id);
+                          setDragOverId(`group:${key}`);
                         }
                       : undefined
                   }
@@ -220,66 +300,167 @@ export function RoutineList() {
                     draggingId !== null
                       ? (event) => {
                           event.preventDefault();
-                          handleDrop(routine.id);
+                          handleDrop(group, group.routines.length);
                         }
                       : undefined
                   }
                   className={cn(
-                    "rounded-lg",
-                    draggable && "cursor-grab active:cursor-grabbing",
-                    /* Çizgi satırlar arasındaki boşluğa düşer (bkz. TaskItem). */
-                    edge === "top" && "shadow-[0_-3px_0_0_var(--color-accent)]",
-                    edge === "bottom" && "shadow-[0_3px_0_0_var(--color-accent)]",
+                    "rounded-xl transition-colors duration-[var(--duration-fast)]",
+                    groupOver && "bg-[var(--color-surface-2)]",
                   )}
                 >
-                  {editing === routine.id ? (
-                    <div className="rounded-xl border border-[var(--color-line-2)] bg-[var(--color-surface)] p-4">
-                      <RoutineForm
-                        initial={{
-                          name: routine.name,
-                          colorSlot: routine.colorSlot,
-                          target: routine.target,
-                          unit: routine.unit,
-                          schedule: scheduleAt(routine, todayStr()) ?? { kind: "daily" },
-                          endDate: routine.endDate,
-                        }}
-                        submitLabel="Kaydet"
-                        pending={update.isPending || changeSchedule.isPending}
-                        otherRoutines={active.filter((r) => r.id !== routine.id)}
-                        onSubmit={(draft) => handleUpdate(routine, draft)}
-                        onCancel={() => setEditing(null)}
-                      />
+                  {showHeadings && (
+                    <div className="mb-2 flex items-center gap-2">
+                      {group.category && (
+                        <CategoryDot category={group.category} size={9} />
+                      )}
+                      <h2 className="text-[length:var(--text-sm)] font-medium text-[var(--color-ink-2)]">
+                        {group.category?.name ?? "Kategorisiz"}
+                      </h2>
+                      <span className="tabular text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
+                        {group.routines.length}
+                      </span>
+                      {/* Kategorisiz grubun ekleme yolu başlıktaki
+                          "Yeni rutin". */}
+                      {group.category && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="ml-auto"
+                          onClick={() =>
+                            setCreating({ categoryId: group.category?.id ?? null })
+                          }
+                        >
+                          + Rutin ekle
+                        </Button>
+                      )}
                     </div>
-                  ) : (
-                    <RoutineRow
-                      routine={routine}
-                      reorder={
-                        active.length > 1 ? (
-                          <ReorderButtons
-                            title={routine.name}
-                            isFirst={index === 0}
-                            isLast={index === active.length - 1}
-                            className=""
-                            onMove={(delta) => {
-                              const patches = planReorder(active, routine.id, delta);
-                              if (patches.length > 0) reorder.mutate(patches);
-                            }}
-                          />
-                        ) : undefined
-                      }
-                      onEdit={() => setEditing(routine.id)}
-                      onArchive={() =>
-                        archive.mutate(
-                          { id: routine.id, archived: true },
-                          { onError: (error) => toast.show(errorText(error)) },
-                        )
-                      }
-                    />
                   )}
-                </li>
+
+                  {showHeadings &&
+                    group.category !== null &&
+                    creating?.categoryId === group.category.id &&
+                    renderForm(group.category.id)}
+
+                  {group.routines.length === 0 ? (
+                    showHeadings && (
+                      <p className="rounded-lg border border-dashed border-[var(--color-line)] px-3.5 py-3 text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
+                        Bu kategoride henüz rutin yok.
+                      </p>
+                    )
+                  ) : (
+                    <ul className="flex flex-col gap-2">
+                      {group.routines.map((routine, index) => {
+                        const draggable =
+                          editing !== routine.id && active.length > 1;
+                        const edge = dropEdgeOf(group, index);
+
+                        return (
+                          <li
+                            key={routine.id}
+                            draggable={draggable || undefined}
+                            onDragStart={
+                              draggable
+                                ? (event) => {
+                                    /* Firefox veri yazılmadan sürüklemeyi başlatmıyor. */
+                                    event.dataTransfer.setData("text/plain", routine.name);
+                                    event.dataTransfer.effectAllowed = "move";
+                                    setDraggingId(routine.id);
+                                  }
+                                : undefined
+                            }
+                            onDragEnd={() => {
+                              setDraggingId(null);
+                              setDragOverId(null);
+                            }}
+                            onDragOver={
+                              draggingId !== null
+                                ? (event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    event.dataTransfer.dropEffect = "move";
+                                    setDragOverId(routine.id);
+                                  }
+                                : undefined
+                            }
+                            onDrop={
+                              draggingId !== null
+                                ? (event) => {
+                                    event.preventDefault();
+                                    // Grup da bırakma hedefi; ikisi birden çalışmasın.
+                                    event.stopPropagation();
+                                    handleDrop(group, index);
+                                  }
+                                : undefined
+                            }
+                            className={cn(
+                              "rounded-lg",
+                              draggable && "cursor-grab active:cursor-grabbing",
+                              /* Çizgi satırlar arasındaki boşluğa düşer (bkz. TaskItem). */
+                              edge === "top" && "shadow-[0_-3px_0_0_var(--color-accent)]",
+                              edge === "bottom" && "shadow-[0_3px_0_0_var(--color-accent)]",
+                            )}
+                          >
+                            {editing === routine.id ? (
+                              <div className="rounded-xl border border-[var(--color-line-2)] bg-[var(--color-surface)] p-4">
+                                <RoutineForm
+                                  initial={{
+                                    name: routine.name,
+                                    colorSlot: routine.colorSlot,
+                                    target: routine.target,
+                                    unit: routine.unit,
+                                    schedule:
+                                      scheduleAt(routine, todayStr()) ?? { kind: "daily" },
+                                    endDate: routine.endDate,
+                                    categoryId: routine.categoryId,
+                                  }}
+                                  submitLabel="Kaydet"
+                                  pending={update.isPending || changeSchedule.isPending}
+                                  otherRoutines={active.filter((r) => r.id !== routine.id)}
+                                  categories={categories}
+                                  onSubmit={(draft) => handleUpdate(routine, draft)}
+                                  onCancel={() => setEditing(null)}
+                                />
+                              </div>
+                            ) : (
+                              <RoutineRow
+                                routine={routine}
+                                reorder={
+                                  group.routines.length > 1 ? (
+                                    <ReorderButtons
+                                      title={routine.name}
+                                      isFirst={index === 0}
+                                      isLast={index === group.routines.length - 1}
+                                      className=""
+                                      onMove={(delta) => {
+                                        const patches = planReorder(
+                                          group.routines,
+                                          routine.id,
+                                          delta,
+                                        );
+                                        if (patches.length > 0) reorder.mutate({ patches });
+                                      }}
+                                    />
+                                  ) : undefined
+                                }
+                                onEdit={() => setEditing(routine.id)}
+                                onArchive={() =>
+                                  archive.mutate(
+                                    { id: routine.id, archived: true },
+                                    { onError: (error) => toast.show(errorText(error)) },
+                                  )
+                                }
+                              />
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </section>
               );
             })}
-          </ul>
+          </div>
         )}
 
         {ended.length > 0 && (
@@ -304,10 +485,12 @@ export function RoutineList() {
                           unit: routine.unit,
                           schedule: scheduleAt(routine, today) ?? { kind: "daily" },
                           endDate: routine.endDate,
+                          categoryId: routine.categoryId,
                         }}
                         submitLabel="Kaydet"
                         pending={update.isPending || changeSchedule.isPending}
                         otherRoutines={active}
+                        categories={categories}
                         onSubmit={(draft) => handleUpdate(routine, draft)}
                         onCancel={() => setEditing(null)}
                       />
