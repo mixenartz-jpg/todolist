@@ -3,10 +3,11 @@
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/Button";
 import { cn } from "@/lib/ui/cn";
-import { SLOT_HEX, SLOT_NAMES } from "@/lib/ui/colors";
+import { SLOT_HEX, SLOT_NAMES, slotVar } from "@/lib/ui/colors";
 import { endOfIsoWeek, todayStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { formatShortDate } from "@/lib/ui/tr";
+import type { Category } from "@/features/planlama/types";
 import { ScheduleEditor } from "./ScheduleEditor";
 import { WeekOverview } from "./WeekOverview";
 import type { RoutineDraft, RoutineWithSchedule, Schedule } from "./types";
@@ -31,6 +32,8 @@ interface RoutineFormProps {
   pending?: boolean;
   /** Haftalık görünümde gösterilecek diğer rutinler (düzenlenen hariç). */
   otherRoutines?: readonly RoutineWithSchedule[];
+  /** Seçilebilir kategoriler (arşivliler dahil gelebilir; etkinler listelenir). */
+  categories?: readonly Category[];
   onSubmit: (draft: RoutineDraft) => void;
   onCancel: () => void;
 }
@@ -40,6 +43,7 @@ export function RoutineForm({
   submitLabel,
   pending = false,
   otherRoutines = [],
+  categories = [],
   onSubmit,
   onCancel,
 }: RoutineFormProps) {
@@ -51,6 +55,18 @@ export function RoutineForm({
   const [hasTarget, setHasTarget] = useState((initial?.target ?? 1) > 1);
   const [target, setTarget] = useState(initial?.target ?? 1);
   const [unit, setUnit] = useState(initial?.unit ?? "");
+  const [categoryId, setCategoryId] = useState<string | null>(
+    initial?.categoryId ?? null,
+  );
+  /*
+   * Arşivli ama hâlâ atanmış kategori listede kalır — yoksa `<select>`
+   * ilk seçeneğe düşer ve kaydetmek kategoriyi sessizce silerdi
+   * (CategoryPicker ile aynı gerekçe).
+   */
+  const categoryOptions = categories.filter(
+    (c) => c.archivedAt === null || c.id === categoryId,
+  );
+  const currentCategory = categories.find((c) => c.id === categoryId);
 
   const today = todayStr();
   const weekEnd = endOfIsoWeek(today);
@@ -74,6 +90,7 @@ export function RoutineForm({
       target: hasTarget ? Math.max(1, target) : 1,
       unit: hasTarget && unit.trim() ? unit.trim() : null,
       schedule,
+      categoryId,
       endDate:
         duration === "none"
           ? null
@@ -99,6 +116,36 @@ export function RoutineForm({
           className="h-10 rounded-lg border border-[var(--color-line-2)] bg-[var(--color-surface)] px-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-line-3)]"
         />
       </label>
+
+      {categoryOptions.length > 0 && (
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
+            Kategori
+          </span>
+          <span className="flex items-center gap-2">
+            {currentCategory && (
+              <span
+                aria-hidden
+                className="size-2.5 shrink-0 rounded-full"
+                style={{ background: slotVar(currentCategory.colorSlot) }}
+              />
+            )}
+            <select
+              value={categoryId ?? ""}
+              onChange={(e) => setCategoryId(e.target.value === "" ? null : e.target.value)}
+              className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--color-line-2)] bg-[var(--color-surface)] px-3 text-[length:var(--text-base)]"
+            >
+              <option value="">Kategorisiz</option>
+              {categoryOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {c.archivedAt !== null ? " (arşiv)" : ""}
+                </option>
+              ))}
+            </select>
+          </span>
+        </label>
+      )}
 
       <ScheduleEditor value={schedule} onChange={setSchedule} />
 

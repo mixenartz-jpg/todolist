@@ -200,6 +200,8 @@ export function useDeleteCategory(onError?: (message: string) => void) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.categories() });
       qc.invalidateQueries({ queryKey: qk.tasks() });
+      // Rutinler de aynı kategoriye bağlanabiliyor (0027).
+      qc.invalidateQueries({ queryKey: qk.routines() });
     },
     onError: (error) => onError?.(errorText(error)),
   });

@@ -52,6 +52,8 @@ export interface RoutineWithSchedule {
    */
   endDate: DateStr | null;
   archivedAt: DateStr | null;
+  /** Kategori (0027, görevlerle ortak tablo). null → kategorisiz. */
+  categoryId: string | null;
   sortOrder: number;
   versions: ScheduleVersion[];
 }
@@ -66,4 +68,6 @@ export interface RoutineDraft {
   schedule: Schedule;
   /** Son gün (dahil); null → süresiz. */
   endDate: DateStr | null;
+  /** Kategori; null → kategorisiz. */
+  categoryId: string | null;
 }

@@ -29,6 +29,7 @@ interface RoutineOptions {
   archivedAt?: string | null;
   colorSlot?: number;
   sortOrder?: number;
+  categoryId?: string | null;
 }
 
 /** Test için rutin üretir. Varsayılan: her gün, hedef 1, 2020'den beri aktif. */
@@ -52,6 +53,7 @@ export function routine(options: RoutineOptions = {}): RoutineWithSchedule {
     startDate,
     endDate: options.endDate ? asDateStr(options.endDate) : null,
     archivedAt: options.archivedAt ? asDateStr(options.archivedAt) : null,
+    categoryId: options.categoryId ?? null,
     sortOrder: options.sortOrder ?? 0,
     versions,
   };

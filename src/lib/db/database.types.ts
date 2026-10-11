@@ -20,6 +20,8 @@ export interface RoutineRow {
   start_date: string;
   /** Son gün, dahil (0026). Opsiyonel: migration öncesi alan hiç gelmez. */
   end_date?: string | null;
+  /** Kategori (0027). Opsiyonel: migration öncesi alan hiç gelmez. */
+  category_id?: string | null;
   sort_order: number;
   archived_at: string | null;
   created_at: string;

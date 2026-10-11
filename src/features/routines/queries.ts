@@ -80,6 +80,7 @@ export function joinRoutines(
       startDate,
       endDate: r.end_date ? asDateStr(r.end_date) : null,
       archivedAt: r.archived_at ? asDateStr(r.archived_at.slice(0, 10)) : null,
+      categoryId: r.category_id ?? null,
       sortOrder: r.sort_order,
       // Program satırı hiç yoksa (olmamalı, trigger garanti eder)
       // "her gün" varsayılır ki rutin matriste görünmez olmasın.
