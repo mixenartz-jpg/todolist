@@ -11,8 +11,9 @@ type Mode = "signin" | "signup";
 export function LoginForm() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("signin");
-  const [email, setEmail] = useState("");
+  const [rawEmail, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<
     { kind: "idle" } | { kind: "loading" } | { kind: "error"; message: string } | { kind: "sent" }
   >({ kind: "idle" });
@@ -20,6 +21,14 @@ export function LoginForm() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setStatus({ kind: "loading" });
+
+    /*
+     * Telefon klavyesi e-postanın ilk harfini büyütebilir veya sona
+     * boşluk ekleyebilir; masaüstünde giren hesap telefonda "hatalı"
+     * der. Supabase'e her zaman tek biçim gönderilir. Parolaya
+     * DOKUNULMAZ: boşluk ve büyük harf parolanın parçası olabilir.
+     */
+    const email = rawEmail.trim().toLowerCase();
 
     try {
       const supabase = createClient();
@@ -51,7 +60,7 @@ export function LoginForm() {
     return (
       <div>
         <p className="text-[length:var(--text-base)]">
-          <strong className="font-medium">{email}</strong> adresine bir
+          <strong className="font-medium">{rawEmail.trim().toLowerCase()}</strong> adresine bir
           doğrulama bağlantısı gönderildi.
         </p>
         <p className="mt-2 text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
@@ -84,7 +93,11 @@ export function LoginForm() {
           type="email"
           required
           autoComplete="email"
-          value={email}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          inputMode="email"
+          value={rawEmail}
           onChange={(e) => setEmail(e.target.value)}
           /* Zemin `surface-2`: alan `surface` üzerindeki bir kartın
              içinde ve aynı renk olsaydı girdi kutusu kaybolurdu.
@@ -98,19 +111,32 @@ export function LoginForm() {
         <span className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
           Parola
         </span>
+        <div className="relative">
         <input
-          type="password"
+          type={showPassword ? "text" : "password"}
           required
           minLength={8}
           autoComplete={mode === "signup" ? "new-password" : "current-password"}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           /* Zemin `surface-2`: alan `surface` üzerindeki bir kartın
              içinde ve aynı renk olsaydı girdi kutusu kaybolurdu.
              Odakta kenar `line-3`'e çıkar — `accent` artık BEYAZ ve
              odaklanan alanın kenarı gözü acıtırdı. */
-          className="h-11 rounded-lg border border-[var(--color-line-2)] bg-[var(--color-surface-2)] px-3 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] focus:border-[var(--color-line-3)]"
+          className="h-11 w-full rounded-lg border border-[var(--color-line-2)] bg-[var(--color-surface-2)] pl-3 pr-16 text-[length:var(--text-base)] outline-none transition-colors duration-[var(--duration-fast)] focus:border-[var(--color-line-3)]"
         />
+        <button
+          type="button"
+          onClick={() => setShowPassword((v) => !v)}
+          aria-pressed={showPassword}
+          className="absolute inset-y-0 right-0 px-3 text-[length:var(--text-sm)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-ink-2)]"
+        >
+          {showPassword ? "Gizle" : "Göster"}
+        </button>
+        </div>
       </label>
 
       {status.kind === "error" && (
