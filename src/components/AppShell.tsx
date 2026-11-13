@@ -199,7 +199,7 @@ function MobileTabBar() {
        * odaklanabilir. Ayrı bir odak durağı, klavye kullanıcısına
        * anlamsız bir fazladan Tab bastırırdı.
        */
-      className="tabBar glassChrome glassChrome--bottom fixed inset-x-0 bottom-0 z-[var(--z-sticky)] pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="tabBar glassChrome glassChrome--bottom flex fixed inset-x-0 bottom-0 z-[var(--z-sticky)] pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       {NAV.map((item) => {
         const active = isActive(pathname, item.href);
