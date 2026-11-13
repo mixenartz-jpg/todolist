@@ -21,9 +21,13 @@
  * gerekçe buraya sığıyor; className zincirine sığmazdı.
  */
 
-.tabBar {
-  display: flex;
-}
+/*
+ * `.tabBar`'a burada `display` VERİLMEZ. Bu dosya katmansız (unlayered)
+ * CSS'tir ve Tailwind v4'ün `@layer utilities` içindeki `md:hidden`
+ * kuralını her zaman yener: çubuk masaüstünde de görünür ve kenar
+ * çubuğunun altındaki "Çıkış yap" düğmesini örter. `flex` sınıfı
+ * AppShell'de, `md:hidden` ile aynı katmanda verilir.
+ */
 
 .tabBarItem {
   /*
