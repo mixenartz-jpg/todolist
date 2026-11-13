@@ -6,9 +6,9 @@ import { Button } from "@/components/Button";
 import { createClient } from "@/lib/supabase/client";
 import { getSiteUrl } from "@/lib/supabase/site-url";
 
-type Mode = "signin" | "signup";
+type Mode = "signin" | "signup" | "reset";
 
-export function LoginForm() {
+export function LoginForm({ initialError }: { initialError?: string }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("signin");
   const [rawEmail, setEmail] = useState("");
@@ -16,7 +16,7 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<
     { kind: "idle" } | { kind: "loading" } | { kind: "error"; message: string } | { kind: "sent" }
-  >({ kind: "idle" });
+  >(initialError ? { kind: "error", message: initialError } : { kind: "idle" });
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -32,6 +32,20 @@ export function LoginForm() {
 
     try {
       const supabase = createClient();
+
+      if (mode === "reset") {
+        /*
+         * Bağlantı /auth/callback'e döner, oradan yeni parola sayfasına
+         * geçer. PKCE: doğrulayıcı BU tarayıcının çerezinde durur, yani
+         * bağlantı aynı tarayıcıda açılmalı (mesaj bunu söylüyor).
+         */
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${getSiteUrl()}/auth/callback?next=/parola-yenile`,
+        });
+        if (error) throw error;
+        setStatus({ kind: "sent" });
+        return;
+      }
 
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
@@ -61,10 +75,12 @@ export function LoginForm() {
       <div>
         <p className="text-[length:var(--text-base)]">
           <strong className="font-medium">{rawEmail.trim().toLowerCase()}</strong> adresine bir
-          doğrulama bağlantısı gönderildi.
+          {mode === "reset" ? " parola sıfırlama" : " doğrulama"} bağlantısı gönderildi.
         </p>
         <p className="mt-2 text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
-          Bağlantıya tıkladıktan sonra buradan giriş yapabilirsin.
+          {mode === "reset"
+            ? "Bağlantıyı bu cihazda, bu tarayıcıda aç; yeni parolanı orada belirleyeceksin. Gelmediyse spam klasörüne bak."
+            : "Bağlantıya tıkladıktan sonra buradan giriş yapabilirsin."}
         </p>
         <Button
           variant="ghost"
@@ -107,6 +123,7 @@ export function LoginForm() {
         />
       </label>
 
+      {mode !== "reset" && (
       <label className="flex flex-col gap-1.5">
         <span className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
           Parola
@@ -138,6 +155,7 @@ export function LoginForm() {
         </button>
         </div>
       </label>
+      )}
 
       {status.kind === "error" && (
         <p
@@ -149,8 +167,25 @@ export function LoginForm() {
       )}
 
       <Button type="submit" variant="primary" loading={isLoading} className="mt-1">
-        {mode === "signin" ? "Giriş yap" : "Hesap oluştur"}
+        {mode === "signin"
+          ? "Giriş yap"
+          : mode === "signup"
+            ? "Hesap oluştur"
+            : "Sıfırlama bağlantısı gönder"}
       </Button>
+
+      {mode === "signin" && (
+        <button
+          type="button"
+          onClick={() => {
+            setMode("reset");
+            setStatus({ kind: "idle" });
+          }}
+          className="text-[length:var(--text-sm)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-ink-2)]"
+        >
+          Parolamı unuttum
+        </button>
+      )}
 
       <button
         type="button"
@@ -162,7 +197,9 @@ export function LoginForm() {
       >
         {mode === "signin"
           ? "Hesabın yok mu? Oluştur"
-          : "Zaten hesabın var mı? Giriş yap"}
+          : mode === "signup"
+            ? "Zaten hesabın var mı? Giriş yap"
+            : "Girişe dön"}
       </button>
     </form>
   );
@@ -183,6 +220,9 @@ function translateAuthError(error: unknown): string {
   }
   if (message.includes("Email not confirmed")) {
     return "E-postanı doğrulaman gerekiyor. Gelen kutunu kontrol et.";
+  }
+  if (message.toLowerCase().includes("rate limit") || message.includes("security purposes")) {
+    return "Çok sık denedin. Birkaç dakika bekleyip tekrar dene.";
   }
   if (message.includes("NEXT_PUBLIC_SUPABASE")) {
     return "Supabase ayarları eksik. .env.local dosyasını kontrol et.";

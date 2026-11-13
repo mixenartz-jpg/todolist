@@ -37,7 +37,18 @@ const CELLS = [
   { top: 102, left: 510, opacity: 0.05 },
 ];
 
-export default function LoginPage() {
+const ERRORS: Record<string, string> = {
+  auth: "Bağlantı geçersiz veya süresi dolmuş. Bağlantıyı isteği gönderdiğin tarayıcıda açtığından emin ol ve yeniden dene.",
+};
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const { error } = await searchParams;
+  const initialError = typeof error === "string" ? ERRORS[error] : undefined;
+
   return (
     <main className="loginRoot flex min-h-dvh items-center justify-center px-6 py-12">
       <div aria-hidden className="loginBackdrop">
@@ -88,7 +99,7 @@ export default function LoginPage() {
             ayrımı KENARLIK bildirir (yüzey doktrini, globals.css).
             Gölge yine de duruyor ama tek başına taşıyıcı değil. */}
         <Card pad="none" className="rounded-2xl p-5">
-          <LoginForm />
+          <LoginForm initialError={initialError} />
         </Card>
       </div>
     </main>
