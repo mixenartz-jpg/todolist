@@ -5,6 +5,7 @@ import type { DateStr } from "@/lib/date/types";
 import { orderForDay } from "@/features/tasks/dayorder";
 import { TaskItem } from "@/features/tasks/TaskItem";
 import type { Task } from "@/features/tasks/types";
+import { CoachResultLine } from "@/features/coachview/CoachResultLine";
 import { CategoryDot } from "./CategoryDot";
 import { ReorderButtons } from "./ReorderButtons";
 import type { Category } from "./types";
@@ -151,14 +152,18 @@ export function PlanTaskList({
                 : null
             }
             extra={
-              ordered.length > 1 && !task.done ? (
-                <ReorderButtons
-                  title={task.title}
-                  isFirst={index === 0}
-                  isLast={index === ordered.length - 1}
-                  onMove={(delta) => onReorder(ordered, task, delta)}
-                />
-              ) : undefined
+              <>
+                {/* Öğrencinin sonucu (salt okunur) — sağlayıcı yoksa boş. */}
+                <CoachResultLine task={task} />
+                {ordered.length > 1 && !task.done && (
+                  <ReorderButtons
+                    title={task.title}
+                    isFirst={index === 0}
+                    isLast={index === ordered.length - 1}
+                    onMove={(delta) => onReorder(ordered, task, delta)}
+                  />
+                )}
+              </>
             }
           />
         );

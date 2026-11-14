@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from "react";
+import { StudentDataProvider } from "@/features/coachview/StudentDataProvider";
 import { PlanlamaTabs } from "./PlanlamaTabs";
 
 /**
@@ -25,7 +26,7 @@ export default function PlanlamaLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      {children}
+      <StudentDataProvider>{children}</StudentDataProvider>
     </div>
   );
 }

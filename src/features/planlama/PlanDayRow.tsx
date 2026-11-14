@@ -9,6 +9,7 @@ import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
 import type { Task } from "@/features/tasks/types";
 import { DayLoad } from "@/features/tasks/DayLoad";
 import { dayLoad } from "@/features/tasks/estimate";
+import { DayStudentBar } from "@/features/coachview/DayStudentBar";
 import { PlanTaskList } from "./PlanTaskList";
 import type { PlanBucket } from "./range";
 import type { Category } from "./types";
@@ -301,6 +302,9 @@ export function PlanDayRow({
 
           <DayLoad tasks={bucket.tasks} compact className="ml-auto" />
         </div>
+
+        {/* Öğrencinin günlük formu + koç notu (sağlayıcı yoksa boş). */}
+        {inScope && <DayStudentBar date={bucket.date} />}
 
         {!collapsed && (
           <PlanTaskList
