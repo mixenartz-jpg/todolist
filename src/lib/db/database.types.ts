@@ -539,6 +539,23 @@ export interface TaskItemRow {
   item_id: string;
 }
 
+export interface SourceItemMarkRow {
+  item_id: string;
+  status: "assigned" | "done";
+  marked_at: string;
+  note: string | null;
+}
+
+export interface SourceRangeMarkRow {
+  id: string;
+  section_id: string;
+  unit_from: number;
+  unit_to: number;
+  status: "assigned" | "done";
+  marked_at: string;
+  note: string | null;
+}
+
 export interface TaskActionRow {
   id: string;
   coach_id: string;

@@ -288,6 +288,8 @@ export const qk = {
   /** Görev ↔ test bağları; görev eklenince/silinince geçersiz. */
   taskItems: () => ["task-items"] as const,
   taskActions: () => ["task-actions"] as const,
+  /** Elle işaretler (0036): test ve aralık. */
+  sourceMarks: () => ["source-marks"] as const,
   /** Kaynağa bağlı görevlerin TÜM sonuçları (pencere yok — ilerleme). */
   sourceResults: (studentId: string) => ["task-results", studentId, "sources"] as const,
 

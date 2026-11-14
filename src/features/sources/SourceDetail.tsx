@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { SelectInput } from "@/components/Field";
@@ -14,7 +14,10 @@ import { resultSummary } from "@/features/results/format";
 import { ResultIcon } from "@/features/results/ResultDetails";
 import { formatShortDate } from "@/lib/ui/tr";
 import type { DateStr } from "@/lib/date/types";
-import { mainResult, type SectionProgress, type SeriesProgress } from "./progress";
+import type { SourceMarks } from "./markQueries";
+import { MarkBar, RangeMarkInput, UnitMenu, useApplyMarks } from "./MarkActions";
+import { mainResult, type SectionProgress, type SeriesProgress, type SourceProgress } from "./progress";
+import { useCatalogSelection, type CatalogSelection } from "./selection";
 import { useArchiveSource, useSaveSource, useSetSourceStatus, useSourceResults, useTaskItems } from "./queries";
 import { SourceForm } from "./SourceForm";
 import {
@@ -36,15 +39,16 @@ import { useSourceProgress } from "./useSourceProgress";
  */
 export function SourceDetail({
   sourceId,
-  sectionActions,
+  selectionExtra,
 }: {
   sourceId: string;
-  /** Bölüm başlığının sağına ek eylem (katalog eylemleri, sonraki adımlar). */
-  sectionActions?: (s: SectionProgress) => ReactNode;
+  /** Eylem çubuğuna ek düğmeler (ör. "Güne ekle"). */
+  selectionExtra?: (p: SourceProgress, selection: CatalogSelection) => ReactNode;
 }) {
   const toast = useToast();
   const router = useRouter();
-  const { trees, topics, progress, studentId, loading } = useSourceProgress({ autoStatus: true });
+  const { trees, topics, progress, marks, studentId, loading } = useSourceProgress({ autoStatus: true });
+  const selection = useCatalogSelection();
   const itemsQuery = useTaskItems();
   const resultsQuery = useSourceResults(studentId);
   const save = useSaveSource((m) => toast.show(m));
@@ -164,10 +168,21 @@ export function SourceDetail({
           unit={s.unit}
           topics={topicName}
           results={resultsQuery.data ?? []}
-          sectionActions={sectionActions}
           single={p.series.length === 1}
+          selection={selection}
+          progress={p}
+          marks={marks}
+          onError={(m) => toast.show(m)}
         />
       ))}
+
+      <MarkBar
+        selection={selection}
+        progress={p}
+        marks={marks}
+        extra={selectionExtra?.(p, selection)}
+        onError={(m) => toast.show(m)}
+      />
 
       <Toast message={toast.message} variant={toast.variant} token={toast.token} onDismiss={toast.dismiss} />
     </ScreenBody>
@@ -179,15 +194,21 @@ function SeriesCard({
   unit,
   topics,
   results,
-  sectionActions,
   single,
+  selection,
+  progress,
+  marks,
+  onError,
 }: {
   sp: SeriesProgress;
   unit: string;
   topics: ReadonlyMap<string, Topic>;
   results: Parameters<typeof mainResult>[1];
-  sectionActions?: (s: SectionProgress) => ReactNode;
   single: boolean;
+  selection: CatalogSelection;
+  progress: SourceProgress;
+  marks: SourceMarks;
+  onError: (m: string) => void;
 }) {
   return (
     <Card as="section" aria-label={sp.series.name}>
@@ -213,7 +234,10 @@ function SeriesCard({
             unit={unit}
             topics={topics}
             results={results}
-            actions={sectionActions?.(sec)}
+            selection={selection}
+            progress={progress}
+            marks={marks}
+            onError={onError}
           />
         ))}
       </ul>
@@ -226,15 +250,27 @@ function SectionRow({
   unit,
   topics,
   results,
-  actions,
+  selection,
+  progress,
+  marks,
+  onError,
 }: {
   sec: SectionProgress;
   unit: string;
   topics: ReadonlyMap<string, Topic>;
   results: Parameters<typeof mainResult>[1];
-  actions?: ReactNode;
+  selection: CatalogSelection;
+  progress: SourceProgress;
+  marks: SourceMarks;
+  onError: (m: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [menu, setMenu] = useState<{ n: number; anchor: HTMLElement } | null>(null);
+  const [rangeText, setRangeText] = useState("");
+  const { apply } = useApplyMarks(onError);
+  const closeMenu = useCallback(() => setMenu(null), []);
+  const sectionId = sec.section.id;
+  const selected = selection.sel.get(sectionId);
   const topic = sec.section.topicId ? topics.get(sec.section.topicId) : undefined;
   const next =
     unit === "test"
@@ -257,10 +293,48 @@ function SectionRow({
           </p>
         </div>
         <span className="shrink-0 text-[length:var(--text-sm)] tabular-nums">%{percent(sec.summary)}</span>
-        {actions}
       </div>
       <div className="mt-2">
-        {unit === "test" ? <TestGrid states={sec.states} /> : <RangeBar states={sec.states} unitLabel={unit} />}
+        {unit === "test" ? (
+          <TestGrid
+            states={sec.states}
+            selected={selected}
+            onPick={(n, shift) => selection.pick(sectionId, n, shift)}
+            onMenu={(n, anchor) => setMenu({ n, anchor })}
+          />
+        ) : (
+          <>
+            <RangeBar
+              states={sec.states}
+              unitLabel={unit}
+              onSegment={(from, to) => setRangeText(from === to ? String(from) : `${from}-${to}`)}
+            />
+            <RangeMarkInput
+              min={sec.section.unitFrom}
+              max={sec.section.unitTo}
+              unitLabel={unit}
+              value={rangeText}
+              onChange={setRangeText}
+              onApply={(span, status) => {
+                const numbers: number[] = [];
+                for (let n = span.from; n <= span.to; n++) numbers.push(n);
+                apply(progress, new Map([[sectionId, new Set(numbers)]]), marks, status, null);
+                setRangeText("");
+              }}
+            />
+          </>
+        )}
+        {menu && (
+          <UnitMenu
+            anchor={menu.anchor}
+            title={`${sec.section.label} · ${menu.n}. test`}
+            onClose={closeMenu}
+            onAction={(status) => {
+              apply(progress, new Map([[sectionId, new Set([menu.n])]]), marks, status, null);
+              setMenu(null);
+            }}
+          />
+        )}
       </div>
       {itemTopics.length > 0 && (
         <p className="mt-1 text-[length:var(--text-2xs)] text-[var(--color-ink-3)]">

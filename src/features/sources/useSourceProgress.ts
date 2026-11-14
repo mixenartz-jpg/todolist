@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useTasks } from "@/features/tasks/queries";
 import { useOptionalViewer } from "@/lib/auth/ViewerProvider";
+import { useSourceMarks } from "./markQueries";
 import { indexProgress, sourceProgress, type SourceProgress } from "./progress";
 import { useSetSourceStatus, useSourceResults, useSourceTrees, useTaskItems, useTopics } from "./queries";
 import { autoAdvance, derivedSourceStatus } from "./unitStatus";
@@ -24,6 +25,7 @@ export function useSourceProgress({ autoStatus = false }: { autoStatus?: boolean
   const tasksQuery = useTasks();
   const itemsQuery = useTaskItems();
   const resultsQuery = useSourceResults(studentId);
+  const marksQuery = useSourceMarks();
 
   const trees = useMemo(() => treesQuery.data ?? [], [treesQuery.data]);
   const topics = useMemo(() => topicsQuery.data ?? [], [topicsQuery.data]);
@@ -33,14 +35,20 @@ export function useSourceProgress({ autoStatus = false }: { autoStatus?: boolean
       tasks: tasksQuery.data ?? [],
       taskItems: itemsQuery.data ?? [],
       results: resultsQuery.data ?? [],
+      itemMarks: marksQuery.data?.items ?? [],
+      rangeMarks: marksQuery.data?.ranges ?? [],
     });
     return new Map<string, SourceProgress>(trees.map((t) => [t.id, sourceProgress(t, ix)]));
-  }, [trees, tasksQuery.data, itemsQuery.data, resultsQuery.data]);
+  }, [trees, tasksQuery.data, itemsQuery.data, resultsQuery.data, marksQuery.data]);
 
   // Kaynak durumu otomatik İLERİ gider (sırada → devam → bitti).
-  const setStatus = useSetSourceStatus();
+  const { mutate: setStatus } = useSetSourceStatus();
   const sent = useRef(new Set<string>());
-  const settled = !tasksQuery.isPending && !itemsQuery.isPending && (studentId === null || !resultsQuery.isPending);
+  const settled =
+    !tasksQuery.isPending &&
+    !itemsQuery.isPending &&
+    !marksQuery.isPending &&
+    (studentId === null || !resultsQuery.isPending);
   useEffect(() => {
     if (!autoStatus || !settled) return;
     for (const p of progress.values()) {
@@ -48,17 +56,23 @@ export function useSourceProgress({ autoStatus = false }: { autoStatus?: boolean
       const key = `${p.source.id}:${next}`;
       if (next && !sent.current.has(key)) {
         sent.current.add(key);
-        setStatus.mutate({ id: p.source.id, status: next });
+        setStatus({ id: p.source.id, status: next });
       }
     }
   }, [autoStatus, settled, progress, setStatus]);
 
   return {
+    marks: marksQuery.data ?? { items: [], ranges: [] },
     trees,
     topics,
     progress,
     studentId,
-    loading: treesQuery.isPending || topicsQuery.isPending || tasksQuery.isPending || itemsQuery.isPending,
+    loading:
+      treesQuery.isPending ||
+      topicsQuery.isPending ||
+      tasksQuery.isPending ||
+      itemsQuery.isPending ||
+      marksQuery.isPending,
     error: treesQuery.error ?? topicsQuery.error ?? null,
   };
 }
