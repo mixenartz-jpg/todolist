@@ -64,7 +64,12 @@ export function StudentTaskRow({
     if (immediate) autosave.flush();
   }
 
-  const done = draft.status === "done";
+  /*
+   * Durum seçilmemişse görevin kendi `done`'ı geçerli (koç işaretlemiş
+   * ya da sonuç tablosundan önce bitmiş olabilir). Böylece checkbox ile
+   * üstteki yüzde aynı şeyi söyler.
+   */
+  const done = draft.status !== null ? draft.status === "done" : task.done;
   const summaryText = result ? resultSummary(result) : "";
   const showSummary = !open && result && hasResultContent(result);
 
