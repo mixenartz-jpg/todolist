@@ -23,6 +23,8 @@ import {
 import { ReorderButtons } from "@/features/planlama/ReorderButtons";
 import { planMoveTo, planReorder } from "@/features/planlama/reorder";
 import { useRoutines } from "./queries";
+import { StudentRoutinesSection } from "./StudentRoutinesSection";
+import { useOptionalViewer } from "@/lib/auth/ViewerProvider";
 import { RoutineForm } from "./RoutineForm";
 import { groupRoutines, planMoveToGroup, type RoutineGroup } from "./groups";
 import { CategoryManager } from "@/features/planlama/CategoryManager";
@@ -38,6 +40,7 @@ import "@/components/list-motion.css";
 
 export function RoutineList() {
   const { data: routines = [], isPending } = useRoutines();
+  const studentId = useOptionalViewer()?.studentId ?? null;
   const categoriesQuery = useCategories();
   const categories = categoriesQuery.data ?? EMPTY_CATEGORIES;
   const [editing, setEditing] = useState<string | null>(null);
@@ -98,7 +101,7 @@ export function RoutineList() {
     });
   }
 
-  function handleUpdate(routine: RoutineWithSchedule, draft: RoutineDraft) {
+  function handleUpdate(routine: RoutineWithSchedule, draft: RoutineDraft, done?: () => void) {
     update.mutate(
       {
         id: routine.id,
@@ -112,6 +115,8 @@ export function RoutineList() {
         ...(draft.categoryId !== routine.categoryId && {
           categoryId: draft.categoryId,
         }),
+        ...(draft.estimateMinutes !== undefined &&
+          draft.estimateMinutes !== routine.estimateMinutes && { estimateMinutes: draft.estimateMinutes }),
       },
       {
         onError: (error) => toast.show(errorText(error)),
@@ -126,6 +131,7 @@ export function RoutineList() {
             );
           }
           setEditing(null);
+          done?.();
         },
       },
     );
@@ -185,6 +191,7 @@ export function RoutineList() {
           pending={create.isPending}
           otherRoutines={active}
           categories={categories}
+          studentId={studentId}
           onSubmit={handleCreate}
           onCancel={() => setCreating(null)}
         />
@@ -417,6 +424,7 @@ export function RoutineList() {
                                   submitLabel="Kaydet"
                                   pending={update.isPending || changeSchedule.isPending}
                                   otherRoutines={active.filter((r) => r.id !== routine.id)}
+                                  ownerLocked
                                   categories={categories}
                                   onSubmit={(draft) => handleUpdate(routine, draft)}
                                   onCancel={() => setEditing(null)}
@@ -462,6 +470,13 @@ export function RoutineList() {
             })}
           </div>
         )}
+
+        <StudentRoutinesSection
+          studentId={studentId}
+          updatePending={update.isPending || changeSchedule.isPending}
+          onUpdate={handleUpdate}
+          onError={toast.show}
+        />
 
         {ended.length > 0 && (
           <section className="mt-8">

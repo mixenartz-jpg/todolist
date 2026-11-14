@@ -15,11 +15,34 @@ import type { RoutineWithSchedule, Schedule, ScheduleVersion } from "./types";
  * İki tablo ayrı çekilip bellekte birleştirilir; toplam satır sayısı
  * onlarla ölçüldüğü için bu, gömülü JOIN'den daha basit ve okunabilir.
  */
+/**
+ * Koçun KENDİ rutinleri (student_id boş). Matris, istatistik, Bugün
+ * ve seriler yalnızca bunları görür — öğrenci rutinleri görev üretir,
+ * alışkanlık takibine karışmaz (0037).
+ */
 export function useRoutines() {
   return useQuery({
     queryKey: qk.routines(),
     queryFn: fetchRoutines,
+    select: personalRoutines,
   });
+}
+
+/** Öğrenci rutinleri (aynı önbellek, farklı süzgeç). */
+export function useStudentRoutines() {
+  return useQuery({
+    queryKey: qk.routines(),
+    queryFn: fetchRoutines,
+    select: studentRoutines,
+  });
+}
+
+export function personalRoutines(list: RoutineWithSchedule[]): RoutineWithSchedule[] {
+  return list.filter((r) => r.studentId === null);
+}
+
+export function studentRoutines(list: RoutineWithSchedule[]): RoutineWithSchedule[] {
+  return list.filter((r) => r.studentId !== null);
 }
 
 async function fetchRoutines(): Promise<RoutineWithSchedule[]> {
@@ -81,6 +104,8 @@ export function joinRoutines(
       endDate: r.end_date ? asDateStr(r.end_date) : null,
       archivedAt: r.archived_at ? asDateStr(r.archived_at.slice(0, 10)) : null,
       categoryId: r.category_id ?? null,
+      studentId: r.student_id ?? null,
+      estimateMinutes: r.estimate_minutes ?? null,
       sortOrder: r.sort_order,
       // Program satırı hiç yoksa (olmamalı, trigger garanti eder)
       // "her gün" varsayılır ki rutin matriste görünmez olmasın.

@@ -43,6 +43,9 @@ export function useCreateRoutine() {
           ...(draft.endDate !== null && { end_date: draft.endDate }),
           // Aynı gerekçe (0027): kategorisiz rutin migration'sız da eklenir.
           ...(draft.categoryId !== null && { category_id: draft.categoryId }),
+          // Öğrenci rutini (0037): yalnız VARSA yazılır.
+          ...(draft.studentId && { student_id: draft.studentId }),
+          ...(draft.estimateMinutes != null && { estimate_minutes: draft.estimateMinutes }),
         })
         .select()
         .single();
@@ -90,6 +93,8 @@ export function useUpdateRoutine() {
       endDate?: DateStr | null;
       /** undefined → kategoriye dokunulmaz; null → kategorisiz (0027). */
       categoryId?: string | null;
+      /** undefined → dokunulmaz (0037). */
+      estimateMinutes?: number | null;
     }) => {
       const supabase = createClient();
       const { error } = await supabase
@@ -102,6 +107,7 @@ export function useUpdateRoutine() {
           unit: input.unit,
           ...(input.endDate !== undefined && { end_date: input.endDate }),
           ...(input.categoryId !== undefined && { category_id: input.categoryId }),
+          ...(input.estimateMinutes !== undefined && { estimate_minutes: input.estimateMinutes }),
         })
         .eq("id", input.id);
 

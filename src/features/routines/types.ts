@@ -54,6 +54,14 @@ export interface RoutineWithSchedule {
   archivedAt: DateStr | null;
   /** Kategori (0027, görevlerle ortak tablo). null → kategorisiz. */
   categoryId: string | null;
+  /**
+   * Öğrenci rutini (0037). Dolu → her uygun gün öğrencinin listesine
+   * "Rutin | Ad" görevi düşer; entries'e ve seri istatistiklerine
+   * GİRMEZ (tamamlanma görev sonucundan). null → koçun kendi takibi.
+   */
+  studentId: string | null;
+  /** Üretilen görevin süresi (dk). */
+  estimateMinutes: number | null;
   sortOrder: number;
   versions: ScheduleVersion[];
 }
@@ -70,4 +78,8 @@ export interface RoutineDraft {
   endDate: DateStr | null;
   /** Kategori; null → kategorisiz. */
   categoryId: string | null;
+  /** Kimin için: null → koçun kendisi, dolu → öğrenci (0037). */
+  studentId?: string | null;
+  /** Öğrenci rutininde görev süresi (dk). */
+  estimateMinutes?: number | null;
 }

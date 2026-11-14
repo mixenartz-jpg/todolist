@@ -13,6 +13,7 @@ import { Button } from "@/components/Button";
 import { ScreenBody } from "@/components/Screen";
 import { DayView } from "@/features/day/DayView";
 import { CatalogToggle, useCatalogPanel } from "@/features/sources/CatalogPanel";
+import { useRoutineTaskSync } from "@/features/routines/useRoutineTaskSync";
 import { Toast, useToast } from "@/components/Toast";
 import { useTasks } from "@/features/tasks/queries";
 import { monthGrid } from "./monthgrid";
@@ -58,6 +59,7 @@ import "./planlama.css";
 export function PlanlamaScreen() {
   const toast = useToast();
   const catalog = useCatalogPanel();
+  useRoutineTaskSync();
   const {
     today,
     anchor,

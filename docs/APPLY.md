@@ -9,6 +9,7 @@ Supabase → Database → Backups. Ayrıca SQL Editor'den CSV olarak dışa al:
 - `tasks`
 - `task_results`
 - `sources`
+- `routines`, `routine_schedules`, `entries`
 
 ## 2. Çalıştırma sırası (Supabase → SQL Editor)
 
@@ -19,6 +20,7 @@ Supabase → Database → Backups. Ayrıca SQL Editor'den CSV olarak dışa al:
 | 3 | `0034_source_tree.sql` | Kaynak ağacı: `sources` genişler; `topics`, `source_series`, `source_sections`, `source_items`, `task_items`, `task_actions`; `tasks` ve `task_results`'a yeni sütunlar. Mevcut her kaynağa "Konu Testleri / Tümü" bölümü ve testleri açılır; 0029'da elle bağlanmış görevler bağını korur. |
 | 4 | `0035_topics_seed.sql` | Ortak konu listesi (TYT/AYT Mat, Geo, Fiz, Kim, Biy; LGS Mat, Fen). Düzenleyip yeniden çalıştırılabilir. |
 | 5 | `0036_source_marks.sql` | Elle işaretler: `source_item_marks` (test), `source_range_marks` (soru/sayfa/ders). |
+| 6 | `0037_student_routines.sql` | `routines.student_id`, `estimate_minutes`; günlük rutin görevi için kısmi unique index ve `insert_routine_tasks` (sunucuda doğrular, idempotent). |
 
 Hepsi yalnızca ekleme/kısıtlama yapar; satır silmez. Geri almak için `.down.sql`
 dosyalarını **ters sırayla** çalıştır.
@@ -54,3 +56,9 @@ dosyalarını **ters sırayla** çalıştır.
       çok testli görev "Yarım kaldı" → testleri işaretleyince yalnızca işaretlenenler yeşil, kalanı kırmızı
 - [ ] Koç: İlerlet görevinde "Hedef ~10 sayfa → 8 sayfa ilerledi (126-133)"
 - [ ] Görev silinince kutucuk eski rengine dönüyor
+- [ ] Rutinler → Yeni rutin → Kimin için: Öğrenci, Pzt/Çrş, 30 dk → Planlama'da o günlere
+      "Rutin | Ad" görevi düşüyor; sayfayı yenileyince ikinci kopya oluşmuyor
+- [ ] Öğrenci rutini Bugün ekranında görev olarak çıkıyor, sonuç girilebiliyor; koçun Bugün/
+      matris/istatistik ekranında görünmüyor (seri hesabına girmiyor)
+- [ ] Esnek programlı öğrenci rutini otomatik düşmüyor; Rutinler sayfasında "Güne ekle" ile ekleniyor
+- [ ] **Koçun kendi rutinleri eskisi gibi çalışıyor** (matris, seri, Bugün)

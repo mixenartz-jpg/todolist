@@ -22,6 +22,9 @@ export interface RoutineRow {
   end_date?: string | null;
   /** Kategori (0027). Opsiyonel: migration öncesi alan hiç gelmez. */
   category_id?: string | null;
+  /** Öğrenci rutini (0037): dolu → görev üretir, entries'e girmez. */
+  student_id?: string | null;
+  estimate_minutes?: number | null;
   sort_order: number;
   archived_at: string | null;
   created_at: string;

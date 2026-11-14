@@ -30,6 +30,8 @@ interface RoutineOptions {
   colorSlot?: number;
   sortOrder?: number;
   categoryId?: string | null;
+  studentId?: string | null;
+  estimateMinutes?: number | null;
 }
 
 /** Test için rutin üretir. Varsayılan: her gün, hedef 1, 2020'den beri aktif. */
@@ -54,6 +56,8 @@ export function routine(options: RoutineOptions = {}): RoutineWithSchedule {
     endDate: options.endDate ? asDateStr(options.endDate) : null,
     archivedAt: options.archivedAt ? asDateStr(options.archivedAt) : null,
     categoryId: options.categoryId ?? null,
+    studentId: options.studentId ?? null,
+    estimateMinutes: options.estimateMinutes ?? null,
     sortOrder: options.sortOrder ?? 0,
     versions,
   };

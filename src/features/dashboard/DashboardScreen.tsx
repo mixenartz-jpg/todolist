@@ -18,6 +18,7 @@ import { STATUS_LABELS } from "@/features/results/types";
 import { useCreateTask } from "@/features/tasks/mutations";
 import { orderForDay } from "@/features/tasks/dayorder";
 import { useTasks } from "@/features/tasks/queries";
+import { useRoutineTaskSync } from "@/features/routines/useRoutineTaskSync";
 import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
 import { useViewer } from "@/lib/auth/ViewerProvider";
 import { addDays, isoWeekday, todayStr } from "@/lib/date/date";
@@ -53,6 +54,7 @@ export function DashboardScreen() {
   const studentId = viewer.studentId;
 
   const tasksQuery = useTasks();
+  useRoutineTaskSync();
   const resultsQuery = useTaskResults(studentId, from, tomorrow);
   const logsQuery = useDailyLogs(studentId, from, today);
   const doneTodayQuery = useResultsDoneOn(studentId, today);

@@ -23,6 +23,7 @@ import type { PlanTaskActions } from "@/features/planlama/usePlanTaskActions";
 import { useViewer } from "@/lib/auth/ViewerProvider";
 import { resultFormKind, wantsFeynman } from "@/features/sources/actions";
 import { CatalogAddButton } from "@/features/sources/CatalogPanel";
+import { useRoutineTaskSync } from "@/features/routines/useRoutineTaskSync";
 import { useSourceUnits, useTaskItemNumbers } from "@/features/sources/queries";
 import { todayStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
@@ -83,6 +84,8 @@ export function DayView({
   const logsQuery = useDailyLogs(studentId, from, to);
   const notesQuery = useCoachNotes(studentId, date, date);
 
+  // Öğrenci rutinlerinin bu pencere için görevleri (eksikse) üretilir.
+  useRoutineTaskSync();
   const itemNumbers = useTaskItemNumbers();
   const sourceUnits = useSourceUnits();
   const saveResult = useSaveTaskResult(studentId, (m) => toast.show(m));

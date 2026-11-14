@@ -36,6 +36,13 @@ interface RoutineFormProps {
   categories?: readonly Category[];
   onSubmit: (draft: RoutineDraft) => void;
   onCancel: () => void;
+  /**
+   * Bağlı öğrenci varsa "Kimin için: Ben / Öğrenci" seçimi çıkar (0037).
+   * Düzenlemede değiştirilemez (`ownerLocked`): kişisel takip ile görev
+   * üreten rutin farklı şeyler, biri diğerine dönüşmez.
+   */
+  studentId?: string | null;
+  ownerLocked?: boolean;
 }
 
 export function RoutineForm({
@@ -46,8 +53,12 @@ export function RoutineForm({
   categories = [],
   onSubmit,
   onCancel,
+  studentId = null,
+  ownerLocked = false,
 }: RoutineFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
+  const [forStudent, setForStudent] = useState(Boolean(initial?.studentId));
+  const [estimate, setEstimate] = useState(initial?.estimateMinutes ? String(initial.estimateMinutes) : "");
   const [colorSlot, setColorSlot] = useState(initial?.colorSlot ?? 0);
   const [schedule, setSchedule] = useState<Schedule>(
     initial?.schedule ?? { kind: "daily" },
@@ -83,12 +94,16 @@ export function RoutineForm({
     event.preventDefault();
     if (!name.trim() || untilInvalid) return;
 
+    const est = Math.floor(Number(estimate));
     onSubmit({
       name: name.trim(),
       icon: null,
       colorSlot,
-      target: hasTarget ? Math.max(1, target) : 1,
-      unit: hasTarget && unit.trim() ? unit.trim() : null,
+      // Öğrenci rutininde sayısal hedef yok: tamamlanma görev sonucundan.
+      target: !forStudent && hasTarget ? Math.max(1, target) : 1,
+      unit: !forStudent && hasTarget && unit.trim() ? unit.trim() : null,
+      studentId: forStudent ? (initial?.studentId ?? studentId) : null,
+      estimateMinutes: forStudent && est >= 1 ? Math.min(est, 1440) : null,
       schedule,
       categoryId,
       endDate:
@@ -100,8 +115,46 @@ export function RoutineForm({
     });
   }
 
+  const canChooseOwner = (studentId !== null || Boolean(initial?.studentId)) && !ownerLocked;
+  // Öğrenci rutini her gün / belirli günler görev üretir; esnek programlı
+  // olanlar görev üretmez, koç elle güne ekler.
+  const flexibleStudent = forStudent && schedule.kind === "flexible";
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      {(canChooseOwner || ownerLocked) && (studentId !== null || initial?.studentId) && (
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="mb-1 text-[length:var(--text-sm)] text-[var(--color-ink-2)]">Kimin için</legend>
+          <div className="flex gap-4">
+            {(
+              [
+                [false, "Ben (kendi takibim)"],
+                [true, "Öğrenci (görev olarak düşer)"],
+              ] as const
+            ).map(([value, label]) => (
+              <label key={label} className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="routine-owner"
+                  disabled={ownerLocked}
+                  checked={forStudent === value}
+                  onChange={() => setForStudent(value)}
+                  className="size-4 accent-[var(--color-accent)]"
+                />
+                <span className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]">{label}</span>
+              </label>
+            ))}
+          </div>
+          {forStudent && (
+            <p className="text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
+              Seçili günlerde öğrencinin listesine &quot;Rutin | {name.trim() || "…"}&quot; görevi düşer; seri
+              istatistiklerine girmez.
+              {flexibleStudent && " Esnek programda görev otomatik düşmez, Rutinler sayfasından güne eklersin."}
+            </p>
+          )}
+        </fieldset>
+      )}
+
       <label className="flex flex-col gap-1.5">
         <span className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
           Rutin adı
@@ -204,6 +257,20 @@ export function RoutineForm({
         )}
       </fieldset>
 
+      {forStudent && (
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]">Süre (dk)</span>
+          <input
+            inputMode="numeric"
+            value={estimate}
+            onChange={(e) => setEstimate(e.target.value.replace(/\D/g, ""))}
+            placeholder="30"
+            className="tabular h-9 w-24 rounded-md border border-[var(--color-line-2)] bg-[var(--color-surface)] px-2 text-[length:var(--text-sm)]"
+          />
+        </label>
+      )}
+
+      {!forStudent && (
       <div className="flex flex-col gap-2.5">
         <label className="flex items-center gap-2">
           <input
@@ -241,6 +308,7 @@ export function RoutineForm({
           </div>
         )}
       </div>
+      )}
 
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
