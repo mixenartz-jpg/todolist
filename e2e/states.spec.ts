@@ -17,7 +17,7 @@ import { preparePage, SHOT_DIR, VIEWPORTS } from "./shot";
 
 test("s1 — gün paneli (mobil)", async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.mobile);
-  await preparePage(page, "/planlama");
+  await preparePage(page, "/koc/planlama");
 
   const day = page.getByRole("button", { name: /Mart/ }).first();
   if ((await day.count()) === 0) {
@@ -30,7 +30,7 @@ test("s1 — gün paneli (mobil)", async ({ page }) => {
 
 test("s2 — gün paneli (masaüstü)", async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
-  await preparePage(page, "/planlama");
+  await preparePage(page, "/koc/planlama");
 
   const day = page.getByRole("button", { name: /Mart/ }).first();
   if ((await day.count()) === 0) {
@@ -43,7 +43,7 @@ test("s2 — gün paneli (masaüstü)", async ({ page }) => {
 
 test("s3 — plan gün paneli", async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
-  await preparePage(page, "/planlama");
+  await preparePage(page, "/koc/planlama");
 
   const day = page.getByRole("button", { name: /günü aç/ }).first();
   if ((await day.count()) === 0) {
@@ -64,7 +64,7 @@ test("s3 — plan gün paneli", async ({ page }) => {
  */
 test("s4 — matris kaydırılmış (yapışkan opaklık)", async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop);
-  await preparePage(page, "/tablo");
+  await preparePage(page, "/koc/tablo");
 
   await page.evaluate(() => {
     const scroller = document.querySelector(".matrixScroll");
@@ -123,7 +123,7 @@ test("s6 — onay diyaloğu", async ({ page }) => {
  */
 test("s7 — hızlı panel kapalı (mobil)", async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.mobile);
-  await preparePage(page, "/planlama");
+  await preparePage(page, "/koc/planlama");
 
   const strip = page.getByRole("button", { name: /iş kaldı|gün tamam/ });
   if ((await strip.count()) === 0) {
@@ -134,7 +134,7 @@ test("s7 — hızlı panel kapalı (mobil)", async ({ page }) => {
 
 test("s8 — hızlı panel açık (mobil)", async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.mobile);
-  await preparePage(page, "/planlama");
+  await preparePage(page, "/koc/planlama");
 
   const strip = page.getByRole("button", { name: /iş kaldı|gün tamam/ });
   if ((await strip.count()) === 0) {

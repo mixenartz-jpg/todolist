@@ -34,6 +34,9 @@ const nextConfig: NextConfig = {
        * önbelleğe almasın. Öğrenci buraya düşerse proxy onu kendi
        * ekranına geri yollar.
        */
+      // Hedef ağacı sayfaları kaldırıldı; eski bağlantılar hedef listesine.
+      { source: "/koc/planlama/hedefler/:path+", destination: "/koc/planlama/hedefler", permanent: false },
+
       ...["bugun", "planlama", "arsiv", "istatistik", "tablo", "rutinler", "takvim"].flatMap(
         (seg) => [
           { source: `/${seg}`, destination: `/koc/${seg}`, permanent: false },

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/Button";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { cn } from "@/lib/ui/cn";
@@ -173,15 +172,6 @@ export function WeekGoalCard({
             </p>
           )}
         </div>
-
-        {/* Ağaç sayfasına geçiş — aylık karttaki bağlantının ikizi (0025). */}
-        <Link
-          href={`/koc/planlama/hedefler/hafta/${goal.id}`}
-          aria-label={`${goal.title}: ağacı aç`}
-          className="shrink-0 rounded-lg px-2 py-1 text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-quart)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-accent)]"
-        >
-          Ağaç
-        </Link>
 
         <Button
           size="sm"

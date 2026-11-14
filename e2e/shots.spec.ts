@@ -51,12 +51,12 @@ const ROUTES: readonly Route[] = [
    * Panel `narrow` (320px) ölçüsünde de çekiliyor: hafta şeridi yedi
    * sütunu o genişliğe sığdırmak zorunda ve taşma SESSİZ olurdu.
    */
-  { slug: "00-panel", path: "/", viewports: [...ALL, "narrow"] },
-  { slug: "01-tablo", path: "/tablo", viewports: ALL },
-  { slug: "02-bugun", path: "/bugun", viewports: ALL },
-  { slug: "05-planlama", path: "/planlama", viewports: ALL },
-  { slug: "07-planlama-hedefler", path: "/planlama/hedefler", viewports: ALL },
-  { slug: "08-planlama-ozet", path: "/planlama/ozet", viewports: ALL },
+  { slug: "00-panel", path: "/koc/panel", viewports: [...ALL, "narrow"] },
+  { slug: "01-tablo", path: "/koc/tablo", viewports: ALL },
+  { slug: "02-bugun", path: "/koc/bugun", viewports: ALL },
+  { slug: "05-planlama", path: "/koc/planlama", viewports: ALL },
+  { slug: "07-planlama-hedefler", path: "/koc/planlama/hedefler", viewports: ALL },
+  { slug: "08-planlama-ozet", path: "/koc/planlama/ozet", viewports: ALL },
   /*
    * `/planlama/hedefler/[id]` (hedef ağacı, 0022) BİLEREK YOK.
    *
@@ -65,9 +65,9 @@ const ROUTES: readonly Route[] = [
    * bir sayfanın fotoğrafını çekerdi. Kararlı bir tohum eklendiğinde
    * buraya "07b-hedef-agaci" olarak girer.
    */
-  { slug: "09-istatistik", path: "/istatistik", viewports: ALL },
-  { slug: "10-rutinler", path: "/rutinler", viewports: ALL },
-  { slug: "13-arsiv", path: "/arsiv", viewports: ALL },
+  { slug: "09-istatistik", path: "/koc/istatistik", viewports: ALL },
+  { slug: "10-rutinler", path: "/koc/rutinler", viewports: ALL },
+  { slug: "13-arsiv", path: "/koc/arsiv", viewports: ALL },
 ];
 
 for (const route of ROUTES) {
@@ -94,7 +94,7 @@ for (const route of ROUTES) {
  */
 test("05-planlama-ay @ wide", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
-  await preparePage(page, "/planlama");
+  await preparePage(page, "/koc/planlama");
   await page.screenshot({
     path: `${SHOT_DIR}/05-planlama--wide.png`,
     fullPage: true,
@@ -114,13 +114,13 @@ test("yönlendirmeler", async ({ page }) => {
      * `DEFAULT_SCALE` ile birlikte değişmek zorundaydı — eski hâlleri
      * yer imlerini sessizce yanlış ölçeğe açardı.
      */
-    ["/planlama/ay", "/planlama\?ol=ay"],
-    ["/planlama/hafta", "/planlama"],
-    ["/planlama/haftalik", "/planlama/hedefler"],
+    ["/planlama/ay", "/koc/planlama\?ol=ay"],
+    ["/planlama/hafta", "/koc/planlama"],
+    ["/planlama/haftalik", "/koc/planlama/hedefler"],
     /* Takvim sekmesi kaldırıldı ama adresler yer imlerinde olabilir;
        PWA'da 404 çıkmaz sokaktır. */
-    ["/takvim", "/planlama"],
-    ["/takvim/plan", "/planlama"],
+    ["/takvim", "/koc/planlama"],
+    ["/takvim/plan", "/koc/planlama"],
   ]) {
     await page.goto(from);
     /*

@@ -36,9 +36,9 @@ setup("oturum aç", async ({ page }) => {
    * Ana gezinmenin görünmesi oturumun gerçekten kurulduğunun kanıtı —
    * `AppShell` yalnızca `(app)` grubunda render edilir.
    */
-  /* Giriş `/`'a atar, o da `/bugun`'e yönlendirir — ikisinden
-     hangisine düşerse düşsün oturum kurulmuş demektir. */
-  await page.waitForURL(/\/(bugun)?$/);
+  /* Giriş role göre ana ekrana yönlenir: koç `/koc/panel`,
+     öğrenci `/ogrenci/bugun`. */
+  await page.waitForURL(/\/(koc\/panel|ogrenci\/bugun)$/);
   await expect(
     page.getByRole("navigation", { name: "Ana gezinme" }).first(),
   ).toBeVisible();

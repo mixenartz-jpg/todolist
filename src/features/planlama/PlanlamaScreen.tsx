@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   endOfIsoWeek,
   endOfMonth,
-  startOfIsoWeek,
   startOfMonth,
   toParts,
 } from "@/lib/date/date";
@@ -18,9 +17,8 @@ import { goalProgress } from "./rollup";
 import { CategoryFilterMenu } from "./CategoryFilterMenu";
 import { daySummaries } from "./dayplan";
 import { useSetTaskCategory, useSetTaskGoal } from "./mutations";
-import { useMonthPlanDays, usePlanGoals, useWeekGoals } from "./queries";
+import { useMonthPlanDays, usePlanGoals } from "./queries";
 import { PlanBacklog } from "./PlanBacklog";
-import { PlanNodePanel } from "./PlanNodePanel";
 import { PlanGoalStrip } from "./PlanGoalStrip";
 import { PlanDayRow } from "./PlanDayRow";
 import { PlanDaySheet } from "./PlanDaySheet";
@@ -36,11 +34,7 @@ import { useCollapsedDays } from "./useCollapsedDays";
 import { defaultCollapsed } from "./foldrule";
 import { weekSummaries } from "./weekmap";
 import { usePlanTaskActions } from "./usePlanTaskActions";
-import { isPlacingNode, isPlacingTask, type Placing } from "./placement";
-import type { NodeOwner } from "./types";
-import { planDistribution } from "./distribute";
-import { useDistributeNodes } from "./nodeMutations";
-import { useGoalNodes } from "./nodeQueries";
+import { isPlacingTask, type Placing } from "./placement";
 import { eachDay } from "@/lib/date/date";
 import "./planlama.css";
 
@@ -79,16 +73,6 @@ export function PlanlamaScreen() {
    * Escape davranışı demekti (gerekçe placement.ts'te).
    */
   const [placing, setPlacing] = useState<Placing>(null);
-  /**
-   * Panelde seçili ağacın sahibi (aylık ya da haftalık hedef) —
-   * yerleştirilen düğümün ağacını bulmak için.
-   */
-  const [panelOwner, setPanelOwner] = useState<NodeOwner | null>(null);
-  // Kimliği kararlı: panelin effect'i her çizimde yeniden koşmasın.
-  const handlePanelGoal = useCallback(
-    (owner: NodeOwner | null) => setPanelOwner(owner),
-    [],
-  );
   /** Sürüklemenin şu an üstünde durduğu gün (Faz 6). */
   const [dragOverDate, setDragOverDate] = useState<DateStr | null>(null);
   /** Açılan gün paneli. */
@@ -98,7 +82,6 @@ export function PlanlamaScreen() {
   const categories = usePlanCategories(tasksQuery.data, category);
   const setTaskCategory = useSetTaskCategory(toast.show);
   const setTaskGoal = useSetTaskGoal(toast.show);
-  const distribute = useDistributeNodes(toast.show);
 
   /*
    * Ölçek yalnızca ARALIĞI belirler.
@@ -172,19 +155,6 @@ export function PlanlamaScreen() {
   /* Ayın hedefleri — gün panelindeki hedef seçici için. */
   const goalsQuery = usePlanGoals(startOfMonth(anchor));
 
-  /*
-   * Haftanın hedefleri — ağaç panelinin seçicisi için (0025).
-   *
-   * Hafta ölçeğinde çapa zaten pazartesi. Ay ölçeğinde bugünün haftası
-   * (görüntülenen ay bugünün ayıysa), değilse ayın ilk haftası —
-   * `WeekGoalsSection` ile aynı kural.
-   */
-  const panelWeekStart = useMemo(() => {
-    if (scale === "week") return anchor;
-    const sameMonth = anchor.slice(0, 7) === today.slice(0, 7);
-    return startOfIsoWeek(sameMonth ? today : anchor);
-  }, [scale, anchor, today]);
-  const weekGoalsQuery = useWeekGoals(panelWeekStart);
 
   /*
    * Hedef şeridinin satırları — ilerlemeleriyle.
@@ -214,14 +184,6 @@ export function PlanlamaScreen() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isPlacing]);
 
-  /*
-   * Yerleştirme kipindeki düğümün ağacı. Panel kendi sorgusunu açıyor
-   * ama bu ekranın da düğümün BAŞLIĞINA ihtiyacı var (görev ondan
-   * doğuyor) — aynı anahtar, aynı önbellek girdisi, ikinci bir ağ
-   * turu yok.
-   */
-  const placingNodeOwner = isPlacingNode(placing) ? panelOwner : null;
-  const placingNodesQuery = useGoalNodes(placingNodeOwner);
 
   function handlePlace(date: DateStr) {
     if (placing === null) return;
@@ -235,29 +197,7 @@ export function PlanlamaScreen() {
       return;
     }
 
-    // Düğüm: görev TAŞINMIYOR, yenisi DOĞUYOR.
-    const node = (placingNodesQuery.data ?? []).find((n) => n.id === placing.id);
-    if (node === undefined) {
-      setPlacing(null);
-      return;
-    }
-
-    /*
-     * Haftalık ağaçtan doğan görev, haftalık hedefin hizmet ettiği
-     * AYLIK hedefe bağlanır (0014) — yoksa hedefsiz. `tasks.goal_id`
-     * haftalık hedefe bakamıyor.
-     */
-    const taskGoalId =
-      node.planGoalId ??
-      (weekGoalsQuery.data ?? []).find((g) => g.id === node.weekGoalId)
-        ?.planGoalId ??
-      null;
-    const plan = planDistribution(
-      [node],
-      { from: date, to: date, perDayCap: null },
-      taskGoalId,
-    );
-    if (plan.drafts.length > 0) distribute.mutate({ drafts: plan.drafts });
+    // Hedef ağacı kaldırıldı: yerleştirilebilen tek şey görev.
     setPlacing(null);
   }
 
@@ -398,25 +338,6 @@ export function PlanlamaScreen() {
                   onSelectWeek={goToWeek}
                 />
               )}
-
-              <PlanNodePanel
-                goals={goalsQuery.data ?? []}
-                weekGoals={weekGoalsQuery.data ?? []}
-                tasks={tasksQuery.data ?? []}
-                today={today}
-                selectedNodeId={isPlacingNode(placing) ? placing.id : null}
-                onSelectGoal={handlePanelGoal}
-                onSelect={(id) =>
-                  setPlacing(id === null ? null : { kind: "node", id })
-                }
-                /*
-                 * Sürükleme başlarken düğümü yerleştirme kipine sokar
-                 * — yani sürükleme, tıkla-yerleştir kipinin ÜSTÜNE
-                 * binen bir kısayol. Bırakma `handlePlace`'e düşüyor,
-                 * tıklamayla aynı yere.
-                 */
-                onDragStart={(id) => setPlacing({ kind: "node", id })}
-              />
 
               <PlanBacklog
                 tasks={range.backlog}
