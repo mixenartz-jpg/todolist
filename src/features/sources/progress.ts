@@ -1,6 +1,5 @@
 import type { DateStr } from "@/lib/date/types";
 import type { Task } from "@/features/tasks/types";
-import { linkTask } from "./parse";
 import type { Source } from "./types";
 
 export interface SourceProgress {
@@ -42,11 +41,14 @@ export function unionLength(ranges: ReadonlyArray<{ from: number; to: number }>,
 export function sourceProgress(sources: readonly Source[], tasks: readonly Task[]): SourceProgress[] {
   const bySource = new Map<string, Array<{ task: Task; range: { from: number; to: number } | null }>>();
   for (const task of tasks) {
-    const link = linkTask(task, sources);
-    if (!link) continue;
-    const list = bySource.get(link.sourceId) ?? [];
-    list.push({ task, range: link.range });
-    bySource.set(link.sourceId, list);
+    // Bağ yalnızca açıkça kurulur (kaynaktan oluşturulan görev);
+    // başlıktan tahmin YOK.
+    if (!task.sourceId) continue;
+    const range =
+      task.rangeFrom != null && task.rangeTo != null ? { from: task.rangeFrom, to: task.rangeTo } : null;
+    const list = bySource.get(task.sourceId) ?? [];
+    list.push({ task, range });
+    bySource.set(task.sourceId, list);
   }
 
   return sources.map((source) => {

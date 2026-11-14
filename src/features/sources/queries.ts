@@ -76,27 +76,3 @@ export function useArchiveSource(onError?: (m: string) => void) {
     onSettled: () => qc.invalidateQueries({ queryKey: qk.sources() }),
   });
 }
-
-/** Görevi elle bir kaynağa bağla (aralık opsiyonel). */
-export function useLinkTaskSource(onError?: (m: string) => void) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: {
-      taskId: string;
-      sourceId: string | null;
-      range: { from: number; to: number } | null;
-    }) => {
-      const { error } = await createClient()
-        .from("tasks")
-        .update({
-          source_id: input.sourceId,
-          range_from: input.range?.from ?? null,
-          range_to: input.range?.to ?? null,
-        })
-        .eq("id", input.taskId);
-      if (error) throw error;
-    },
-    onError: (e) => onError?.(e instanceof Error ? e.message : "Bağlanamadı"),
-    onSettled: () => qc.invalidateQueries({ queryKey: qk.tasks() }),
-  });
-}

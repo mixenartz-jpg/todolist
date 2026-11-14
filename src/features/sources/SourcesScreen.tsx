@@ -9,21 +9,15 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { SkeletonList } from "@/components/Skeleton";
 import { Toast, useToast } from "@/components/Toast";
 import { useTasks } from "@/features/tasks/queries";
-import type { Task } from "@/features/tasks/types";
-import { addDays, todayStr } from "@/lib/date/date";
 import { formatShortDate } from "@/lib/ui/tr";
-import { linkTask, looksLikeSourceTask, parseRange } from "./parse";
 import { sourceProgress, type SourceProgress } from "./progress";
-import { useArchiveSource, useLinkTaskSource, useSaveSource, useSources } from "./queries";
+import { useArchiveSource, useSaveSource, useSources } from "./queries";
 import { UNIT_LABELS, type Source, type SourceDraft, type SourceUnit } from "./types";
-
-/** Eşleşmeyenler listesi bu kadar gün geriye bakar. */
-const UNMATCHED_DAYS = 60;
 
 /**
  * Kaynaklar: her kitap için ilerleme (tamamlanan görevlerin aralık
- * birleşimi / toplam). Görevler başlıktan otomatik eşleşir;
- * eşleşmeyenler altta, tek tıkla bağlanır.
+ * birleşimi / toplam). Bağ yalnızca kaynaktan oluşturulan görevlerde
+ * kurulur; başlıktan eşleştirme yok.
  */
 export function SourcesScreen() {
   const toast = useToast();
@@ -31,21 +25,11 @@ export function SourcesScreen() {
   const tasksQuery = useTasks();
   const save = useSaveSource((m) => toast.show(m));
   const archive = useArchiveSource((m) => toast.show(m));
-  const link = useLinkTaskSource((m) => toast.show(m));
   const [editing, setEditing] = useState<Source | "new" | null>(null);
 
   const sources = useMemo(() => sourcesQuery.data ?? [], [sourcesQuery.data]);
   const tasks = useMemo(() => tasksQuery.data ?? [], [tasksQuery.data]);
   const progress = useMemo(() => sourceProgress(sources, tasks), [sources, tasks]);
-
-  const today = todayStr();
-  const unmatched = useMemo(() => {
-    const from = addDays(today, -UNMATCHED_DAYS);
-    return tasks
-      .filter((t) => t.dueDate !== null && t.dueDate >= from)
-      .filter((t) => looksLikeSourceTask(t.title) && !linkTask(t, sources))
-      .sort((a, b) => ((a.dueDate ?? "") < (b.dueDate ?? "") ? 1 : -1));
-  }, [tasks, sources, today]);
 
   const loading = sourcesQuery.isPending || tasksQuery.isPending;
 
@@ -87,8 +71,7 @@ export function SourcesScreen() {
       ) : progress.length === 0 ? (
         <Card tone="sunken">
           <p className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
-            Henüz kaynak yok. Kitabı adı ve toplam test sayısıyla ekle; &quot;Kitap | Konu | 12-18&quot;
-            biçimindeki görevler otomatik eşleşir.
+            Henüz kaynak yok. Kitabı adı ve toplam test sayısıyla ekle.
           </p>
         </Card>
       ) : (
@@ -97,28 +80,6 @@ export function SourcesScreen() {
             <SourceRowCard key={p.source.id} p={p} onEdit={() => setEditing(p.source)} />
           ))}
         </ul>
-      )}
-
-      {!loading && sources.length > 0 && unmatched.length > 0 && (
-        <Card as="section" aria-label="Eşleşmeyen görevler">
-          <SectionTitle level={3}>Eşleşmeyen görevler · son {UNMATCHED_DAYS} gün</SectionTitle>
-          <ul className="mt-2 flex flex-col divide-y divide-[var(--color-line)]">
-            {unmatched.slice(0, 20).map((t) => (
-              <UnmatchedRow
-                key={t.id}
-                task={t}
-                sources={sources}
-                onLink={(sourceId) =>
-                  link.mutate({
-                    taskId: t.id,
-                    sourceId,
-                    range: parseRange(t.title.split("|").slice(1)),
-                  })
-                }
-              />
-            ))}
-          </ul>
-        </Card>
       )}
 
       <Toast message={toast.message} variant={toast.variant} token={toast.token} onDismiss={toast.dismiss} />
@@ -162,42 +123,6 @@ function SourceRowCard({ p, onEdit }: { p: SourceProgress; onEdit: () => void })
   );
 }
 
-function UnmatchedRow({
-  task,
-  sources,
-  onLink,
-}: {
-  task: Task;
-  sources: readonly Source[];
-  onLink: (sourceId: string) => void;
-}) {
-  return (
-    <li className="flex items-center gap-2 py-2">
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[length:var(--text-sm)]">{task.title}</p>
-        {task.dueDate && (
-          <p className="text-[length:var(--text-2xs)] text-[var(--color-ink-3)]">{formatShortDate(task.dueDate)}</p>
-        )}
-      </div>
-      <div className="w-44 shrink-0">
-      <SelectInput
-        size="sm"
-        aria-label={`${task.title} için kaynak`}
-        value=""
-        onChange={(e) => e.target.value && onLink(e.target.value)}
-      >
-        <option value="">Kaynağa bağla…</option>
-        {sources.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.title}
-          </option>
-        ))}
-      </SelectInput>
-      </div>
-    </li>
-  );
-}
-
 function SourceForm({
   initial,
   pending,
@@ -215,7 +140,6 @@ function SourceForm({
   const [subject, setSubject] = useState(initial?.subject ?? "");
   const [total, setTotal] = useState(initial ? String(initial.totalTests) : "");
   const [unit, setUnit] = useState<SourceUnit>(initial?.unit ?? "test");
-  const [aliases, setAliases] = useState(initial?.aliases.join(", ") ?? "");
 
   const totalNum = Math.floor(Number(total));
   const valid = title.trim().length > 0 && totalNum >= 1 && totalNum <= 100000;
@@ -228,7 +152,7 @@ function SourceForm({
       subject: subject || null,
       totalTests: totalNum,
       unit,
-      aliases: aliases.split(",").map((a) => a.trim()).filter(Boolean),
+      aliases: initial?.aliases ?? [],
     });
   }
 
@@ -259,13 +183,6 @@ function SourceForm({
             )}
           </Field>
         </div>
-        <Field
-          label="Diğer yazılışlar"
-          hint="Görev başlıklarında geçen kısaltmalar, virgülle. Ör: Kafadengi Mat, KD"
-          className="col-span-2"
-        >
-          {(p) => <TextInput {...p} size="sm" value={aliases} onChange={(e) => setAliases(e.target.value)} />}
-        </Field>
         <div className="col-span-2 flex items-center gap-2">
           {onArchive && (
             <Button type="button" size="sm" variant="danger" onClick={onArchive}>
