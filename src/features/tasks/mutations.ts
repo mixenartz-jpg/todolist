@@ -233,7 +233,11 @@ export function useDeleteTask(onError?: (message: string) => void) {
       onError?.(errorText(error));
     },
 
-    onSettled: () => qc.invalidateQueries({ queryKey: qk.tasks() }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: qk.tasks() });
+      // Görev↔test bağları cascade ile silinir; katalog kutucukları tazelensin.
+      qc.invalidateQueries({ queryKey: qk.taskItems() });
+    },
   });
 }
 

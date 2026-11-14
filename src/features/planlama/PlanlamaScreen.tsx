@@ -12,6 +12,7 @@ import type { DateStr } from "@/lib/date/types";
 import { Button } from "@/components/Button";
 import { ScreenBody } from "@/components/Screen";
 import { DayView } from "@/features/day/DayView";
+import { CatalogToggle, useCatalogPanel } from "@/features/sources/CatalogPanel";
 import { Toast, useToast } from "@/components/Toast";
 import { useTasks } from "@/features/tasks/queries";
 import { monthGrid } from "./monthgrid";
@@ -56,6 +57,7 @@ import "./planlama.css";
  */
 export function PlanlamaScreen() {
   const toast = useToast();
+  const catalog = useCatalogPanel();
   const {
     today,
     anchor,
@@ -192,6 +194,8 @@ export function PlanlamaScreen() {
 
 
   function handlePlace(date: DateStr) {
+    // Katalog kutucuğu bırakıldıysa görev(ler) orada oluşur.
+    if (catalog?.dropOn(date)) return;
     if (placing === null) return;
 
     if (isPlacingTask(placing)) {
@@ -225,7 +229,12 @@ export function PlanlamaScreen() {
           day={day}
           today={today}
           onDay={goToDay}
-          toggle={<PlanScaleToggle value={view} onChange={setView} />}
+          toggle={
+            <>
+              <PlanScaleToggle value={view} onChange={setView} />
+              <CatalogToggle />
+            </>
+          }
         />
         <DayView
           mode="coach"
@@ -278,6 +287,7 @@ export function PlanlamaScreen() {
       >
         <div className="flex flex-wrap items-center gap-2">
           <PlanScaleToggle value={view} onChange={setView} />
+          <CatalogToggle />
           <CategoryFilterMenu
             categories={categories.active}
             value={category}

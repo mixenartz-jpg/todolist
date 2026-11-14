@@ -24,7 +24,18 @@ export function ResultIcon({ status }: { status: TaskResultStatus | null }) {
   );
 }
 
-export function ResultDetail({ result: r, showDate }: { result: TaskResult; showDate: boolean }) {
+const UNDERSTANDING = ["Anlamadı", "Kısmen anladı", "Anladı"];
+
+export function ResultDetail({
+  result: r,
+  showDate,
+  progress,
+}: {
+  result: TaskResult;
+  showDate: boolean;
+  /** İlerlet satırı: "Hedef ~10 sayfa → 8 sayfa ilerledi (126-133)". */
+  progress?: string | null;
+}) {
   const summary = resultSummary(r);
   return (
     <dl className={cn("grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5", "[&+&]:mt-2 [&+&]:border-t [&+&]:border-[var(--color-line)] [&+&]:pt-2")}>
@@ -38,6 +49,24 @@ export function ResultDetail({ result: r, showDate }: { result: TaskResult; show
         <>
           <dt className="text-[var(--color-ink-3)]">Durum</dt>
           <dd>{STATUS_LABELS[r.status]}</dd>
+        </>
+      )}
+      {progress && (
+        <>
+          <dt className="text-[var(--color-ink-3)]">İlerleme</dt>
+          <dd>{progress}</dd>
+        </>
+      )}
+      {r.understanding != null && (
+        <>
+          <dt className="text-[var(--color-ink-3)]">Anlama</dt>
+          <dd>{UNDERSTANDING[r.understanding - 1]}</dd>
+        </>
+      )}
+      {r.feynmanNote && (
+        <>
+          <dt className="text-[var(--color-ink-3)]">Feynman</dt>
+          <dd className="whitespace-pre-wrap">{r.feynmanNote}</dd>
         </>
       )}
       {summary && (

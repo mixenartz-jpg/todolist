@@ -7,6 +7,8 @@ import { hasResultContent, resultSummary } from "@/features/results/format";
 import { ResultDetail, ResultIcon } from "@/features/results/ResultDetails";
 import { STATUS_LABELS } from "@/features/results/types";
 import type { Task } from "@/features/tasks/types";
+import { useSourceUnits } from "@/features/sources/queries";
+import { progressLine } from "@/features/sources/title";
 import { useStudentData } from "./StudentDataProvider";
 
 /**
@@ -16,7 +18,9 @@ import { useStudentData } from "./StudentDataProvider";
 export function CoachResultLine({ task }: { task: Task }) {
   const data = useStudentData();
   const [open, setOpen] = useState(false);
+  const units = useSourceUnits();
   if (!data) return null;
+  const unit = (task.sourceId && units.data?.get(task.sourceId)) || "sayfa";
 
   const all = (data.resultsByTask.get(task.id) ?? []).filter(hasResultContent);
   // Görevin kendi günündeki sonuç önde; yoksa en yenisi.
@@ -45,7 +49,12 @@ export function CoachResultLine({ task }: { task: Task }) {
       {open && main && (
         <div className="rounded-md bg-[var(--color-surface-2)] p-2 text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
           {all.map((r) => (
-            <ResultDetail key={r.date} result={r} showDate={all.length > 1 || r.date !== task.dueDate} />
+            <ResultDetail
+              key={r.date}
+              result={r}
+              showDate={all.length > 1 || r.date !== task.dueDate}
+              progress={r === main ? progressLine(task, r, unit) : null}
+            />
           ))}
         </div>
       )}

@@ -51,6 +51,12 @@ function toResultRow(studentId: string, r: TaskResultInput) {
     missing_topics: r.missingTopics,
     reason: r.reason,
     note: r.note,
+    // 0034 alanları yalnızca verildiyse yazılır: migration öncesi
+    // veritabanında bilinmeyen sütun hatası olmasın.
+    ...(r.reachedTo !== undefined && { reached_to: r.reachedTo }),
+    ...(r.understanding !== undefined && { understanding: r.understanding }),
+    ...(r.feynmanNote !== undefined && { feynman_note: r.feynmanNote }),
+    ...(r.doneItems !== undefined && { done_items: r.doneItems }),
   };
 }
 
@@ -239,5 +245,9 @@ export function emptyResult(taskId: string, date: DateStr): TaskResultInput {
     missingTopics: [],
     reason: null,
     note: null,
+    reachedTo: null,
+    understanding: null,
+    feynmanNote: null,
+    doneItems: null,
   };
 }

@@ -43,3 +43,14 @@ dosyalarını **ters sırayla** çalıştır.
 - [ ] Kaynak detayında kutucuk seç (tık, shift+tık) → "Çözüldü": kutucuk yeşil + ✎ ikonu; yüzde artıyor
 - [ ] Sağ tık / uzun basma ile tek kutucuk menüsü açılıyor
 - [ ] Sayfa birimli kaynakta "1-52" yaz → Çözüldü: çubukta 1-52 yeşil
+- [ ] Katalogda kutucuk seç → "Güne ekle" → gün + eylem: görev "BilgiSarmal … | 39 - 42. Testler | Çöz"
+      başlığıyla oluşuyor ve **kutucuklar sarıya dönüyor**
+- [ ] Planlama → "Katalog" yan paneli açılıyor; günün altındaki "Kaynaktan ekle" paneli o gün seçili
+      açıyor, sıradaki boş testler önceden seçili; masaüstünde kutucuğu güne sürükleyince görev oluşuyor
+- [ ] Panel ve sayfa sayfası: "Kesin aralık" sıradaki aralıkla dolu, miktar değişince bitiş güncelleniyor;
+      "İlerlet" ~10 sayfa ile görev oluşuyor
+- [ ] **Kaynaktan eklenen görev öğrencide tamamlanınca ilerleme artıyor** (kutucuk yeşil, yüzde artar)
+- [ ] Öğrenci: İzle + Feynman görevinde anlama + Feynman notu; İlerlet görevinde bitiş noktası zorunlu;
+      çok testli görev "Yarım kaldı" → testleri işaretleyince yalnızca işaretlenenler yeşil, kalanı kırmızı
+- [ ] Koç: İlerlet görevinde "Hedef ~10 sayfa → 8 sayfa ilerledi (126-133)"
+- [ ] Görev silinince kutucuk eski rengine dönüyor

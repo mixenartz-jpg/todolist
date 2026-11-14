@@ -258,3 +258,38 @@ export function useAddTopic(onError?: (m: string) => void) {
     onSettled: () => qc.invalidateQueries({ queryKey: qk.topics() }),
   });
 }
+
+/**
+ * Görev → bağlı testler (numaralarıyla). Öğrencinin "yarım" formunda
+ * hangi testleri yaptığını işaretlemesi için; koç da okur.
+ */
+export function useTaskItemNumbers() {
+  return useQuery({
+    queryKey: [...qk.taskItems(), "numbers"] as const,
+    queryFn: async (): Promise<Map<string, Array<{ id: string; number: number }>>> => {
+      const { data, error } = await createClient().from("task_items").select("task_id, item_id, source_items(number)");
+      if (error) throw error;
+      const map = new Map<string, Array<{ id: string; number: number }>>();
+      for (const row of data as unknown as Array<{ task_id: string; item_id: string; source_items: { number: number } | null }>) {
+        const list = map.get(row.task_id) ?? [];
+        list.push({ id: row.item_id, number: row.source_items?.number ?? 0 });
+        map.set(row.task_id, list);
+      }
+      for (const list of map.values()) list.sort((a, b) => a.number - b.number);
+      return map;
+    },
+  });
+}
+
+/** Kaynak → birim ("sayfa"); İlerlet formunun etiketi için hafif sorgu. */
+export function useSourceUnits() {
+  return useQuery({
+    queryKey: [...qk.sources(), "units"] as const,
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<Map<string, string>> => {
+      const { data, error } = await createClient().from("sources").select("id, unit");
+      if (error) throw error;
+      return new Map((data as Array<{ id: string; unit: string }>).map((r) => [r.id, r.unit]));
+    },
+  });
+}

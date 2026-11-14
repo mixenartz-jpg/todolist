@@ -41,9 +41,12 @@ export function TestGrid({
   selected,
   onPick,
   onMenu,
+  draggableFree = false,
 }: {
   states: readonly UnitState[];
   selected?: ReadonlySet<number>;
+  /** Boş (gri/kırmızı) kutucuklar sürüklenebilir; `data-unit` taşır. */
+  draggableFree?: boolean;
   /** shift: aralık seçimi. */
   onPick?: (n: number, shift: boolean) => void;
   /** Sağ tık / uzun basma. */
@@ -53,7 +56,13 @@ export function TestGrid({
     <ul className="flex flex-wrap gap-1" aria-label="Testler">
       {states.map((st) => (
         <li key={st.number}>
-          <UnitBox st={st} selected={selected?.has(st.number) ?? false} onPick={onPick} onMenu={onMenu} />
+          <UnitBox
+            st={st}
+            selected={selected?.has(st.number) ?? false}
+            onPick={onPick}
+            onMenu={onMenu}
+            draggable={draggableFree && (st.color === "gray" || st.color === "red")}
+          />
         </li>
       ))}
     </ul>
@@ -65,9 +74,11 @@ function UnitBox({
   selected,
   onPick,
   onMenu,
+  draggable,
 }: {
   st: UnitState;
   selected: boolean;
+  draggable: boolean;
   onPick?: (n: number, shift: boolean) => void;
   onMenu?: (n: number, anchor: HTMLElement) => void;
 }) {
@@ -82,6 +93,8 @@ function UnitBox({
     <button
       type="button"
       disabled={!interactive}
+      draggable={draggable || undefined}
+      data-unit={st.number}
       title={unitTooltip(st, "test")}
       aria-pressed={interactive ? selected : undefined}
       aria-label={unitTooltip(st, "test").split("\n")[0]}

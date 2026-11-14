@@ -8,6 +8,7 @@ import { cn } from "@/lib/ui/cn";
 import type { SaveStatus } from "@/lib/ui/useAutosave";
 import { SaveIndicator } from "./SaveIndicator";
 import { addTopics } from "@/features/student/topics";
+import { UNDERSTANDING_LABELS, type ResultFormKind } from "@/features/sources/actions";
 
 const STATUSES: TaskResultStatus[] = ["done", "partial", "skipped"];
 
@@ -24,8 +25,13 @@ function toInt(v: string): number | null {
 }
 
 /**
- * Görevin sonuç giriş alanı. Otomatik kaydedilir. Bütün alanlar
- * opsiyonel: her görev soru görevi değil, her gün her şey yazılmaz.
+ * Görevin sonuç giriş alanı. Otomatik kaydedilir. Biçim eyleme göre
+ * değişir (bkz. `resultFormKind`):
+ *   solve     durum, T/D/Y/B, net, süre, eksik konular, not
+ *   watch     durum, süre, anlama, Feynman notu, not
+ *   progress  durum, bitiş noktası (zorunlu), süre, ops. D/Y, not
+ *   routine   durum, süre, not; ops. D/Y
+ * Birden çok testli görev yarım kalırsa testler tek tek işaretlenir.
  */
 export function TaskResultForm({
   draft,
@@ -34,6 +40,10 @@ export function TaskResultForm({
   status,
   questionTask,
   disabled,
+  kind = "solve",
+  feynman = false,
+  items = [],
+  progress,
 }: {
   draft: TaskResultInput;
   /** Taslağı değiştir ve kaydı planla; `immediate` → hemen gönder. */
@@ -43,11 +53,25 @@ export function TaskResultForm({
   /** Soru alanları açık mı başlasın. */
   questionTask: boolean;
   disabled: boolean;
+  kind?: ResultFormKind;
+  /** İzle + Feynman: Feynman notu alanı. */
+  feynman?: boolean;
+  /** Göreve bağlı testler (yarım kalınca işaretlenir). */
+  items?: ReadonlyArray<{ id: string; number: number }>;
+  /** İlerlet: başlangıç ve birim ("sayfa"). */
+  progress?: { start: number | null; unit: string };
 }) {
   const [topicInput, setTopicInput] = useState("");
   const [showQuestions, setShowQuestions] = useState(
-    questionTask || draft.correct !== null || draft.total !== null,
+    (kind === "solve" && questionTask) || draft.correct !== null || draft.total !== null,
   );
+  const questionsAllowed = kind !== "watch";
+  const fullQuestions = kind === "solve";
+  const reachedMissing =
+    kind === "progress" && (draft.status === "done" || draft.status === "partial") && draft.reachedTo == null;
+  const reachedBefore =
+    kind === "progress" && draft.reachedTo != null && progress?.start != null && draft.reachedTo < progress.start;
+  const doneItems = new Set(draft.doneItems ?? []);
   const autosave = { flush, status };
 
   function commitTopics() {
@@ -119,7 +143,116 @@ export function TaskResultForm({
         </Field>
       )}
 
-      {showQuestions ? (
+      {kind === "progress" && (
+        <Field
+          label={`Bitiş noktası — en son geldiğin ${progress?.unit ?? "sayfa"}`}
+          error={
+            reachedMissing
+              ? "Zorunlu: nereye kadar geldin?"
+              : reachedBefore
+                ? `Başlangıçtan (${progress?.start}) küçük olamaz`
+                : undefined
+          }
+          hint={progress?.start != null ? `Başlangıç: ${progress.start}` : undefined}
+          className="max-w-56"
+        >
+          {(p) => (
+            <TextInput
+              {...p}
+              size="sm"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              className="tabular-nums"
+              invalid={p.invalid}
+              value={draft.reachedTo ?? ""}
+              onChange={(e) => {
+                const n = e.target.value.trim() === "" ? null : Math.floor(Number(e.target.value));
+                update({ reachedTo: n !== null && Number.isFinite(n) && n >= 1 ? Math.min(n, 100000) : null });
+              }}
+              onBlur={() => autosave.flush()}
+            />
+          )}
+        </Field>
+      )}
+
+      {draft.status === "partial" && items.length > 1 && (
+        <div>
+          <p className="mb-1 text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
+            Hangi testleri yaptın? Yapılmayanlar havuza döner.
+          </p>
+          <div role="group" aria-label="Yapılan testler" className="flex flex-wrap gap-1.5">
+            {items.map((it) => {
+              const on = doneItems.has(it.id);
+              return (
+                <button
+                  key={it.id}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => {
+                    const next = new Set(doneItems);
+                    if (on) next.delete(it.id);
+                    else next.add(it.id);
+                    update({ doneItems: [...next] }, true);
+                  }}
+                  className={cn(
+                    "h-8 min-w-10 rounded-md border px-2 text-[length:var(--text-sm)] font-medium tabular-nums",
+                    on
+                      ? "border-[var(--color-good)] bg-[color-mix(in_oklch,var(--color-good)_18%,transparent)]"
+                      : "border-[var(--color-line-2)] text-[var(--color-ink-2)]",
+                  )}
+                >
+                  {it.number}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {kind === "watch" && (
+        <div role="radiogroup" aria-label="Anlama" className="flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-[length:var(--text-sm)] text-[var(--color-ink-2)]">Anlama</span>
+          {UNDERSTANDING_LABELS.map((label, i) => {
+            const value = i + 1;
+            const active = draft.understanding === value;
+            return (
+              <button
+                key={label}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => update({ understanding: active ? null : value }, true)}
+                className={cn(
+                  "h-8 rounded-full border px-3 text-[length:var(--text-sm)]",
+                  active
+                    ? "border-[var(--color-accent)] bg-[color-mix(in_oklch,var(--color-accent)_14%,transparent)] text-[var(--color-ink)]"
+                    : "border-[var(--color-line-2)] text-[var(--color-ink-2)]",
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {kind === "watch" && feynman && (
+        <Field label="Feynman notu" hint="Konuyu birine anlatır gibi, kendi cümlelerinle kısaca yaz.">
+          {(p) => (
+            <TextArea
+              {...p}
+              rows={3}
+              maxLength={2000}
+              value={draft.feynmanNote ?? ""}
+              onChange={(e) => update({ feynmanNote: e.target.value || null })}
+              onBlur={() => autosave.flush()}
+              className="text-[length:var(--text-sm)]"
+            />
+          )}
+        </Field>
+      )}
+
+      {!questionsAllowed ? null : showQuestions ? (
         <div className="flex flex-col gap-1.5">
           <div className="flex items-baseline justify-between">
             <span className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]">Soru sonucu</span>
@@ -127,14 +260,19 @@ export function TaskResultForm({
               {net === null ? "— net" : `${formatNet(net)} net`}
             </span>
           </div>
-          <div className="grid grid-cols-4 gap-2">
+          <div className={cn("grid gap-2", fullQuestions ? "grid-cols-4" : "max-w-56 grid-cols-2")}>
             {(
-              [
-                ["total", "Toplam"],
-                ["correct", "Doğru"],
-                ["wrong", "Yanlış"],
-                ["empty", "Boş"],
-              ] as const
+              (fullQuestions
+                ? [
+                    ["total", "Toplam"],
+                    ["correct", "Doğru"],
+                    ["wrong", "Yanlış"],
+                    ["empty", "Boş"],
+                  ]
+                : [
+                    ["correct", "Doğru"],
+                    ["wrong", "Yanlış"],
+                  ]) as ReadonlyArray<readonly ["total" | "correct" | "wrong" | "empty", string]>
             ).map(([key, label]) => (
               <Field key={key} label={label}>
                 {(p) => (
@@ -164,7 +302,7 @@ export function TaskResultForm({
           onClick={() => setShowQuestions(true)}
           className="self-start text-[length:var(--text-sm)] text-[var(--color-accent)] hover:underline disabled:opacity-50"
         >
-          + Soru sonucu ekle
+          {fullQuestions ? "+ Soru sonucu ekle" : "+ D/Y ekle (opsiyonel)"}
         </button>
       )}
 
@@ -186,6 +324,7 @@ export function TaskResultForm({
         )}
       </Field>
 
+      {kind === "solve" && (
       <Field label="Eksik / takıldığım konular" hint="Virgül ya da Enter ile ekle">
         {(p) => (
           <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-[var(--color-line-2)] bg-[var(--color-surface-2)] p-1.5">
@@ -219,6 +358,8 @@ export function TaskResultForm({
           </div>
         )}
       </Field>
+
+      )}
 
       <Field label="Not">
         {(p) => (

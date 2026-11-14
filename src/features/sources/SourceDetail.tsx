@@ -16,6 +16,9 @@ import { formatShortDate } from "@/lib/ui/tr";
 import type { DateStr } from "@/lib/date/types";
 import type { SourceMarks } from "./markQueries";
 import { MarkBar, RangeMarkInput, UnitMenu, useApplyMarks } from "./MarkActions";
+import { AddTasksForm } from "./AddTasksForm";
+import { planTasks, progressLine } from "./title";
+import { addDays, todayStr } from "@/lib/date/date";
 import { mainResult, type SectionProgress, type SeriesProgress, type SourceProgress } from "./progress";
 import { useCatalogSelection, type CatalogSelection } from "./selection";
 import { useArchiveSource, useSaveSource, useSetSourceStatus, useSourceResults, useTaskItems } from "./queries";
@@ -49,6 +52,7 @@ export function SourceDetail({
   const router = useRouter();
   const { trees, topics, progress, marks, studentId, loading } = useSourceProgress({ autoStatus: true });
   const selection = useCatalogSelection();
+  const [adding, setAdding] = useState(false);
   const itemsQuery = useTaskItems();
   const resultsQuery = useSourceResults(studentId);
   const save = useSaveSource((m) => toast.show(m));
@@ -90,7 +94,7 @@ export function SourceDetail({
   }
 
   const s = p.source;
-  const topicName = new Map(topics.map((t) => [t.id, t]));
+  const topicName = new Map(topics.map((t) => [t.id, t] as const));
   const meta = [
     KIND_LABELS[s.kind],
     s.publisher,
@@ -176,11 +180,40 @@ export function SourceDetail({
         />
       ))}
 
+      {adding && selection.count > 0 && (
+        <Card as="section" aria-label="Güne ekle">
+          <SectionTitle level={3}>Güne ekle</SectionTitle>
+          <div className="mt-2">
+            <AddTasksForm
+              kind={s.kind}
+              defaultDate={addDays(todayStr(), 1)}
+              build={(action, dueDate) =>
+                planTasks({ source: s, topics: topicName, picks: selection.sel, action, dueDate })
+              }
+              onCancel={() => setAdding(false)}
+              onError={(m) => toast.show(m)}
+              onCreated={(plans) => {
+                toast.show(`${plans.length} görev eklendi`);
+                selection.clear();
+                setAdding(false);
+              }}
+            />
+          </div>
+        </Card>
+      )}
+
       <MarkBar
         selection={selection}
         progress={p}
         marks={marks}
-        extra={selectionExtra?.(p, selection)}
+        extra={
+          <>
+            <Button size="sm" variant="primary" onClick={() => setAdding(true)}>
+              Güne ekle
+            </Button>
+            {selectionExtra?.(p, selection)}
+          </>
+        }
         onError={(m) => toast.show(m)}
       />
 
@@ -315,6 +348,11 @@ function SectionRow({
               unitLabel={unit}
               value={rangeText}
               onChange={setRangeText}
+              onSelect={(span) => {
+                const numbers: number[] = [];
+                for (let n = span.from; n <= span.to; n++) numbers.push(n);
+                selection.selectOnly(sectionId, numbers);
+              }}
               onApply={(span, status) => {
                 const numbers: number[] = [];
                 for (let n = span.from; n <= span.to; n++) numbers.push(n);
@@ -356,7 +394,9 @@ function SectionRow({
               {sec.tasks.map((t) => {
                 const r = mainResult(t, results);
                 const watch = r?.understanding ? ["anlamadı", "kısmen anladı", "anladı"][r.understanding - 1] : null;
-                const line = r ? [resultSummary(r), watch, r.feynmanNote].filter(Boolean).join(" · ") : "";
+                const line = [progressLine(t, r, unit), r ? resultSummary(r) : null, watch, r?.feynmanNote]
+                  .filter(Boolean)
+                  .join(" · ");
                 return (
                   <li key={t.id} className="flex items-baseline gap-2 text-[length:var(--text-sm)]">
                     <ResultIcon status={r?.status ?? (t.done ? "done" : null)} />

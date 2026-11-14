@@ -7,7 +7,8 @@ const rootDir = import.meta.dirname;
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    // .tsx: sunucu render duman testleri (DOM gerekmez).
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     coverage: {
       provider: "v8",
       // Kapsamı yalnızca saf mantığa uygula. Global kapsam hedefi,

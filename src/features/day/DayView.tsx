@@ -21,6 +21,9 @@ import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
 import type { Task } from "@/features/tasks/types";
 import type { PlanTaskActions } from "@/features/planlama/usePlanTaskActions";
 import { useViewer } from "@/lib/auth/ViewerProvider";
+import { resultFormKind, wantsFeynman } from "@/features/sources/actions";
+import { CatalogAddButton } from "@/features/sources/CatalogPanel";
+import { useSourceUnits, useTaskItemNumbers } from "@/features/sources/queries";
 import { todayStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { CoachNotesCard } from "./CoachNotesCard";
@@ -80,6 +83,8 @@ export function DayView({
   const logsQuery = useDailyLogs(studentId, from, to);
   const notesQuery = useCoachNotes(studentId, date, date);
 
+  const itemNumbers = useTaskItemNumbers();
+  const sourceUnits = useSourceUnits();
   const saveResult = useSaveTaskResult(studentId, (m) => toast.show(m));
   const saveLog = useSaveDailyLog(studentId, (m) => toast.show(m));
 
@@ -140,6 +145,15 @@ export function DayView({
       result={results.get(resultKey(task.id, date))}
       editable={editable && !isPendingTask(task.id)}
       onSave={(input) => saveResult.mutateAsync(input)}
+      formOptions={{
+        kind: resultFormKind(task),
+        feynman: wantsFeynman(task),
+        items: itemNumbers.data?.get(task.id) ?? [],
+        progress: {
+          start: task.rangeFrom ?? null,
+          unit: (task.sourceId && sourceUnits.data?.get(task.sourceId)) || "sayfa",
+        },
+      }}
       coach={coach}
       position={{ isFirst: index === 0, isLast: index === list.length - 1 }}
     />
@@ -187,12 +201,15 @@ export function DayView({
               )}
 
               {mode === "coach" && coachActions && (
-                <div className="mt-3">
-                  <TaskQuickAdd
-                    dueDate={date}
-                    pending={coachActions.addPending}
-                    onAdd={(title) => coachActions.onAdd(title, date)}
-                  />
+                <div className="mt-3 flex items-start gap-1">
+                  <div className="min-w-0 flex-1">
+                    <TaskQuickAdd
+                      dueDate={date}
+                      pending={coachActions.addPending}
+                      onAdd={(title) => coachActions.onAdd(title, date)}
+                    />
+                  </div>
+                  <CatalogAddButton date={date} className="mt-0.5" />
                 </div>
               )}
 

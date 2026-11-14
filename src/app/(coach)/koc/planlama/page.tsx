@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PlanlamaScreen } from "@/features/planlama/PlanlamaScreen";
 import { PlanBoot } from "@/features/planlama/PlanBoot";
+import { CatalogPanelProvider } from "@/features/sources/CatalogPanel";
 
 export const metadata: Metadata = { title: "Plan · Kero YKS" };
 
@@ -21,7 +22,10 @@ export const metadata: Metadata = { title: "Plan · Kero YKS" };
 export default function Page() {
   return (
     <Suspense fallback={<PlanBoot scale="month" />}>
-      <PlanlamaScreen />
+      {/* Katalog yan paneli Hafta ve Gün görünümünü sarar. */}
+      <CatalogPanelProvider>
+        <PlanlamaScreen />
+      </CatalogPanelProvider>
     </Suspense>
   );
 }

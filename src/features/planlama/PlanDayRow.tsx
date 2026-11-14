@@ -10,6 +10,7 @@ import type { Task } from "@/features/tasks/types";
 import { DayLoad } from "@/features/tasks/DayLoad";
 import { dayLoad } from "@/features/tasks/estimate";
 import { DayStudentBar } from "@/features/coachview/DayStudentBar";
+import { CatalogAddButton } from "@/features/sources/CatalogPanel";
 import { PlanTaskList } from "./PlanTaskList";
 import type { PlanBucket } from "./range";
 import type { Category } from "./types";
@@ -353,11 +354,16 @@ export function PlanDayRow({
           /* Katlıyken ekleme kutusu da gizlenir — yoksa "kapalı" bir
              gün yine 36px yer kaplar ve katlamanın anlamı kalmazdı. */
           !collapsed && (
-            <TaskQuickAdd
-              dueDate={bucket.date}
-              pending={addPending}
-              onAdd={(title) => onAdd(title, bucket.date)}
-            />
+            <div className="flex items-start gap-1">
+              <div className="min-w-0 flex-1">
+                <TaskQuickAdd
+                  dueDate={bucket.date}
+                  pending={addPending}
+                  onAdd={(title) => onAdd(title, bucket.date)}
+                />
+              </div>
+              <CatalogAddButton date={bucket.date} className="mt-0.5" />
+            </div>
           )
         )}
       </div>

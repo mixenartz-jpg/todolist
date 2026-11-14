@@ -176,6 +176,7 @@ export function RangeMarkInput({
   value,
   onChange,
   onApply,
+  onSelect,
   unitLabel,
 }: {
   min: number;
@@ -183,6 +184,8 @@ export function RangeMarkInput({
   value: string;
   onChange: (v: string) => void;
   onApply: (span: { from: number; to: number }, status: MarkStatus | null) => void;
+  /** Aralığı seçime al (eylem çubuğundan "Güne ekle"). */
+  onSelect?: (span: { from: number; to: number }) => void;
   unitLabel: string;
 }) {
   const span = parseRangeInput(value, min, max);
@@ -197,6 +200,11 @@ export function RangeMarkInput({
           onChange={(e) => onChange(e.target.value)}
         />
       </div>
+      {onSelect && (
+        <Button size="sm" variant="secondary" disabled={!span} onClick={() => span && onSelect(span)}>
+          Seç
+        </Button>
+      )}
       <Button size="sm" variant="ghost" disabled={!span} onClick={() => span && onApply(span, "assigned")}>
         Ödevlendirildi
       </Button>

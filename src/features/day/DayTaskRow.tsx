@@ -10,6 +10,8 @@ import { emptyResult } from "@/features/results/mutations";
 import { ResultDetail } from "@/features/results/ResultDetails";
 import { STATUS_LABELS, type TaskResult, type TaskResultInput } from "@/features/results/types";
 import { looksLikeQuestionTask } from "@/features/student/topics";
+import type { ResultFormKind } from "@/features/sources/actions";
+import { progressLine } from "@/features/sources/title";
 import { formatEstimate, parseEstimateInput } from "@/features/tasks/estimate";
 import type { Task } from "@/features/tasks/types";
 import { isDateStr } from "@/lib/date/date";
@@ -18,6 +20,14 @@ import { cn } from "@/lib/ui/cn";
 import { useAutosave } from "@/lib/ui/useAutosave";
 import type { DayMode } from "./days";
 import { TaskResultForm } from "./TaskResultForm";
+
+/** Sonuç formunun eyleme göre biçimi (bkz. `TaskResultForm`). */
+export interface ResultFormOptions {
+  kind: ResultFormKind;
+  feynman: boolean;
+  items: ReadonlyArray<{ id: string; number: number }>;
+  progress: { start: number | null; unit: string };
+}
 
 /** Koç kipinde satırın yapabildikleri (Planlama'nın görev eylemleri). */
 export interface CoachTaskControls {
@@ -43,6 +53,10 @@ function inputFrom(task: Task, date: DateStr, r: TaskResult | undefined): TaskRe
     missingTopics: r.missingTopics,
     reason: r.reason,
     note: r.note,
+    reachedTo: r.reachedTo ?? null,
+    understanding: r.understanding ?? null,
+    feynmanNote: r.feynmanNote ?? null,
+    doneItems: r.doneItems ?? null,
   };
 }
 
@@ -62,6 +76,7 @@ export function DayTaskRow({
   onSave,
   coach,
   position,
+  formOptions,
 }: {
   mode: DayMode;
   task: Task;
@@ -73,6 +88,7 @@ export function DayTaskRow({
   coach?: CoachTaskControls;
   /** Koç sıralaması için listedeki yer. */
   position?: { isFirst: boolean; isLast: boolean };
+  formOptions?: ResultFormOptions;
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(() => inputFrom(task, date, result));
@@ -184,7 +200,14 @@ export function DayTaskRow({
       {open && (
         <div className="pl-11">
           {isCoach ? (
-            <CoachTaskPanel task={task} date={date} result={result} coach={coach} position={position} />
+            <CoachTaskPanel
+              task={task}
+              date={date}
+              result={result}
+              coach={coach}
+              position={position}
+              unit={formOptions?.progress.unit ?? "sayfa"}
+            />
           ) : (
             <TaskResultForm
                 draft={draft}
@@ -193,6 +216,10 @@ export function DayTaskRow({
                 status={autosave.status}
                 questionTask={looksLikeQuestionTask(task.title)}
                 disabled={!(mode === "student" && editable)}
+                kind={formOptions?.kind}
+                feynman={formOptions?.feynman}
+                items={formOptions?.items}
+                progress={formOptions?.progress}
               />
           )}
         </div>
@@ -211,12 +238,14 @@ function CoachTaskPanel({
   result,
   coach,
   position,
+  unit,
 }: {
   task: Task;
   date: DateStr;
   result: TaskResult | undefined;
   coach: CoachTaskControls;
   position?: { isFirst: boolean; isLast: boolean };
+  unit: string;
 }) {
   const [title, setTitle] = useState(task.title);
   const [estimate, setEstimate] = useState(task.estimateMinutes ? formatEstimate(task.estimateMinutes) : "");
@@ -308,9 +337,11 @@ function CoachTaskPanel({
 
       <div>
         <p className="mb-1 text-[length:var(--text-sm)] text-[var(--color-ink-2)]">Öğrencinin sonucu</p>
-        {result && hasResultContent(result) ? (
+        {!result && task.targetAmount != null ? (
+          <p className="text-[length:var(--text-sm)] text-[var(--color-ink-3)]">{progressLine(task, null, unit)} · sonuç girilmedi.</p>
+        ) : result && hasResultContent(result) ? (
           <div className="rounded-md bg-[var(--color-surface-2)] p-2 text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
-            <ResultDetail result={result} showDate={false} />
+            <ResultDetail result={result} showDate={false} progress={progressLine(task, result, unit)} />
           </div>
         ) : (
           <p className="text-[length:var(--text-sm)] text-[var(--color-ink-3)]">Sonuç girilmedi.</p>
