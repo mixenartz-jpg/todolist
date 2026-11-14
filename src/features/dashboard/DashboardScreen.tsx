@@ -13,7 +13,7 @@ import {
   formatMinutesShort,
   TONE_COLOR,
 } from "@/features/results/format";
-import { useDailyLogs, useTaskResults } from "@/features/results/queries";
+import { useDailyLogs, useResultsDoneOn, useTaskResults } from "@/features/results/queries";
 import { STATUS_LABELS } from "@/features/results/types";
 import { useCreateTask } from "@/features/tasks/mutations";
 import { orderForDay } from "@/features/tasks/dayorder";
@@ -22,7 +22,14 @@ import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
 import { useViewer } from "@/lib/auth/ViewerProvider";
 import { addDays, isoWeekday, todayStr } from "@/lib/date/date";
 import { formatShortDate, WEEKDAYS_MIN } from "@/lib/ui/tr";
-import { attention, weekSummary, type CoachDay } from "./coachSummary";
+import {
+  attention,
+  doneTodayElsewhere,
+  todayBoard,
+  weekSummary,
+  type BoardState,
+  type CoachDay,
+} from "./coachSummary";
 
 /** Uyarılar ve "dikkat" kartı 14 gün geriye bakar. */
 const LOOKBACK_DAYS = 14;
@@ -48,6 +55,7 @@ export function DashboardScreen() {
   const tasksQuery = useTasks();
   const resultsQuery = useTaskResults(studentId, from, tomorrow);
   const logsQuery = useDailyLogs(studentId, from, today);
+  const doneTodayQuery = useResultsDoneOn(studentId, today);
   const createTask = useCreateTask((m) => toast.show(m));
 
   const tasks = useMemo(() => tasksQuery.data ?? [], [tasksQuery.data]);
@@ -62,9 +70,9 @@ export function DashboardScreen() {
   );
 
   const todayTasks = orderForDay(tasks.filter((t) => t.dueDate === today));
-  const todayOpen = todayTasks.filter((t) => !t.done);
-  const resultFor = (taskId: string) =>
-    results.find((r) => r.taskId === taskId && r.date === today);
+  const todayDone = todayTasks.filter((t) => t.done).length;
+  const board = todayBoard(today, todayTasks, results);
+  const early = doneTodayElsewhere(today, tasks, doneTodayQuery.data ?? []);
   const tomorrowCount = tasks.filter((t) => t.dueDate === tomorrow).length;
 
   const loading =
@@ -105,35 +113,36 @@ export function DashboardScreen() {
         <div className="grid items-start gap-[var(--stack-gap)] md:grid-cols-2">
           {/* 1. Bugün */}
           <Card as="section" aria-label="Bugün">
-            <SectionTitle
-              trailing={
-                <Percent done={todayTasks.length - todayOpen.length} total={todayTasks.length} />
-              }
-            >
+            <SectionTitle trailing={<Percent done={todayDone} total={todayTasks.length} />}>
               Bugün
             </SectionTitle>
-            <Bar done={todayTasks.length - todayOpen.length} total={todayTasks.length} />
+            <Bar done={todayDone} total={todayTasks.length} />
             {todayTasks.length === 0 ? (
               <Muted className="mt-3">Bugüne görev yok.</Muted>
-            ) : todayOpen.length === 0 ? (
-              <Muted className="mt-3">Hepsi tamam.</Muted>
             ) : (
-              <ul className="mt-3 flex flex-col gap-1.5">
-                {todayOpen.slice(0, 5).map((t) => {
-                  const r = resultFor(t.id);
-                  return (
-                    <li key={t.id} className="flex items-baseline gap-2 text-[length:var(--text-sm)]">
-                      <span className="min-w-0 flex-1 truncate">{t.title}</span>
-                      {r?.status && r.status !== "done" && (
-                        <span className="shrink-0 text-[length:var(--text-2xs)] text-[var(--color-warn)]">
-                          {STATUS_LABELS[r.status]}
-                        </span>
+              <ul className="mt-3 flex flex-col gap-2">
+                {board.map((row) => (
+                  <li key={row.task.id} className="flex items-start gap-2 text-[length:var(--text-sm)]">
+                    <StateIcon state={row.state} />
+                    <div className="min-w-0 flex-1">
+                      <p className={row.state === "done" ? "text-[var(--color-ink-2)]" : undefined}>{row.task.title}</p>
+                      {row.summary && (
+                        <p className="text-[length:var(--text-2xs)] tabular-nums text-[var(--color-ink-3)]">
+                          {row.summary}
+                        </p>
                       )}
-                    </li>
-                  );
-                })}
-                {todayOpen.length > 5 && <Muted>+{todayOpen.length - 5} görev daha</Muted>}
+                    </div>
+                  </li>
+                ))}
               </ul>
+            )}
+            {early.length > 0 && (
+              <p className="mt-3 border-t border-[var(--color-line)] pt-2 text-[length:var(--text-2xs)] text-[var(--color-ink-3)]">
+                <span className="text-[var(--color-accent)]">Bugün erken yapıldı:</span>{" "}
+                {early
+                  .map((e) => `${e.task.title} (${formatShortDate(e.plannedFor)}${e.state === "partial" ? ", yarım" : ""})`)
+                  .join(" · ")}
+              </p>
             )}
           </Card>
 
@@ -243,6 +252,22 @@ export function DashboardScreen() {
 
       <Toast message={toast.message} variant={toast.variant} token={toast.token} onDismiss={toast.dismiss} />
     </ScreenBody>
+  );
+}
+
+const STATE_ICON: Record<BoardState, { glyph: string; color: string; label: string }> = {
+  done: { glyph: "✓", color: "var(--color-good)", label: "Tamamlandı" },
+  partial: { glyph: "◐", color: "var(--color-warn)", label: "Yarım kaldı" },
+  skipped: { glyph: "✗", color: "var(--color-danger)", label: "Yapılmadı" },
+  pending: { glyph: "○", color: "var(--color-ink-3)", label: "Henüz girilmedi" },
+};
+
+function StateIcon({ state }: { state: BoardState }) {
+  const { glyph, color, label } = STATE_ICON[state];
+  return (
+    <span role="img" aria-label={label} title={label} style={{ color }} className="w-4 shrink-0 text-center font-semibold">
+      {glyph}
+    </span>
   );
 }
 

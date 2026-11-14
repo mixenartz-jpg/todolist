@@ -9,6 +9,8 @@
 3. `supabase/migrations/0030_gap_items.sql`: eksik konu havuzu
 4. `supabase/migrations/0031_student_denemeler.sql`: koçun öğrenci denemelerini okuması
 
+0032 ve sonrası için: **[APPLY.md](./APPLY.md)** (kaynak tabanlı planlama).
+
 Her birinin `.down.sql` dosyası geri alma içindir. Geri alırken **ters sırayla** çalıştırılır.
 Mevcut hesap otomatik olarak **koç** olur. Mevcut görevler koçta kalır.
 
@@ -55,4 +57,4 @@ Koç `/ogrenci/*` adresini **salt okunur önizleme** olarak açar (menüde "Öğ
 - [ ] Koç bir güne not yazar → öğrenci "Koçtan notlar"da görür
 - [ ] Öğrenci "eksik konu" yazar → `/koc/ogrenci` havuzunda görünür;
       "Göreve çevir" → görev tamamlanınca konu "Kapandı" olur
-- [ ] Öğrenci gelecek günde form/sonuç giremez
+- [ ] Öğrenci gelecek günde günlük form giremez; görev sonucunu girebilir (erken yapma)

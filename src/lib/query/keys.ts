@@ -266,6 +266,13 @@ export const qk = {
   taskResults: () => ["task-results"] as const,
   taskResultsRange: (studentId: string, from: DateStr, to: DateStr) =>
     ["task-results", studentId, from, to] as const,
+  /**
+   * Belirli bir günde YAPILAN sonuçlar (`done_on`, 0033). Kök aynı:
+   * sonuç kaydı tüm `task-results` önbelleklerini geçersiz kılar.
+   * İyimser güncelleme bu anahtarı atlar ("done-on" bir tarih değil).
+   */
+  taskResultsDoneOn: (studentId: string, date: DateStr) =>
+    ["task-results", studentId, "done-on", date] as const,
 
   dailyLogs: () => ["daily-logs"] as const,
   dailyLogsRange: (studentId: string, from: DateStr, to: DateStr) =>

@@ -31,6 +31,24 @@ export function useTaskResults(studentId: string | null, from: DateStr, to: Date
   });
 }
 
+/** O gün YAPILAN sonuçlar — planlandığı gün ne olursa olsun (0033). */
+export function useResultsDoneOn(studentId: string | null, date: DateStr) {
+  return useQuery({
+    queryKey: qk.taskResultsDoneOn(studentId ?? "-", date),
+    enabled: studentId !== null,
+    queryFn: async (): Promise<TaskResult[]> => {
+      const { data, error } = await createClient()
+        .from("task_results")
+        .select("*")
+        .eq("student_id", studentId!)
+        .eq("done_on", date)
+        .in("status", ["done", "partial"]);
+      if (error) throw error;
+      return (data as TaskResultRow[]).map(toTaskResult);
+    },
+  });
+}
+
 export function useDailyLogs(studentId: string | null, from: DateStr, to: DateStr) {
   return useQuery({
     queryKey: qk.dailyLogsRange(studentId ?? "-", from, to),

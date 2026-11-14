@@ -1,7 +1,7 @@
 import { addDays, eachDay, endOfIsoWeek, startOfIsoWeek } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { studyBucketMinutes } from "@/features/results/buckets";
-import { sleepMinutes } from "@/features/results/format";
+import { resultSummary, sleepMinutes } from "@/features/results/format";
 import type { DailyLog, TaskResult } from "@/features/results/types";
 import type { Task } from "@/features/tasks/types";
 import { topicKey } from "@/features/student/topics";
@@ -135,4 +135,58 @@ export function attention(
     .slice(0, topN);
 
   return { missed, topics };
+}
+
+/** Panel "Bugün" kartında bir görevin durumu. */
+export type BoardState = "done" | "partial" | "skipped" | "pending";
+
+export interface BoardRow {
+  task: Task;
+  state: BoardState;
+  /** "15D 2Y · 14.5 net · 2.2 sa"; sonuç yoksa boş. */
+  summary: string;
+}
+
+/**
+ * Bugünün görevleri tek tek: durum sonucun durumundan; sonuç yoksa
+ * görevin `done`'ından (koç işaretlemiş olabilir), o da yoksa
+ * "henüz girilmedi".
+ */
+export function todayBoard(
+  today: DateStr,
+  dayTasks: readonly Task[],
+  results: readonly TaskResult[],
+): BoardRow[] {
+  return dayTasks.map((task) => {
+    const r = results.find((x) => x.taskId === task.id && x.date === today);
+    const state: BoardState = r?.status ?? (task.done ? "done" : "pending");
+    return { task, state, summary: r ? resultSummary(r) : "" };
+  });
+}
+
+export interface EarlyRow {
+  task: Task;
+  /** Planlanan gün. */
+  plannedFor: DateStr;
+  state: "done" | "partial";
+}
+
+/**
+ * Bugün YAPILAN ama başka güne planlanmış görevler (`done_on` =
+ * bugün, `date` ≠ bugün). Görev listede yoksa (silinmiş) atlanır.
+ */
+export function doneTodayElsewhere(
+  today: DateStr,
+  tasks: readonly Task[],
+  doneToday: readonly TaskResult[],
+): EarlyRow[] {
+  const byId = new Map(tasks.map((t) => [t.id, t]));
+  return doneToday
+    .filter((r) => r.doneOn === today && r.date !== today)
+    .filter((r) => r.status === "done" || r.status === "partial")
+    .flatMap((r) => {
+      const task = byId.get(r.taskId);
+      return task ? [{ task, plannedFor: r.date, state: r.status as "done" | "partial" }] : [];
+    })
+    .sort((a, b) => (a.plannedFor < b.plannedFor ? -1 : 1));
 }
