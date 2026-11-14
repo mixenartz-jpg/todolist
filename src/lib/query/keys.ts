@@ -276,4 +276,6 @@ export const qk = {
     ["coach-notes", studentId, from, to] as const,
 
   sources: () => ["sources"] as const,
+
+  gapItems: () => ["gap-items"] as const,
 } as const;

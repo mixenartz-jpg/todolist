@@ -473,3 +473,21 @@ export interface SourceRow {
   archived_at: string | null;
   created_at: string;
 }
+
+// ───────────────────────── 0030: eksik konular ──────────────────────
+
+export interface GapItemRow {
+  id: string;
+  student_id: string;
+  coach_id: string;
+  topic: string;
+  topic_key: string;
+  subject: string | null;
+  first_seen: string;
+  last_seen: string;
+  count: number;
+  status: "open" | "planned" | "closed";
+  task_id: string | null;
+  closed_at: string | null;
+  created_at: string;
+}
