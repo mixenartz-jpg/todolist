@@ -1,502 +1,333 @@
 "use client";
 
-import { useMemo } from "react";
 import Link from "next/link";
-import { cn } from "@/lib/ui/cn";
-import { addDays, startOfMonth, todayStr } from "@/lib/date/date";
-import { formatLongDate, formatPercent, WEEKDAYS_MIN } from "@/lib/ui/tr";
+import { useMemo, type ReactNode } from "react";
+import { Card } from "@/components/Card";
 import { ScreenBody } from "@/components/Screen";
+import { SectionTitle } from "@/components/SectionTitle";
+import { Skeleton } from "@/components/Skeleton";
 import { Toast, useToast } from "@/components/Toast";
-import { EMPTY_ENTRIES, useEntries } from "@/features/entries/queries";
-import { useRoutines } from "@/features/routines/queries";
-import { useTasks } from "@/features/tasks/queries";
-import { usePlanGoals } from "@/features/planlama/queries";
-import { goalProgress } from "@/features/planlama/rollup";
-import { buildDayClose } from "@/features/today/daysummary";
-import { weeklyTrend } from "@/features/stats/aggregate";
-import { computeStreak, streakAtRisk } from "@/features/stats/streak";
-import { trendDelta } from "@/features/stats/trend";
+import { computeAlerts } from "@/features/alerts/alerts";
 import {
-  atRiskLine,
-  dayLine,
-  streakLine,
-  trendLine,
-  type CoachLine,
-} from "@/features/coach/messages";
-import { pickCoachLine } from "@/features/coach/pick";
-import { SLOT_HEX } from "@/lib/ui/colors";
-import { pendingRoutines, routineHeat, weekStrip } from "./summary";
+  completionTone,
+  formatMinutesShort,
+  TONE_COLOR,
+} from "@/features/results/format";
+import { useDailyLogs, useTaskResults } from "@/features/results/queries";
+import { STATUS_LABELS } from "@/features/results/types";
+import { useCreateTask } from "@/features/tasks/mutations";
+import { orderForDay } from "@/features/tasks/dayorder";
+import { useTasks } from "@/features/tasks/queries";
+import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
+import { useViewer } from "@/lib/auth/ViewerProvider";
+import { addDays, isoWeekday, todayStr } from "@/lib/date/date";
+import { formatShortDate, WEEKDAYS_MIN } from "@/lib/ui/tr";
+import { attention, weekSummary, type CoachDay } from "./coachSummary";
 
-/** Isı şeridinin uzunluğu. İki hafta, bir örüntü görmeye yeter. */
-const HEAT_DAYS = 14;
-
-/** Trend için geriye bakış: dört hafta, iki karşılaştırma noktası. */
-const TREND_DAYS = 28;
+/** Uyarılar ve "dikkat" kartı 14 gün geriye bakar. */
+const LOOKBACK_DAYS = 14;
 
 /**
- * Kontrol paneli — açılış ekranı.
- *
- * ── Ne için var? ──
- * "Neyin nerede olduğu" tek ekranda görünsün diye. Uygulama yedi
- * sekmeye çıktığında en çok kaybolan şey buydu: kullanıcı hangi
- * ekranda ne olduğunu hatırlamak zorunda kalıyordu.
- *
- * ── Kart yığma YASAK ──
- * Beş bölüm beş özdeş kart olmaz — "cards are the lazy answer".
- * Hiyerarşi: koçluk satırı ve günün durumu büyük ve ışıklı, hafta
- * şeridi yatay, hedefler liste, rutin şeridi ince. İç içe kart yok.
- *
- * ── Yeni sorgu AÇILMAZ ──
- * Tüm veri mevcut sorgulardan türetiliyor ve React Query aynı
- * anahtarları başka ekranlarla paylaşıyor. Panel için ayrı bir tur
- * açmak aynı veriyi ikinci kez indirmek olurdu.
+ * Koç paneli — tek ekranda dört soru:
+ *  1. Bugün: öğrenci nerede, ne kaldı?
+ *  2. Bu hafta: gün gün tamamlanma, plan–gerçek, çalışma, uyku.
+ *  3. Dikkat: yapılmayan/yarım kalanlar ve sık eksik konular.
+ *  4. Hızlı eylem: yarına görev ekle.
+ * Üstte yalnızca TETİKLENEN uyarılar. Rutin ısı haritası, hedef
+ * listesi ve motivasyon cümlesi kaldırıldı: biri öğrenci akışında yok,
+ * diğerleri Planlama/İstatistik'te zaten var.
  */
 export function DashboardScreen() {
-  const today = todayStr();
+  const viewer = useViewer();
   const toast = useToast();
+  const today = todayStr();
+  const tomorrow = addDays(today, 1);
+  const from = addDays(today, -LOOKBACK_DAYS);
+  const studentId = viewer.studentId;
 
-  const routinesQuery = useRoutines();
   const tasksQuery = useTasks();
-  /*
-   * Girdi aralığı ısı şeridini DEĞİL trendi kapsıyor (28 > 14): tek
-   * sorgu ikisini birden besliyor, iki ayrı aralık çekmek aynı
-   * satırları iki kez indirmek olurdu.
-   */
-  const entriesQuery = useEntries(addDays(today, -(TREND_DAYS - 1)), today);
-  const goalsQuery = usePlanGoals(startOfMonth(today));
+  const resultsQuery = useTaskResults(studentId, from, tomorrow);
+  const logsQuery = useDailyLogs(studentId, from, today);
+  const createTask = useCreateTask((m) => toast.show(m));
 
-  const entries = entriesQuery.data ?? EMPTY_ENTRIES;
-  const routines = useMemo(() => routinesQuery.data ?? [], [routinesQuery.data]);
   const tasks = useMemo(() => tasksQuery.data ?? [], [tasksQuery.data]);
+  const results = useMemo(() => resultsQuery.data ?? [], [resultsQuery.data]);
+  const logs = useMemo(() => logsQuery.data ?? [], [logsQuery.data]);
 
-  const close = useMemo(
-    () => buildDayClose({ entries, routines, tasks, today }),
-    [entries, routines, tasks, today],
+  const week = useMemo(() => weekSummary(today, tasks, results, logs), [today, tasks, results, logs]);
+  const focus = useMemo(() => attention(today, tasks, results), [today, tasks, results]);
+  const alerts = useMemo(
+    () => (studentId ? computeAlerts({ today, tasks, results, logs }) : []),
+    [studentId, today, tasks, results, logs],
   );
 
-  const strip = useMemo(() => weekStrip(tasks, today), [tasks, today]);
+  const todayTasks = orderForDay(tasks.filter((t) => t.dueDate === today));
+  const todayOpen = todayTasks.filter((t) => !t.done);
+  const resultFor = (taskId: string) =>
+    results.find((r) => r.taskId === taskId && r.date === today);
+  const tomorrowCount = tasks.filter((t) => t.dueDate === tomorrow).length;
 
-  const heat = useMemo(
-    () => routineHeat(entries, routines, today, HEAT_DAYS),
-    [entries, routines, today],
-  );
-
-  const pending = useMemo(
-    () => pendingRoutines(entries, routines, today),
-    [entries, routines, today],
-  );
-
-  const goals = useMemo(() => {
-    const list = goalsQuery.data ?? [];
-    return list.map((goal) => goalProgress(goal, tasks));
-  }, [goalsQuery.data, tasks]);
-
-  /**
-   * Günün tek koçluk satırı.
-   *
-   * Elde aynı anda dört doğru cümle var; `pickCoachLine` en bilgi
-   * değerlisini seçiyor. Dördünü birden göstermek panoyu bir bildirim
-   * akışına çevirirdi — bir koç her şeyi aynı anda söylemez.
-   */
-  const coach = useMemo<CoachLine | null>(() => {
-    const lines: Array<CoachLine | null> = [];
-
-    /*
-     * Risk altındaki İLK seri. Hepsini toplamak gereksiz: satır zaten
-     * tek bir cümle gösterecek ve `pickCoachLine` aralarından yine
-     * birini seçerdi.
-     */
-    for (const routine of routines) {
-      if (!streakAtRisk(entries, routine, today)) continue;
-      const streak = computeStreak(entries, routine, today);
-      lines.push(atRiskLine(routine.name, streak.current));
-      break;
-    }
-
-    /*
-     * En uzun devam eden seri — kutlanacaksa o kutlanmalı. Rutin
-     * başına ayrı satır üretmek, on rutinli bir kullanıcıda on
-     * cümlelik bir liste demekti.
-     */
-    let best: ReturnType<typeof computeStreak> | null = null;
-    for (const routine of routines) {
-      const streak = computeStreak(entries, routine, today);
-      if (best === null || streak.current > best.current) best = streak;
-    }
-    if (best !== null && best.current > 0) lines.push(streakLine(best));
-
-    lines.push(
-      trendLine(
-        trendDelta(
-          weeklyTrend(entries, routines, addDays(today, -(TREND_DAYS - 1)), today),
-        ),
-      ),
-    );
-
-    lines.push(dayLine(close));
-
-    return pickCoachLine(lines);
-  }, [entries, routines, today, close]);
-
-  const isLoading = routinesQuery.isPending || tasksQuery.isPending;
-
-  const doneTotal = close.routines.done + close.tasks.done;
-  const total = close.routines.total + close.tasks.total;
-  const ratio = total === 0 ? 0 : doneTotal / total;
+  const loading =
+    tasksQuery.isPending || (studentId !== null && (resultsQuery.isPending || logsQuery.isPending));
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <header className="border-b border-[var(--color-line)] px-4 py-4 md:px-6">
-        {/* Başlık gövdeyle AYNI genişlikte: ScreenBody 3xl kullanıyor
-            ve burada 5xl vermek, tarihi içeriğin solunda asılı
-            bırakırdı. */}
-        <div className="mx-auto w-full max-w-3xl">
-          <h1 className="text-[length:var(--text-xl)] font-semibold tracking-[-0.015em]">
-            {formatLongDate(today)}
-          </h1>
+    <ScreenBody width="6xl" className="max-w-[60rem]">
+      {studentId === null && (
+        <Card tone="sunken">
+          <p className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
+            Henüz bağlı öğrenci yok. Supabase → Authentication → Add user ile hesabı aç, sonra SQL
+            Editor&apos;de <code>select public.link_student(&apos;ogrenci@mail&apos;, &apos;koc@mail&apos;);</code>
+          </p>
+        </Card>
+      )}
+
+      {alerts.length > 0 && (
+        <ul aria-label="Uyarılar" className="flex flex-wrap gap-1.5">
+          {alerts.map((a) => (
+            <li
+              key={a.kind + a.text}
+              className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color-mix(in_oklch,var(--color-warn)_45%,transparent)] bg-[color-mix(in_oklch,var(--color-warn)_10%,transparent)] px-2.5 text-[length:var(--text-sm)] text-[var(--color-ink)]"
+            >
+              <span aria-hidden className="text-[var(--color-warn)]">!</span>
+              {a.text}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {loading ? (
+        <div className="grid gap-[var(--stack-gap)] md:grid-cols-2">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={220} delayIndex={i} />
+          ))}
         </div>
-      </header>
+      ) : (
+        <div className="grid items-start gap-[var(--stack-gap)] md:grid-cols-2">
+          {/* 1. Bugün */}
+          <Card as="section" aria-label="Bugün">
+            <SectionTitle
+              trailing={
+                <Percent done={todayTasks.length - todayOpen.length} total={todayTasks.length} />
+              }
+            >
+              Bugün
+            </SectionTitle>
+            <Bar done={todayTasks.length - todayOpen.length} total={todayTasks.length} />
+            {todayTasks.length === 0 ? (
+              <Muted className="mt-3">Bugüne görev yok.</Muted>
+            ) : todayOpen.length === 0 ? (
+              <Muted className="mt-3">Hepsi tamam.</Muted>
+            ) : (
+              <ul className="mt-3 flex flex-col gap-1.5">
+                {todayOpen.slice(0, 5).map((t) => {
+                  const r = resultFor(t.id);
+                  return (
+                    <li key={t.id} className="flex items-baseline gap-2 text-[length:var(--text-sm)]">
+                      <span className="min-w-0 flex-1 truncate">{t.title}</span>
+                      {r?.status && r.status !== "done" && (
+                        <span className="shrink-0 text-[length:var(--text-2xs)] text-[var(--color-warn)]">
+                          {STATUS_LABELS[r.status]}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+                {todayOpen.length > 5 && <Muted>+{todayOpen.length - 5} görev daha</Muted>}
+              </ul>
+            )}
+          </Card>
 
-      <ScreenBody width="3xl">
-        {isLoading ? (
-          <DashboardSkeleton />
-        ) : (
-          <div className="flex flex-col gap-[var(--stack-gap)]">
-            {coach && <CoachBanner line={coach} ratio={ratio} total={total} />}
+          {/* 2. Bu hafta */}
+          <Card as="section" aria-label="Bu hafta">
+            <SectionTitle
+              trailing={
+                week.adherence !== null && (
+                  <span className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
+                    Plan uyumu{" "}
+                    <strong className="tabular-nums" style={{ color: TONE_COLOR[completionTone(week.adherence)] }}>
+                      %{Math.round(week.adherence * 100)}
+                    </strong>
+                  </span>
+                )
+              }
+            >
+              Bu hafta
+            </SectionTitle>
+            <WeekBars days={week.days} today={today} />
+            <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
+              <Stat label="Çalışma" value={week.totalStudyMinutes ? formatMinutesShort(week.totalStudyMinutes) : "—"} />
+              <Stat label="Plan / gerçek" value={`${formatMinutesShort(week.plannedMinutes)} / ${formatMinutesShort(week.actualMinutes)}`} />
+              <Stat label="Ort. uyku" value={week.avgSleepMinutes !== null ? formatMinutesShort(week.avgSleepMinutes) : "—"} />
+            </dl>
+          </Card>
 
-            <WeekStrip strip={strip} />
+          {/* 3. Dikkat */}
+          <Card as="section" aria-label="Dikkat gerektirenler">
+            <SectionTitle>Dikkat · son 7 gün</SectionTitle>
+            {focus.missed.length === 0 && focus.topics.length === 0 ? (
+              <Muted className="mt-2">Yapılmayan ya da eksik konu yok.</Muted>
+            ) : (
+              <>
+                {focus.missed.length > 0 && (
+                  <ul className="mt-2 flex flex-col gap-1.5">
+                    {focus.missed.slice(0, 4).map((m) => (
+                      <li key={m.taskId + m.date} className="text-[length:var(--text-sm)]">
+                        <div className="flex items-baseline gap-2">
+                          <span
+                            className="shrink-0 text-[length:var(--text-2xs)] font-medium"
+                            style={{ color: m.status === "skipped" ? "var(--color-danger)" : "var(--color-warn)" }}
+                          >
+                            {STATUS_LABELS[m.status]}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate">{m.title}</span>
+                          <span className="shrink-0 text-[length:var(--text-2xs)] text-[var(--color-ink-3)]">
+                            {formatShortDate(m.date)}
+                          </span>
+                        </div>
+                        {m.reason && (
+                          <p className="truncate text-[length:var(--text-2xs)] text-[var(--color-ink-3)]">{m.reason}</p>
+                        )}
+                      </li>
+                    ))}
+                    {focus.missed.length > 4 && <Muted>+{focus.missed.length - 4} daha</Muted>}
+                  </ul>
+                )}
+                {focus.topics.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-[length:var(--text-2xs)] uppercase tracking-[0.06em] text-[var(--color-ink-3)]">
+                      Sık eksik konular
+                    </p>
+                    <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                      {focus.topics.map((t) => (
+                        <li
+                          key={t.topic}
+                          className="inline-flex h-6 items-center gap-1 rounded-full bg-[var(--color-surface-2)] px-2 text-[length:var(--text-sm)]"
+                        >
+                          {t.topic}
+                          {t.count > 1 && (
+                            <span className="text-[length:var(--text-2xs)] text-[var(--color-ink-3)]">×{t.count}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
+            )}
+          </Card>
 
-            {goals.length > 0 && <GoalList goals={goals} />}
+          {/* 4. Hızlı eylem */}
+          <Card as="section" aria-label="Yarına görev ekle">
+            <SectionTitle
+              trailing={
+                <Link href="/koc/planlama" className="text-[length:var(--text-sm)] text-[var(--color-accent)] hover:underline">
+                  Planlama →
+                </Link>
+              }
+            >
+              Yarına görev ekle
+            </SectionTitle>
+            <Muted className="mt-1">
+              {formatShortDate(tomorrow)} · şu an {tomorrowCount} görev
+            </Muted>
+            <div className="mt-2">
+              <TaskQuickAdd
+                dueDate={tomorrow}
+                pending={createTask.isPending}
+                onAdd={(title) => createTask.mutate({ title, dueDate: tomorrow, note: null })}
+              />
+            </div>
+          </Card>
+        </div>
+      )}
 
-            <RoutineHeat heat={heat} pending={pending} />
-          </div>
-        )}
-      </ScreenBody>
+      <Toast message={toast.message} variant={toast.variant} token={toast.token} onDismiss={toast.dismiss} />
+    </ScreenBody>
+  );
+}
 
-      <Toast
-        message={toast.message}
-        variant={toast.variant}
-        token={toast.token}
-        onDismiss={toast.dismiss}
+function Muted({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <p className={`text-[length:var(--text-sm)] text-[var(--color-ink-3)] ${className ?? ""}`}>{children}</p>
+  );
+}
+
+function Percent({ done, total }: { done: number; total: number }) {
+  if (total === 0) return <span className="text-[var(--color-ink-3)]">—</span>;
+  const ratio = done / total;
+  return (
+    <span
+      className="text-[length:var(--text-lg)] font-semibold tabular-nums"
+      style={{ color: TONE_COLOR[completionTone(ratio)] }}
+    >
+      %{Math.round(ratio * 100)}
+    </span>
+  );
+}
+
+function Bar({ done, total }: { done: number; total: number }) {
+  const ratio = total === 0 ? 0 : done / total;
+  return (
+    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--color-surface-3)]" aria-hidden>
+      <div
+        className="h-full rounded-full"
+        style={{ width: `${Math.round(ratio * 100)}%`, background: TONE_COLOR[completionTone(ratio)] }}
       />
     </div>
   );
 }
 
-/**
- * Panelin en büyük öğesi: koçluk cümlesi + günün ilerlemesi.
- *
- * İkisi AYNI blokta çünkü aynı şeyi söylüyorlar: cümle yorum, çubuk
- * ölçü. Ayrı kartlara bölmek, kullanıcıyı sayıyı ve onun ne anlama
- * geldiğini iki yerde okumaya zorlardı.
- */
-function CoachBanner({
-  line,
-  ratio,
-  total,
-}: {
-  line: CoachLine;
-  ratio: number;
-  total: number;
-}) {
+function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <section
-      className={cn(
-        "rounded-2xl border p-5 md:p-6",
-        /*
-         * Işıma YALNIZCA `good` tonunda. Glow bir ödüldür, ceza değil:
-         * `warn` bilerek ışımaz ve uyarı rengini metinde taşır.
-         */
-        line.tone === "good"
-          ? "border-[var(--color-accent)] bg-[var(--color-surface)] shadow-[var(--glow-accent-md)]"
-          : "border-[var(--color-line)] bg-[var(--color-surface)]",
-      )}
-    >
-      <p
-        className={cn(
-          "text-[length:var(--text-2xl)] font-semibold tracking-[-0.02em]",
-          line.tone === "warn" && "text-[var(--color-warn)]",
-        )}
-      >
-        {line.headline}
-      </p>
+    <div className="rounded-md bg-[var(--color-surface-2)] px-1 py-1.5">
+      <dt className="text-[length:var(--text-2xs)] text-[var(--color-ink-3)]">{label}</dt>
+      <dd className="text-[length:var(--text-sm)] font-medium tabular-nums">{value}</dd>
+    </div>
+  );
+}
 
-      {line.detail && (
-        <p className="mt-1.5 text-[length:var(--text-sm)] leading-relaxed text-[var(--color-ink-2)]">
-          {line.detail}
-        </p>
-      )}
-
-      {/* İlerleme çubuğu yalnızca ÖLÇÜLECEK bir şey varken. Sıfır işlik
-          bir günde "%0" çizmek, olmayan bir işi yapmamakla
-          suçlamaktır. */}
-      {total > 0 && (
-        <div className="mt-4 flex items-center gap-3">
-          <div
-            className="h-2 flex-1 overflow-hidden rounded-full bg-[var(--color-surface-3)]"
-            role="progressbar"
-            aria-valuenow={Math.round(ratio * 100)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Bugünün tamamlanma oranı"
-          >
+/**
+ * Gün gün: üstte tamamlanma hücresi (renk = ton), altında plan (soluk)
+ * ve gerçek (dolu) süre çubukları. Yükseklikler haftanın en büyük
+ * değerine göre.
+ */
+function WeekBars({ days, today }: { days: readonly CoachDay[]; today: string }) {
+  const max = Math.max(60, ...days.flatMap((d) => [d.plannedMinutes, d.actualMinutes]));
+  return (
+    <div className="mt-3 grid grid-cols-7 gap-1.5" role="list" aria-label="Gün gün">
+      {days.map((d) => {
+        const future = d.date > today;
+        const ratio = d.total === 0 ? null : d.done / d.total;
+        const label = `${formatShortDate(d.date)}: ${d.done}/${d.total} görev, plan ${formatMinutesShort(d.plannedMinutes)}, gerçek ${formatMinutesShort(d.actualMinutes)}`;
+        return (
+          <div key={d.date} role="listitem" aria-label={label} title={label} className="flex flex-col items-center gap-1">
             <div
-              className={cn(
-                "h-full rounded-full",
-                "transition-[width] duration-[var(--duration-base)] ease-[var(--ease-out-quart)]",
-                ratio >= 1
-                  ? "bg-[var(--color-good)]"
-                  : "bg-[var(--color-accent)] shadow-[var(--glow-accent-sm)]",
-              )}
-              style={{ width: `${Math.round(ratio * 100)}%` }}
+              className="h-5 w-full rounded"
+              style={{
+                background:
+                  ratio === null || future
+                    ? "var(--color-surface-2)"
+                    : `color-mix(in oklch, ${TONE_COLOR[completionTone(ratio)]} ${30 + Math.round(ratio * 60)}%, transparent)`,
+              }}
             />
-          </div>
-
-          <span className="tabular shrink-0 text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
-            {formatPercent(ratio)}
-          </span>
-        </div>
-      )}
-
-      {line.action && (
-        <Link
-          href={line.action.href}
-          className={cn(
-            "mt-4 inline-flex h-9 items-center rounded-lg px-3.5",
-            "text-[length:var(--text-sm)] font-medium",
-            "bg-[var(--color-accent-fill)] text-[var(--color-on-accent)]",
-            "transition-shadow duration-[var(--duration-fast)]",
-            "hover:shadow-[var(--glow-accent-md)]",
-          )}
-        >
-          {line.action.label}
-        </Link>
-      )}
-    </section>
-  );
-}
-
-/**
- * Haftanın iş yoğunluğu — yedi sütunluk yatay şerit.
- *
- * Kart DEĞİL: panelin ikinci öğesi ve birinciyle aynı ağırlıkta
- * görünmemeli. Çerçevesiz, sadece başlık + şerit.
- */
-function WeekStrip({
-  strip,
-}: {
-  strip: ReturnType<typeof weekStrip>;
-}) {
-  /** Sütun yüksekliğinin ölçeği: haftanın en yoğun günü tam boy. */
-  const peak = Math.max(1, ...strip.map((s) => s.total));
-
-  return (
-    <section>
-      <div className="mb-2.5 flex items-baseline justify-between">
-        <h2 className="text-[length:var(--text-sm)] font-medium text-[var(--color-ink-2)]">
-          Bu hafta
-        </h2>
-        <Link
-          href="/koc/planlama"
-          className="text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-accent)]"
-        >
-          Planlamaya git
-        </Link>
-      </div>
-
-      <ul className="flex items-end gap-1.5">
-        {strip.map((slot) => {
-          const height = Math.round((slot.total / peak) * 100);
-
-          return (
-            <li key={slot.date} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
-              <div className="flex h-16 w-full items-end">
-                {slot.total === 0 ? (
-                  /* Boş gün ince bir taban çizgisi — sıfır yükseklikli
-                     bir sütun "gün yok" gibi okunurdu. */
-                  <div className="h-0.5 w-full rounded-full bg-[var(--color-line)]" />
-                ) : (
-                  <div
-                    /*
-                     * `flex-col justify-end`: dolu kısım sütunun
-                     * TABANINDAN yükseliyor.
-                     *
-                     * Eskiden `marginTop` yüzdesiyle aşağı itiliyordu ve
-                     * bu SESSİZCE yanlıştı: CSS'te yüzdelik dikey
-                     * kenar boşluğu elemanın YÜKSEKLİĞİNE değil,
-                     * kapsayıcının GENİŞLİĞİNE göre hesaplanır. Yedi
-                     * sütuna bölünen dar bir şeritte genişlik
-                     * yükseklikten çok farklı olduğu için dolgu yanlış
-                     * yere oturuyor, kısmen tamamlanmış günler havada
-                     * asılı kalıyordu.
-                     */
-                    className="flex w-full flex-col justify-end overflow-hidden rounded-md bg-[var(--color-surface-3)]"
-                    style={{ height: `${Math.max(height, 12)}%` }}
-                    title={`${slot.done}/${slot.total} iş`}
-                  >
-                    <div
-                      className={cn(
-                        "w-full shrink-0",
-                        slot.isFuture
-                          ? "bg-[var(--color-line-2)]"
-                          : "bg-[var(--color-accent)]",
-                      )}
-                      style={{
-                        height: `${Math.round((slot.done / slot.total) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <span
-                className={cn(
-                  "text-[length:var(--text-2xs)]",
-                  slot.isToday
-                    ? "font-semibold text-[var(--color-accent)]"
-                    : "text-[var(--color-ink-3)]",
-                )}
-              >
-                {WEEKDAYS_MIN[slot.weekday]}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-  );
-}
-
-/** Ayın hedefleri — kompakt liste, kart değil. */
-function GoalList({
-  goals,
-}: {
-  goals: ReturnType<typeof goalProgress>[];
-}) {
-  return (
-    <section>
-      <div className="mb-2.5 flex items-baseline justify-between">
-        <h2 className="text-[length:var(--text-sm)] font-medium text-[var(--color-ink-2)]">
-          Bu ayın hedefleri
-        </h2>
-        <Link
-          href="/koc/planlama/hedefler"
-          className="text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-accent)]"
-        >
-          Hedeflere git
-        </Link>
-      </div>
-
-      <ul className="flex flex-col gap-2">
-        {goals.map((progress) => (
-          <li key={progress.goal.id} className="flex items-center gap-2.5">
+            <div className="flex h-14 w-full items-end justify-center gap-0.5">
+              <div
+                className="w-2 rounded-t bg-[var(--color-line-2)]"
+                style={{ height: `${(d.plannedMinutes / max) * 100}%` }}
+              />
+              <div
+                className="w-2 rounded-t bg-[var(--color-accent)]"
+                style={{ height: `${(d.actualMinutes / max) * 100}%` }}
+              />
+            </div>
             <span
-              aria-hidden
-              className="size-2 shrink-0 rounded-full"
-              style={{ background: SLOT_HEX[progress.goal.colorSlot] }}
-            />
-
-            <span className="min-w-0 flex-1 truncate text-[length:var(--text-sm)]">
-              {progress.goal.title}
+              className={`text-[length:var(--text-2xs)] ${d.date === today ? "font-semibold text-[var(--color-ink)]" : "text-[var(--color-ink-3)]"}`}
+            >
+              {WEEKDAYS_MIN[isoWeekday(d.date)]}
             </span>
-
-            {/*
-              `null` oran ÖLÇÜLMÜYOR demek, sıfır değil: sayısal hedef
-              verilmemiş ve bağlı görev de yok. "%0" yazmak "hiç
-              başlamadın" der ve bu yanlış bir suçlama olurdu.
-            */}
-            {progress.ratio === null ? (
-              <span className="shrink-0 text-[length:var(--text-xs)] text-[var(--color-ink-4)]">
-                ölçülmüyor
-              </span>
-            ) : (
-              <>
-                <div className="h-1.5 w-20 shrink-0 overflow-hidden rounded-full bg-[var(--color-surface-3)]">
-                  <div
-                    className="h-full rounded-full bg-[var(--color-accent)]"
-                    style={{ width: `${Math.round(progress.ratio * 100)}%` }}
-                  />
-                </div>
-                <span className="tabular shrink-0 text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
-                  {formatPercent(progress.ratio)}
-                </span>
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-/** Son iki haftanın rutin doluluğu — en ince öğe, panelin dibinde. */
-function RoutineHeat({
-  heat,
-  pending,
-}: {
-  heat: ReturnType<typeof routineHeat>;
-  pending: number;
-}) {
-  return (
-    <section>
-      <div className="mb-2.5 flex items-baseline justify-between">
-        <h2 className="text-[length:var(--text-sm)] font-medium text-[var(--color-ink-2)]">
-          Rutin doluluğu
-        </h2>
-        <Link
-          href="/koc/tablo"
-          className="text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-accent)]"
-        >
-          Tabloya git
-        </Link>
-      </div>
-
-      <ul className="flex gap-1">
-        {heat.map((slot) => (
-          <li
-            key={slot.date}
-            title={
-              slot.ratio === null
-                ? `${slot.date}: zorunlu rutin yok`
-                : `${slot.date}: ${formatPercent(slot.ratio)}`
-            }
-            className={cn(
-              "h-6 min-w-0 flex-1 rounded-sm",
-              /*
-               * Ölçülmeyen gün ÇİZGİLİ değil sönük: "yapılmadı" ile
-               * "yapılacak bir şey yoktu" farklı şeyler ve ikincisi
-               * bir eksiklik gibi görünmemeli.
-               */
-              slot.ratio === null && "bg-[var(--color-surface-2)]",
-            )}
-            style={
-              slot.ratio === null
-                ? undefined
-                : {
-                    background: `color-mix(in oklch, var(--color-accent) ${Math.round(
-                      Math.max(slot.ratio, 0.08) * 100,
-                    )}%, var(--color-surface-2))`,
-                  }
-            }
-          />
-        ))}
-      </ul>
-
-      {pending > 0 && (
-        <p className="mt-2 text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
-          Bugün {pending} rutin işaretlenmeyi bekliyor.
-        </p>
-      )}
-    </section>
-  );
-}
-
-function DashboardSkeleton() {
-  return (
-    <div className="flex flex-col gap-[var(--stack-gap)]" aria-hidden>
-      <div className="h-36 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
-      <div className="h-24 animate-pulse rounded-xl bg-[var(--color-surface-2)]" />
-      <div className="h-20 animate-pulse rounded-xl bg-[var(--color-surface-2)]" />
+          </div>
+        );
+      })}
     </div>
   );
 }
