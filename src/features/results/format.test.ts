@@ -26,6 +26,7 @@ function result(over: Partial<TaskResult> = {}): TaskResult {
     missingTopics: [],
     reason: null,
     note: null,
+    doneOn: null,
     updatedAt: "",
     ...over,
   };

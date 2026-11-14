@@ -24,7 +24,7 @@ function log(date: DateStr, o: Partial<DailyLog> = {}): DailyLog {
 function skipped(taskId: string, date: DateStr): TaskResult {
   return {
     taskId, date, studentId: "s", status: "skipped", total: null, correct: null, wrong: null,
-    empty: null, actualMinutes: null, missingTopics: [], reason: null, note: null, updatedAt: "",
+    empty: null, actualMinutes: null, missingTopics: [], reason: null, note: null, doneOn: null, updatedAt: "",
   };
 }
 const kinds = (a: ReturnType<typeof computeAlerts>) => a.map((x) => x.kind);

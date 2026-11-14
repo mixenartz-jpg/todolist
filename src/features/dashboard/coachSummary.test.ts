@@ -15,7 +15,7 @@ function task(id: string, due: string, done: boolean, est: number | null): Task 
 function result(taskId: string, date: string, o: Partial<TaskResult>): TaskResult {
   return {
     taskId, date: asDateStr(date), studentId: "s", status: null, total: null, correct: null,
-    wrong: null, empty: null, actualMinutes: null, missingTopics: [], reason: null, note: null,
+    wrong: null, empty: null, actualMinutes: null, missingTopics: [], reason: null, note: null, doneOn: null,
     updatedAt: "", ...o,
   };
 }

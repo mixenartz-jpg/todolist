@@ -34,7 +34,7 @@ const SUBTITLE: Record<DayMode, Record<"past" | "today" | "future", string | und
   student: {
     past: "Geçmiş gün — sonuçları düzenleyebilirsin",
     today: undefined,
-    future: "Gelecek gün — yalnızca görüntüleme",
+    future: "Gelecek gün — erken yapabilirsin",
   },
   preview: { past: undefined, today: undefined, future: undefined },
   coach: {
@@ -209,7 +209,9 @@ export function DayView({
               mode={mode}
               date={date}
               log={log}
-              disabled={!editable}
+              // Gelecek günün görevi erken yapılabilir ama günlük form
+              // (uyku, ekran süresi…) henüz yaşanmamış bir günü anlatamaz.
+              disabled={!editable || date > today}
               onSave={(input) => saveLog.mutateAsync(input)}
             />
             <div className="md:hidden">

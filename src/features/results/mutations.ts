@@ -4,6 +4,7 @@ import { useMutation, useQueryClient, type QueryClient, type QueryKey } from "@t
 import type { DateStr } from "@/lib/date/types";
 import type { CoachNoteRow, DailyLogRow, TaskResultRow } from "@/lib/db/database.types";
 import { qk } from "@/lib/query/keys";
+import { todayStr } from "@/lib/date/date";
 import { createClient } from "@/lib/supabase/client";
 import type { Task } from "@/features/tasks/types";
 import { toCoachNote, toDailyLog, toTaskResult } from "./queries";
@@ -78,8 +79,17 @@ export function useSaveTaskResult(studentId: string | null, onError?: (m: string
       await qc.cancelQueries({ queryKey: qk.taskResults() });
       await qc.cancelQueries({ queryKey: qk.tasks() });
 
+      const prev = qc
+        .getQueriesData<TaskResult[]>({ queryKey: qk.taskResults() })
+        .flatMap(([, d]) => d ?? [])
+        .find((r) => r.taskId === input.taskId && r.date === input.date);
       const optimistic: TaskResult = {
         ...input,
+        // Sunucudaki trigger'ın aynısı: durum done/partial'a geçince bugün.
+        doneOn:
+          (input.status === "done" || input.status === "partial") && prev?.status !== input.status
+            ? todayStr()
+            : (prev?.doneOn ?? null),
         studentId,
         updatedAt: new Date().toISOString(),
       };

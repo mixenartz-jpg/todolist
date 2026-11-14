@@ -18,11 +18,17 @@ export interface TaskResult {
   missingTopics: string[];
   reason: string | null;
   note: string | null;
+  /**
+   * Gerçekten yapıldığı gün (0033). `date` PLANLANAN gündür; ikisi
+   * farklıysa görev erken (ya da geç) yapılmıştır. Veritabanı
+   * damgalar — istemci yazmaz.
+   */
+  doneOn: DateStr | null;
   updatedAt: string;
 }
 
-/** Kaydedilecek alanlar — anahtar dışındaki her şey. */
-export type TaskResultInput = Omit<TaskResult, "studentId" | "updatedAt">;
+/** Kaydedilecek alanlar — anahtar ve sunucu damgaları dışındaki her şey. */
+export type TaskResultInput = Omit<TaskResult, "studentId" | "updatedAt" | "doneOn">;
 
 export interface DailyLog {
   studentId: string;

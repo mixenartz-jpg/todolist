@@ -434,6 +434,8 @@ export interface TaskResultRow {
   missing_topics: string[];
   reason: string | null;
   note: string | null;
+  /** Gerçekten yapıldığı gün (0033); `date` planlanan gündür. */
+  done_on: string | null;
   updated_at: string;
 }
 

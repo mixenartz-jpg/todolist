@@ -4,6 +4,7 @@ import { useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/Button";
 import { Field, TextInput } from "@/components/Field";
 import { ReorderButtons } from "@/features/planlama/ReorderButtons";
+import { earlyDoneOn, earlyLabel } from "@/features/results/early";
 import { hasResultContent, resultSummary } from "@/features/results/format";
 import { emptyResult } from "@/features/results/mutations";
 import { ResultDetail } from "@/features/results/ResultDetails";
@@ -97,6 +98,8 @@ export function DayTaskRow({
   const checkboxEnabled = isCoach || (mode === "student" && editable);
 
   const summaryText = result ? resultSummary(result) : "";
+  // Rozet yalnızca koç görür; öğrenci için bilgi değeri yok.
+  const early = mode === "coach" ? earlyDoneOn(result) : null;
   const showSummary = !open && result && hasResultContent(result);
 
   function toggle() {
@@ -161,6 +164,7 @@ export function DayTaskRow({
             >
               {task.title}
             </span>
+            {early && <EarlyBadge doneOn={early} />}
             {showSummary && (
               <span className="mt-1 block text-[length:var(--text-sm)] text-[var(--color-ink-3)]">
                 {result.status && result.status !== "done" ? STATUS_LABELS[result.status] : ""}
@@ -313,5 +317,13 @@ function CoachTaskPanel({
         )}
       </div>
     </div>
+  );
+}
+
+export function EarlyBadge({ doneOn }: { doneOn: DateStr }) {
+  return (
+    <span className="mt-1 inline-block rounded-full border border-[color-mix(in_oklch,var(--color-accent)_45%,transparent)] px-2 text-[length:var(--text-2xs)] text-[var(--color-accent)]">
+      {earlyLabel(doneOn)}
+    </span>
   );
 }

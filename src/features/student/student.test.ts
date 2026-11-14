@@ -21,7 +21,8 @@ describe("gün şeridi", () => {
     expect(dayMode(today, today)).toBe("today");
     expect(dayMode(asDateStr("2026-11-15"), today)).toBe("future");
     expect(isEditableDay(asDateStr("2026-11-13"), today, false)).toBe(true);
-    expect(isEditableDay(asDateStr("2026-11-15"), today, false)).toBe(false);
+    // Gelecek gün de düzenlenebilir: öğrenci yarının görevini erken yapabilir.
+    expect(isEditableDay(asDateStr("2026-11-15"), today, false)).toBe(true);
     expect(isEditableDay(today, today, true)).toBe(false);
   });
 });
@@ -80,6 +81,7 @@ describe("dayRecords", () => {
           missingTopics: [],
           reason: "yorgundum",
           note: null,
+          doneOn: null,
           updatedAt: "",
         },
       ],

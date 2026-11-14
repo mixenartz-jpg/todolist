@@ -53,9 +53,14 @@ export function dayMode(date: DateStr, today: DateStr): DayKind {
   return date < today ? "past" : "future";
 }
 
-/** Öğrenci geçmiş ve bugünü düzenler; geleceği yalnızca görür. */
-export function isEditableDay(date: DateStr, today: DateStr, readOnly: boolean): boolean {
-  return !readOnly && date <= today;
+/**
+ * Öğrenci her günü düzenler: geçmişi düzeltir, bugünü doldurur,
+ * gelecekteki görevi ERKEN yapabilir (yapıldığı gün `done_on`'a
+ * yazılır, yüzde planlanan güne göre kalır). `date`/`today` imzada
+ * kalıyor: kural ileride yeniden güne bağlanabilir.
+ */
+export function isEditableDay(_date: DateStr, _today: DateStr, readOnly: boolean): boolean {
+  return !readOnly;
 }
 
 /**

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { EarlyBadge } from "@/features/day/DayTaskRow";
+import { earlyDoneOn } from "@/features/results/early";
 import { hasResultContent, resultSummary } from "@/features/results/format";
 import { ResultDetail, ResultIcon } from "@/features/results/ResultDetails";
 import { STATUS_LABELS } from "@/features/results/types";
@@ -21,6 +23,7 @@ export function CoachResultLine({ task }: { task: Task }) {
   const main = all.find((r) => r.date === task.dueDate) ?? all[0];
 
   if (!main) return null;
+  const early = earlyDoneOn(main);
 
   return (
     <div className="mt-1 flex flex-col gap-1 text-[length:var(--text-2xs)]">
@@ -36,6 +39,7 @@ export function CoachResultLine({ task }: { task: Task }) {
             {resultSummary(main) || (main.status ? STATUS_LABELS[main.status] : "Not var")}
           </span>
         </button>
+        {early && <EarlyBadge doneOn={early} />}
       </div>
 
       {open && main && (

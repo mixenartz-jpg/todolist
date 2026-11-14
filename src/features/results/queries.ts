@@ -79,6 +79,7 @@ export function toTaskResult(row: TaskResultRow): TaskResult {
     missingTopics: row.missing_topics ?? [],
     reason: row.reason,
     note: row.note,
+    doneOn: row.done_on ? asDateStr(row.done_on) : null,
     updatedAt: row.updated_at,
   };
 }
