@@ -275,3 +275,44 @@ export function monthOfWeek(weekStart: DateStr, today: DateStr): DateStr {
     compareDates(today, weekStart) >= 0 && compareDates(today, weekEnd) <= 0;
   return startOfMonth(containsToday ? today : addDays(weekStart, 3));
 }
+
+/*
+ * ── Görünüm (Ay / Hafta / Gün) ──
+ *
+ * "Gün" bir ÖLÇEK değil, bir GÖRÜNÜM: aralık hesapları (havuz,
+ * gecikenler, hedef şeridi) yalnızca hafta/ay bilir. Gün görünümü
+ * seçili günün haftasını aralık olarak kullanır ve ekranı öğrencinin
+ * Bugün yerleşimiyle (DayView) çizer. Böylece `PlanScale`'e dokunan
+ * hiçbir hesap değişmedi.
+ */
+export type PlanView = PlanScale | "day";
+
+export const VIEW_DAY_PARAM = "gun";
+
+export function viewFromParam(raw: string | null): PlanView {
+  if (raw === VIEW_DAY_PARAM) return "day";
+  return scaleFromParam(raw);
+}
+
+export function viewToParam(view: PlanView): string | null {
+  return view === "day" ? VIEW_DAY_PARAM : scaleToParam(view);
+}
+
+export function scaleForView(view: PlanView): PlanScale {
+  return view === "day" ? "week" : view;
+}
+
+/**
+ * Hafta/aydan Gün'e geçerken hangi gün açılsın: bugün o aralıktaysa
+ * bugün, değilse aralığın ilk günü (bakılan dönemden kopmamak için).
+ */
+export function dayForView(anchor: DateStr, scale: PlanScale, today: DateStr): DateStr {
+  return alignToScale(today, scale) === anchor ? today : anchor;
+}
+
+/** Son seçilen görünüm — tarayıcıda hatırlanır. */
+export const VIEW_STORAGE_KEY = "kero.planlama.view";
+
+export function parseStoredView(raw: string | null): PlanView | null {
+  return raw === "month" || raw === "week" || raw === "day" ? raw : null;
+}

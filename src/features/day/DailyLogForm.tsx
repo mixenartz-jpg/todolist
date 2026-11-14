@@ -15,6 +15,8 @@ import type { DailyLog, DailyLogInput } from "@/features/results/types";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { useAutosave } from "@/lib/ui/useAutosave";
+import { isLogFilled } from "@/features/results/format";
+import type { DayMode } from "./days";
 import { SaveIndicator } from "./SaveIndicator";
 
 function draftFrom(date: DateStr, log: DailyLog | undefined): DailyLogInput {
@@ -42,6 +44,32 @@ const LABEL = "text-[length:var(--text-sm)] text-[var(--color-ink-2)]";
  * böylece taslak her zaman o günün kaydından doğar.
  */
 export function DailyLogForm({
+  mode,
+  date,
+  log,
+  disabled,
+  onSave,
+}: {
+  mode: DayMode;
+  date: DateStr;
+  log: DailyLog | undefined;
+  /** Öğrenci kipinde de geçmiş/gelecek kuralı gereği kapalı olabilir. */
+  disabled: boolean;
+  onSave: (input: DailyLogInput) => Promise<unknown>;
+}) {
+  // Koç formu yalnızca OKUR; boşsa alanları boş göstermek yerine söyler.
+  if (mode === "coach" && !isLogFilled(log)) {
+    return (
+      <Card as="section" aria-label="Günlük form">
+        <SectionTitle level={2}>Günlük form</SectionTitle>
+        <p className="mt-2 text-[length:var(--text-sm)] text-[var(--color-ink-3)]">Form doldurulmadı.</p>
+      </Card>
+    );
+  }
+  return <DailyLogFields date={date} log={log} disabled={disabled || mode !== "student"} onSave={onSave} />;
+}
+
+function DailyLogFields({
   date,
   log,
   disabled,

@@ -10,7 +10,7 @@ import { useCoachNotes, useDailyLogs, useTaskResults } from "@/features/results/
 import { useTasks } from "@/features/tasks/queries";
 import { addDays, todayStr } from "@/lib/date/date";
 import { useViewer } from "@/lib/auth/ViewerProvider";
-import { chipLabel } from "./days";
+import { chipLabel } from "@/features/day/days";
 import { dayRecords } from "./history";
 
 const HISTORY_DAYS = 30;

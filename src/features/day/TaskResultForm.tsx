@@ -7,7 +7,7 @@ import { STATUS_LABELS, type TaskResultInput, type TaskResultStatus } from "@/fe
 import { cn } from "@/lib/ui/cn";
 import type { SaveStatus } from "@/lib/ui/useAutosave";
 import { SaveIndicator } from "./SaveIndicator";
-import { addTopics } from "./topics";
+import { addTopics } from "@/features/student/topics";
 
 const STATUSES: TaskResultStatus[] = ["done", "partial", "skipped"];
 

@@ -1,18 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
+  addDays,
   endOfIsoWeek,
   endOfMonth,
   startOfMonth,
   toParts,
 } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
+import { Button } from "@/components/Button";
 import { ScreenBody } from "@/components/Screen";
+import { DayView } from "@/features/day/DayView";
 import { Toast, useToast } from "@/components/Toast";
 import { useTasks } from "@/features/tasks/queries";
 import { monthGrid } from "./monthgrid";
-import { buildPlanRange } from "./range";
+import { buildPlanRange, VIEW_DAY_PARAM } from "./range";
 import { goalProgress } from "./rollup";
 import { CategoryFilterMenu } from "./CategoryFilterMenu";
 import { daySummaries } from "./dayplan";
@@ -57,10 +60,13 @@ export function PlanlamaScreen() {
     today,
     anchor,
     scale,
+    view,
+    day,
     category,
     setAnchor,
-    setScale,
     goToWeek,
+    setView,
+    goToDay,
     setCategory,
   } = usePlanlamaSurface();
   const actions = usePlanTaskActions(toast.show);
@@ -206,6 +212,61 @@ export function PlanlamaScreen() {
       ? []
       : (range.buckets.find((b) => b.date === openDay)?.tasks ?? []);
 
+  /*
+   * Gün görünümü: öğrencinin Bugün ekranıyla AYNI bileşen (DayView),
+   * koç kipinde. Havuz, gecikenler ve hedef şeridi hafta/ay yüzeyinin
+   * işi; burada yalnızca o günün planı var. Gün paneli (kategori/hedef
+   * atama) buradan açılmaya devam ediyor.
+   */
+  if (view === "day") {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <DayToolbar
+          day={day}
+          today={today}
+          onDay={goToDay}
+          toggle={<PlanScaleToggle value={view} onChange={setView} />}
+        />
+        <DayView
+          mode="coach"
+          date={day}
+          hrefFor={dayHref}
+          coachActions={actions}
+          toolbar={
+            <button
+              type="button"
+              onClick={() => setOpenDay(day)}
+              className="text-[length:var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
+            >
+              Kategori / hedef
+            </button>
+          }
+        />
+        {openDay !== null && (
+          <PlanDaySheet
+            date={openDay}
+            today={today}
+            tasks={(tasksQuery.data ?? []).filter((t) => t.dueDate === openDay)}
+            categories={categories.all}
+            goals={goalsQuery.data ?? []}
+            onError={toast.show}
+            onSetCategory={(t, categoryId) => setTaskCategory.mutate({ id: t.id, categoryId })}
+            onSetGoal={(t, goalId) => setTaskGoal.mutate({ id: t.id, goalId })}
+            onClose={() => setOpenDay(null)}
+            onToggle={actions.onToggle}
+            onDelete={actions.onDelete}
+            onRename={actions.onRename}
+            onUnschedule={actions.onUnschedule}
+            onSetEstimate={actions.onSetEstimate}
+            onSetNote={actions.onSetNote}
+            onReorder={actions.onReorder}
+          />
+        )}
+        <Toast message={toast.message} variant={toast.variant} token={toast.token} onDismiss={toast.dismiss} />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PlanlamaHeader
@@ -216,7 +277,7 @@ export function PlanlamaScreen() {
         onAnchorChange={setAnchor}
       >
         <div className="flex flex-wrap items-center gap-2">
-          <PlanScaleToggle value={scale} onChange={setScale} />
+          <PlanScaleToggle value={view} onChange={setView} />
           <CategoryFilterMenu
             categories={categories.active}
             value={category}
@@ -286,7 +347,7 @@ export function PlanlamaScreen() {
                       // Gün numarası yerleştirme modunda da paneli
                       // açar: yerleştirmenin kendi düğmesi var, aynı
                       // hedefin anlamı moda göre değişmemeli.
-                      onOpenDay={setOpenDay}
+                      onOpenDay={goToDay}
                       onPlace={handlePlace}
                       onAdd={actions.onAdd}
                       onToggle={actions.onToggle}
@@ -382,6 +443,44 @@ export function PlanlamaScreen() {
         token={toast.token}
         onDismiss={toast.dismiss}
       />
+    </div>
+  );
+}
+
+/** Gün görünümünün adresi — şerit çipleri bağlantı (geri tuşu çalışır). */
+function dayHref(date: DateStr): string {
+  return `/koc/planlama?ol=${VIEW_DAY_PARAM}&t=${date}`;
+}
+
+/** Gün görünümünün üst şeridi: görünüm seçici + önceki/sonraki gün. */
+function DayToolbar({
+  day,
+  today,
+  onDay,
+  toggle,
+}: {
+  day: DateStr;
+  today: DateStr;
+  onDay: (date: DateStr) => void;
+  toggle: ReactNode;
+}) {
+  return (
+    <div className="border-b border-[var(--color-line)] px-4 py-3 md:px-6">
+      <div className="mx-auto flex w-full max-w-[60rem] items-center gap-2">
+        {toggle}
+        <span className="flex-1" />
+        {day !== today && (
+          <Button size="sm" variant="ghost" onClick={() => onDay(today)}>
+            Bugün
+          </Button>
+        )}
+        <Button size="sm" variant="ghost" aria-label="Önceki gün" className="px-2" onClick={() => onDay(addDays(day, -1))}>
+          ‹
+        </Button>
+        <Button size="sm" variant="ghost" aria-label="Sonraki gün" className="px-2" onClick={() => onDay(addDays(day, 1))}>
+          ›
+        </Button>
+      </div>
     </div>
   );
 }

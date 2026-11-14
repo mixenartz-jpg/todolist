@@ -1,15 +1,21 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { isDateStr, startOfIsoWeek, startOfMonth, todayStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import {
   alignToScale,
   anchorForScale,
-  scaleFromParam,
+  dayForView,
+  parseStoredView,
+  scaleForView,
   scaleToParam,
+  viewFromParam,
+  viewToParam,
+  VIEW_STORAGE_KEY,
   type PlanScale,
+  type PlanView,
 } from "./range";
 import type { CategoryFilter } from "./types";
 
@@ -59,6 +65,10 @@ export interface PlanlamaSurface {
    */
   weekAnchor: DateStr;
   scale: PlanScale;
+  /** Ay / Hafta / Gün. Gün görünümünde `scale` "week"tir (aralık için). */
+  view: PlanView;
+  /** Gün görünümünün günü (hizalanmamış çapa). */
+  day: DateStr;
   category: CategoryFilter;
   setAnchor: (next: DateStr) => void;
   /** Çapayı bir haftaya taşı, ölçeğe dokunmadan (Hedefler ekranı). */
@@ -75,6 +85,9 @@ export interface PlanlamaSurface {
    * haftasına düşerdi. Tek yazma, tek sonuç.
    */
   goToWeek: (weekStart: DateStr) => void;
+  setView: (next: PlanView) => void;
+  /** Gün görünümünü verilen günle aç. */
+  goToDay: (date: DateStr) => void;
   setCategory: (next: CategoryFilter) => void;
 }
 
@@ -113,7 +126,8 @@ export function usePlanlamaSurface(): PlanlamaSurface {
 
   const today = useMemo(() => todayStr(), []);
 
-  const scale: PlanScale = scaleFromParam(params.get(SCALE_PARAM));
+  const view: PlanView = viewFromParam(params.get(SCALE_PARAM));
+  const scale: PlanScale = scaleForView(view);
 
   const rawAnchor = params.get(ANCHOR_PARAM);
 
@@ -148,6 +162,7 @@ export function usePlanlamaSurface(): PlanlamaSurface {
    * Temmuz'a atlıyordu). Hafta ölçeğinin yazdığı çapa zaten bir
    * Pazartesi olduğundan o ekranlar için sonuç değişmiyor.
    */
+  const day = base;
   const monthAnchor = useMemo(() => startOfMonth(base), [base]);
   const weekAnchor = useMemo(() => startOfIsoWeek(base), [base]);
 
@@ -256,6 +271,64 @@ export function usePlanlamaSurface(): PlanlamaSurface {
     [today, setParam],
   );
 
+  const remember = useCallback((next: PlanView) => {
+    try {
+      window.localStorage.setItem(VIEW_STORAGE_KEY, next);
+    } catch {
+      // Gizli sekme / kapalı depolama: hatırlamadan devam.
+    }
+  }, []);
+
+  const goToDay = useCallback(
+    (date: DateStr) => {
+      remember("day");
+      setParam({ [SCALE_PARAM]: viewToParam("day"), [ANCHOR_PARAM]: date === today ? null : date });
+    },
+    [remember, setParam, today],
+  );
+
+  const setView = useCallback(
+    (next: PlanView) => {
+      if (next === view) return;
+      if (next === "day") {
+        goToDay(dayForView(anchor, scale, today));
+        return;
+      }
+      remember(next);
+      if (view === "day") {
+        // Günden yukarı: o günün haftası/ayı açılsın.
+        const aligned = alignToScale(day, next);
+        const defaultAnchor = anchorForScale(today, next, today);
+        setParam({
+          [SCALE_PARAM]: scaleToParam(next),
+          [ANCHOR_PARAM]: aligned === defaultAnchor ? null : aligned,
+        });
+        return;
+      }
+      setScale(next);
+    },
+    [view, anchor, scale, today, day, goToDay, remember, setParam, setScale],
+  );
+
+  /*
+   * Hatırlanan görünüm: adres görünüm söylemiyorsa (düz /koc/planlama)
+   * son seçilen açılır. Yalnızca İLK çizimde — sonra kullanıcının
+   * tıkladığı geçerli.
+   */
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current) return;
+    restored.current = true;
+    if (params.get(SCALE_PARAM) !== null || params.get(ANCHOR_PARAM) !== null) return;
+    let stored: PlanView | null = null;
+    try {
+      stored = parseStoredView(window.localStorage.getItem(VIEW_STORAGE_KEY));
+    } catch {
+      stored = null;
+    }
+    if (stored && stored !== "week") setParam({ [SCALE_PARAM]: viewToParam(stored) });
+  }, [params, setParam]);
+
   const setCategory = useCallback(
     (next: CategoryFilter) => {
       setParam({
@@ -272,11 +345,15 @@ export function usePlanlamaSurface(): PlanlamaSurface {
     monthAnchor,
     weekAnchor,
     scale,
+    view,
+    day,
     category,
     setAnchor,
     setWeekAnchor,
     setScale,
     goToWeek,
+    setView,
+    goToDay,
     setCategory,
   };
 }

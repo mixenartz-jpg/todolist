@@ -1,16 +1,17 @@
 "use client";
 
 import { cn } from "@/lib/ui/cn";
-import type { PlanScale } from "./range";
+import type { PlanView } from "./range";
 
 interface PlanScaleToggleProps {
-  value: PlanScale;
-  onChange: (next: PlanScale) => void;
+  value: PlanView;
+  onChange: (next: PlanView) => void;
 }
 
-const OPTIONS: ReadonlyArray<{ value: PlanScale; label: string }> = [
+const OPTIONS: ReadonlyArray<{ value: PlanView; label: string }> = [
   { value: "month", label: "Ay" },
   { value: "week", label: "Hafta" },
+  { value: "day", label: "Gün" },
 ];
 
 /**

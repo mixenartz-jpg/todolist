@@ -471,3 +471,36 @@ describe("monthOfWeek", () => {
     expect(monthOfWeek(d("2026-01-26"), d("2026-09-20"))).toBe("2026-01-01");
   });
 });
+
+import {
+  dayForView,
+  parseStoredView,
+  scaleForView,
+  viewFromParam,
+  viewToParam,
+} from "./range";
+
+describe("görünüm (Ay/Hafta/Gün)", () => {
+  it("URL gidiş-dönüş", () => {
+    for (const v of ["month", "week", "day"] as const) {
+      expect(viewFromParam(viewToParam(v))).toBe(v);
+    }
+    expect(viewToParam("week")).toBeNull();
+    expect(viewFromParam("saçma")).toBe("week");
+  });
+  it("gün görünümünün aralığı haftadır", () => {
+    expect(scaleForView("day")).toBe("week");
+    expect(scaleForView("month")).toBe("month");
+  });
+  it("güne geçerken: bugün aralıktaysa bugün, değilse aralığın başı", () => {
+    const today = asDateStr("2026-11-14");
+    expect(dayForView(asDateStr("2026-11-09"), "week", today)).toBe("2026-11-14");
+    expect(dayForView(asDateStr("2026-11-16"), "week", today)).toBe("2026-11-16");
+    expect(dayForView(asDateStr("2026-12-01"), "month", today)).toBe("2026-12-01");
+  });
+  it("hatırlanan değer doğrulanır", () => {
+    expect(parseStoredView("day")).toBe("day");
+    expect(parseStoredView("yıl")).toBeNull();
+    expect(parseStoredView(null)).toBeNull();
+  });
+});

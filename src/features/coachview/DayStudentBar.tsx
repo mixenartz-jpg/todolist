@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/Button";
-import { TextArea } from "@/components/Field";
 import { ENERGY_LABELS, SCREEN_BUCKETS, STUDY_BUCKETS } from "@/features/results/buckets";
 import { formatMinutesShort, isLogFilled, sleepMinutes } from "@/features/results/format";
-import { useSaveCoachNote } from "@/features/results/mutations";
+import { CoachNoteEditor } from "@/features/day/CoachNoteEditor";
 import type { DailyLog } from "@/features/results/types";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
@@ -116,52 +114,6 @@ function LogSummary({ log }: { log: DailyLog }) {
         ))}
       </dl>
       {log.note && <p className="mt-1.5 whitespace-pre-wrap">{log.note}</p>}
-    </div>
-  );
-}
-
-function CoachNoteEditor({
-  date,
-  studentId,
-  initial,
-  onDone,
-}: {
-  date: DateStr;
-  studentId: string;
-  initial: string;
-  onDone: () => void;
-}) {
-  const [text, setText] = useState(initial);
-  const [error, setError] = useState<string | null>(null);
-  const save = useSaveCoachNote(studentId, setError);
-
-  return (
-    <div className="flex flex-col gap-1.5">
-      <TextArea
-        rows={3}
-        maxLength={4000}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="Öğrencinin o gün göreceği not"
-        aria-label="Koç notu"
-        className="text-[length:var(--text-sm)]"
-        autoFocus
-      />
-      {error && <p className="text-[length:var(--text-2xs)] text-[var(--color-danger)]">{error}</p>}
-      <div className="flex justify-end gap-1.5">
-        <Button size="sm" variant="ghost" type="button" onClick={onDone}>
-          Vazgeç
-        </Button>
-        <Button
-          size="sm"
-          type="button"
-          loading={save.isPending}
-          disabled={text.trim() === initial.trim()}
-          onClick={() => save.mutate({ date, note: text }, { onSuccess: onDone })}
-        >
-          {text.trim() === "" && initial ? "Notu sil" : "Kaydet"}
-        </Button>
-      </div>
     </div>
   );
 }

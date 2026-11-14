@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { asDateStr } from "@/lib/date/date";
-import { chipLabel, dayMode, headline, isEditableDay, stripDays } from "./days";
+import { chipLabel, dayMode, headline, isEditableDay, stripDays } from "@/features/day/days";
 import { addTopics, looksLikeQuestionTask, topicKey } from "./topics";
 
 const today = asDateStr("2026-11-14");
