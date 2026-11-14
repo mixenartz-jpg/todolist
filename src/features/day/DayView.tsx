@@ -15,7 +15,6 @@ import {
   useTaskResults,
 } from "@/features/results/queries";
 import { orderForDay } from "@/features/tasks/dayorder";
-import { useCreateTask, useDeleteTask } from "@/features/tasks/mutations";
 import { useTasks } from "@/features/tasks/queries";
 import { isPendingTask } from "@/features/tasks/pending";
 import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
@@ -30,7 +29,6 @@ import { DailyLogForm } from "./DailyLogForm";
 import { DayStrip } from "./DayStrip";
 import { DayTaskRow, type CoachTaskControls } from "./DayTaskRow";
 import { dayDots, dayMode, headline, isEditableDay, stripFor, type DayMode } from "./days";
-import { ExtraWorkAdd } from "./ExtraWorkAdd";
 
 const SUBTITLE: Record<DayMode, Record<"past" | "today" | "future", string | undefined>> = {
   student: {
@@ -84,8 +82,6 @@ export function DayView({
 
   const saveResult = useSaveTaskResult(studentId, (m) => toast.show(m));
   const saveLog = useSaveDailyLog(studentId, (m) => toast.show(m));
-  const createTask = useCreateTask((m) => toast.show(m));
-  const deleteTask = useDeleteTask((m) => toast.show(m));
 
   const editable = mode === "student" && isEditableDay(date, today, viewer.readOnly);
   const kind = dayMode(date, today);
@@ -96,9 +92,6 @@ export function DayView({
   );
   const marks = useMemo(() => dayDots(days, today, tasks), [days, today, tasks]);
 
-  const isStudentAdded = (t: Task) => Boolean(t.createdBy && studentId && t.createdBy === studentId);
-  const planned = dayTasks.filter((t) => !isStudentAdded(t));
-  const extras = dayTasks.filter(isStudentAdded);
 
   const results = useMemo(() => indexResults(resultsQuery.data ?? []), [resultsQuery.data]);
   const log = (logsQuery.data ?? []).find((l) => l.date === date);
@@ -146,9 +139,7 @@ export function DayView({
       date={date}
       result={results.get(resultKey(task.id, date))}
       editable={editable && !isPendingTask(task.id)}
-      studentAdded={isStudentAdded(task)}
       onSave={(input) => saveResult.mutateAsync(input)}
-      onDelete={isStudentAdded(task) ? () => deleteTask.mutate(task.id) : undefined}
       coach={coach}
       position={{ isFirst: index === 0, isLast: index === list.length - 1 }}
     />
@@ -187,12 +178,12 @@ export function DayView({
               <SectionTitle level={2} trailing={mode === "coach" ? toolbar : undefined}>
                 Günlük görevler
               </SectionTitle>
-              {planned.length === 0 ? (
+              {dayTasks.length === 0 ? (
                 <p className="mt-2 text-[length:var(--text-sm)] text-[var(--color-ink-3)]">
                   {mode === "coach" ? "Bu güne görev yok." : "Bu güne koç görevi yazılmamış."}
                 </p>
               ) : (
-                <ul className="mt-3 flex flex-col gap-2">{planned.map(renderRow)}</ul>
+                <ul className="mt-3 flex flex-col gap-2">{dayTasks.map(renderRow)}</ul>
               )}
 
               {mode === "coach" && coachActions && (
@@ -205,21 +196,6 @@ export function DayView({
                 </div>
               )}
 
-              {(extras.length > 0 || editable) && (
-                <div className="mt-4 border-t border-[var(--color-line)] pt-3">
-                  <SectionTitle level={3}>Ek çalışma</SectionTitle>
-                  {extras.length > 0 && (
-                    <ul className="mt-2 flex flex-col gap-2">{extras.map(renderRow)}</ul>
-                  )}
-                  {editable && (
-                    <div className="mt-2">
-                      <ExtraWorkAdd
-                        onAdd={(title) => createTask.mutate({ title, dueDate: date, note: null })}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
             </Card>
 
             <div className="hidden md:block">

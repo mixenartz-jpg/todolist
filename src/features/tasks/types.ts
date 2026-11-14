@@ -76,9 +76,9 @@ export interface Task {
    */
   estimateMinutes: number | null;
   /**
-   * Görevi yazan kullanıcı (0028). Koçun `user_id`'sinden farklıysa
-   * görev öğrencinin "ek çalışma"sıdır. Opsiyonel: migration öncesi
-   * ve test fikstürlerinde yok.
+   * Görevi yazan kullanıcı (0028). 0032'den beri öğrenci görev
+   * yazamaz; eski "ek çalışma"lar bu alanla ayırt edilebilir ama
+   * arayüzde ayrı gösterilmez. Opsiyonel: test fikstürlerinde yok.
    */
   createdBy?: string | null;
   /**

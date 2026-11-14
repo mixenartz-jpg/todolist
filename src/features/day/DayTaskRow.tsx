@@ -58,9 +58,7 @@ export function DayTaskRow({
   date,
   result,
   editable,
-  studentAdded,
   onSave,
-  onDelete,
   coach,
   position,
 }: {
@@ -70,10 +68,7 @@ export function DayTaskRow({
   result: TaskResult | undefined;
   /** Öğrenci kipinde: gün düzenlenebilir mi (geçmiş/bugün). */
   editable: boolean;
-  studentAdded: boolean;
   onSave: (input: TaskResultInput) => Promise<unknown>;
-  /** Öğrencinin kendi ek çalışmasını silmesi. */
-  onDelete?: () => void;
   coach?: CoachTaskControls;
   /** Koç sıralaması için listedeki yer. */
   position?: { isFirst: boolean; isLast: boolean };
@@ -166,11 +161,6 @@ export function DayTaskRow({
             >
               {task.title}
             </span>
-            {studentAdded && (
-              <span className="mt-1 inline-block rounded-full border border-[var(--color-line-2)] px-2 text-[length:var(--text-2xs)] text-[var(--color-ink-3)]">
-                öğrenci ekledi
-              </span>
-            )}
             {showSummary && (
               <span className="mt-1 block text-[length:var(--text-sm)] text-[var(--color-ink-3)]">
                 {result.status && result.status !== "done" ? STATUS_LABELS[result.status] : ""}
@@ -192,8 +182,7 @@ export function DayTaskRow({
           {isCoach ? (
             <CoachTaskPanel task={task} date={date} result={result} coach={coach} position={position} />
           ) : (
-            <>
-              <TaskResultForm
+            <TaskResultForm
                 draft={draft}
                 update={update}
                 flush={autosave.flush}
@@ -201,16 +190,6 @@ export function DayTaskRow({
                 questionTask={looksLikeQuestionTask(task.title)}
                 disabled={!(mode === "student" && editable)}
               />
-              {studentAdded && mode === "student" && editable && onDelete && (
-                <button
-                  type="button"
-                  onClick={onDelete}
-                  className="mt-2 text-[length:var(--text-sm)] text-[var(--color-danger)] hover:underline"
-                >
-                  Ek çalışmayı sil
-                </button>
-              )}
-            </>
           )}
         </div>
       )}
