@@ -1,78 +1,196 @@
-import type { DateStr } from "@/lib/date/types";
+import type { TaskResult } from "@/features/results/types";
 import type { Task } from "@/features/tasks/types";
-import type { Source } from "./types";
+import type { SectionNode, SeriesNode, SourceTree } from "./types";
+import {
+  addSummaries,
+  sectionUnitStates,
+  summarize,
+  type LinkedTask,
+  type MarkStatus,
+  type UnitMark,
+  type UnitState,
+  type UnitSummary,
+} from "./unitStatus";
+
+/*
+ * Kaynak ağacı + görevler + sonuçlar + elle işaretler → her bölümün
+ * kutucuk durumları ve özetleri. Saf; katalog, yan panel, Dağıt ve
+ * konu takibi aynı hesabı kullanır.
+ */
+
+export interface ItemMark {
+  itemId: string;
+  status: MarkStatus;
+  markedAt: string;
+  note: string | null;
+}
+
+export interface RangeMark {
+  sectionId: string;
+  from: number;
+  to: number;
+  status: MarkStatus;
+  markedAt: string;
+  note: string | null;
+}
+
+export interface ProgressContext {
+  tasks: readonly Task[];
+  /** Görev ↔ test bağları. */
+  taskItems: ReadonlyArray<{ taskId: string; itemId: string }>;
+  results: readonly TaskResult[];
+  itemMarks?: readonly ItemMark[];
+  rangeMarks?: readonly RangeMark[];
+}
+
+export interface SectionProgress {
+  section: SectionNode;
+  states: UnitState[];
+  summary: UnitSummary;
+  /** Bu bölüme bağlı görevler (yeniden eskiye). */
+  tasks: Task[];
+}
+
+export interface SeriesProgress {
+  series: SeriesNode;
+  sections: SectionProgress[];
+  summary: UnitSummary;
+}
 
 export interface SourceProgress {
-  source: Source;
-  /** Tamamlanan görevlerin aralıklarının BİRLEŞİMİ — tekrar sayılmaz. */
-  covered: number;
-  ratio: number;
-  /** Bağlı görev sayısı (aralıklı + aralıksız). */
-  taskCount: number;
-  doneCount: number;
-  /** Aralığı çıkarılamayan tamamlanmış görevler — yüzdeye girmez. */
-  doneWithoutRange: number;
-  last: { from: number; to: number; date: DateStr | null } | null;
+  source: SourceTree;
+  series: SeriesProgress[];
+  summary: UnitSummary;
+  /** Kaynağa bağlı görev var mı (otomatik "devam" için). */
+  hasLinks: boolean;
 }
 
-/** [1..total] içine kırpılmış aralıkların birleşim uzunluğu. */
-export function unionLength(ranges: ReadonlyArray<{ from: number; to: number }>, total: number): number {
-  const clipped = ranges
-    .map((r) => ({ from: Math.max(1, r.from), to: Math.min(total, r.to) }))
-    .filter((r) => r.from <= r.to)
-    .sort((a, b) => a.from - b.from);
+/** Görevin ana sonucu: kendi günündeki, yoksa en yenisi. */
+export function mainResult(task: Task, results: readonly TaskResult[]): TaskResult | null {
+  const own = results.filter((r) => r.taskId === task.id);
+  if (own.length === 0) return null;
+  return own.find((r) => r.date === task.dueDate) ?? [...own].sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+}
 
-  let covered = 0;
-  let curFrom = -1;
-  let curTo = -2;
-  for (const r of clipped) {
-    if (r.from > curTo + 1) {
-      if (curTo >= curFrom && curFrom > 0) covered += curTo - curFrom + 1;
-      curFrom = r.from;
-      curTo = r.to;
-    } else {
-      curTo = Math.max(curTo, r.to);
+/** Hesap için önceden indekslenmiş bağlam (kaynak başına tekrar etmesin). */
+export interface ProgressIndex {
+  tasksById: Map<string, Task>;
+  resultByTask: Map<string, TaskResult | null>;
+  itemsByTask: Map<string, Set<string>>;
+  tasksByItem: Map<string, string[]>;
+  tasksBySection: Map<string, Task[]>;
+  itemMarks: Map<string, ItemMark>;
+  rangeMarks: Map<string, RangeMark[]>;
+}
+
+export function indexProgress(ctx: ProgressContext): ProgressIndex {
+  const tasksById = new Map(ctx.tasks.map((t) => [t.id, t]));
+  const resultsByTask = new Map<string, TaskResult[]>();
+  for (const r of ctx.results) {
+    const list = resultsByTask.get(r.taskId) ?? [];
+    list.push(r);
+    resultsByTask.set(r.taskId, list);
+  }
+  const resultByTask = new Map<string, TaskResult | null>();
+  for (const t of ctx.tasks) resultByTask.set(t.id, mainResult(t, resultsByTask.get(t.id) ?? []));
+
+  const itemsByTask = new Map<string, Set<string>>();
+  const tasksByItem = new Map<string, string[]>();
+  for (const { taskId, itemId } of ctx.taskItems) {
+    if (!tasksById.has(taskId)) continue;
+    const set = itemsByTask.get(taskId) ?? new Set<string>();
+    set.add(itemId);
+    itemsByTask.set(taskId, set);
+    const list = tasksByItem.get(itemId) ?? [];
+    list.push(taskId);
+    tasksByItem.set(itemId, list);
+  }
+
+  const tasksBySection = new Map<string, Task[]>();
+  for (const t of ctx.tasks) {
+    if (!t.sectionId) continue;
+    const list = tasksBySection.get(t.sectionId) ?? [];
+    list.push(t);
+    tasksBySection.set(t.sectionId, list);
+  }
+
+  const rangeMarks = new Map<string, RangeMark[]>();
+  for (const m of ctx.rangeMarks ?? []) {
+    const list = rangeMarks.get(m.sectionId) ?? [];
+    list.push(m);
+    rangeMarks.set(m.sectionId, list);
+  }
+
+  return {
+    tasksById,
+    resultByTask,
+    itemsByTask,
+    tasksByItem,
+    tasksBySection,
+    itemMarks: new Map((ctx.itemMarks ?? []).map((m) => [m.itemId, m])),
+    rangeMarks,
+  };
+}
+
+function sectionProgress(section: SectionNode, unit: SourceTree["unit"], ix: ProgressIndex): SectionProgress {
+  const links: LinkedTask[] = [];
+  const marks: UnitMark[] = [];
+  const linked = new Map<string, Task>();
+
+  if (unit === "test") {
+    const numberOf = new Map(section.items.map((i) => [i.id, i.number]));
+    const unitsByTask = new Map<string, number[]>();
+    for (const item of section.items) {
+      for (const taskId of ix.tasksByItem.get(item.id) ?? []) {
+        const list = unitsByTask.get(taskId) ?? [];
+        list.push(item.number);
+        unitsByTask.set(taskId, list);
+      }
+      const m = ix.itemMarks.get(item.id);
+      if (m) marks.push({ from: item.number, to: item.number, status: m.status, markedAt: m.markedAt, note: m.note });
+    }
+    for (const [taskId, units] of unitsByTask) {
+      const task = ix.tasksById.get(taskId)!;
+      linked.set(taskId, task);
+      const result = ix.resultByTask.get(taskId) ?? null;
+      const doneUnits = new Set(
+        (result?.doneItems ?? []).flatMap((id) => (numberOf.has(id) ? [numberOf.get(id)!] : [])),
+      );
+      links.push({ task, units, result, doneUnits });
+    }
+  } else {
+    for (const task of ix.tasksBySection.get(section.id) ?? []) {
+      if (task.rangeFrom == null || task.rangeTo == null) continue;
+      linked.set(task.id, task);
+      const units: number[] = [];
+      for (let n = Math.max(task.rangeFrom, section.unitFrom); n <= Math.min(task.rangeTo, section.unitTo); n++) {
+        units.push(n);
+      }
+      links.push({ task, units, result: ix.resultByTask.get(task.id) ?? null });
+    }
+    for (const m of ix.rangeMarks.get(section.id) ?? []) {
+      marks.push({ from: m.from, to: m.to, status: m.status, markedAt: m.markedAt, note: m.note });
     }
   }
-  if (curFrom > 0) covered += curTo - curFrom + 1;
-  return covered;
+
+  const states = sectionUnitStates({ from: section.unitFrom, to: section.unitTo, links, marks });
+  return {
+    section,
+    states,
+    summary: summarize(states),
+    tasks: [...linked.values()].sort((a, b) => ((a.dueDate ?? "") < (b.dueDate ?? "") ? 1 : -1)),
+  };
 }
 
-export function sourceProgress(sources: readonly Source[], tasks: readonly Task[]): SourceProgress[] {
-  const bySource = new Map<string, Array<{ task: Task; range: { from: number; to: number } | null }>>();
-  for (const task of tasks) {
-    // Bağ yalnızca açıkça kurulur (kaynaktan oluşturulan görev);
-    // başlıktan tahmin YOK.
-    if (!task.sourceId) continue;
-    const range =
-      task.rangeFrom != null && task.rangeTo != null ? { from: task.rangeFrom, to: task.rangeTo } : null;
-    const list = bySource.get(task.sourceId) ?? [];
-    list.push({ task, range });
-    bySource.set(task.sourceId, list);
-  }
-
-  return sources.map((source) => {
-    const linked = bySource.get(source.id) ?? [];
-    const done = linked.filter((l) => l.task.done);
-    const ranges = done.flatMap((l) => (l.range ? [l.range] : []));
-    const covered = unionLength(ranges, source.totalTests);
-
-    const lastDone = [...done]
-      .filter((l) => l.range)
-      .sort((a, b) => {
-        const ka = a.task.completedAt ?? a.task.dueDate ?? "";
-        const kb = b.task.completedAt ?? b.task.dueDate ?? "";
-        return ka < kb ? 1 : -1;
-      })[0];
-
-    return {
-      source,
-      covered,
-      ratio: covered / source.totalTests,
-      taskCount: linked.length,
-      doneCount: done.length,
-      doneWithoutRange: done.filter((l) => !l.range).length,
-      last: lastDone?.range ? { ...lastDone.range, date: lastDone.task.dueDate } : null,
-    };
+export function sourceProgress(source: SourceTree, ix: ProgressIndex): SourceProgress {
+  const series = source.series.map((s): SeriesProgress => {
+    const sections = s.sections.map((sec) => sectionProgress(sec, source.unit, ix));
+    return { series: s, sections, summary: addSummaries(sections.map((x) => x.summary)) };
   });
+  return {
+    source,
+    series,
+    summary: addSummaries(series.map((s) => s.summary)),
+    hasLinks: series.some((s) => s.sections.some((x) => x.tasks.length > 0)),
+  };
 }

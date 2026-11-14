@@ -8,6 +8,7 @@ Supabase → Database → Backups. Ayrıca SQL Editor'den CSV olarak dışa al:
 
 - `tasks`
 - `task_results`
+- `sources`
 
 ## 2. Çalıştırma sırası (Supabase → SQL Editor)
 
@@ -15,6 +16,8 @@ Supabase → Database → Backups. Ayrıca SQL Editor'den CSV olarak dışa al:
 |---|---|---|
 | 1 | `0032_student_readonly_tasks.sql` | Öğrencinin `tasks` yazma politikaları kalkar (yalnızca SELECT). |
 | 2 | `0033_task_results_done_on.sql` | `task_results.done_on`: görevin gerçekten yapıldığı gün (İstanbul saati, trigger). |
+| 3 | `0034_source_tree.sql` | Kaynak ağacı: `sources` genişler; `topics`, `source_series`, `source_sections`, `source_items`, `task_items`, `task_actions`; `tasks` ve `task_results`'a yeni sütunlar. Mevcut her kaynağa "Konu Testleri / Tümü" bölümü ve testleri açılır; 0029'da elle bağlanmış görevler bağını korur. |
+| 4 | `0035_topics_seed.sql` | Ortak konu listesi (TYT/AYT Mat, Geo, Fiz, Kim, Biy; LGS Mat, Fen). Düzenleyip yeniden çalıştırılabilir. |
 
 Hepsi yalnızca ekleme/kısıtlama yapar; satır silmez. Geri almak için `.down.sql`
 dosyalarını **ters sırayla** çalıştır.
@@ -31,3 +34,8 @@ dosyalarını **ters sırayla** çalıştır.
 - [ ] Panel → Bugün: görevler ✓ ◐ ✗ ○ ikonlarıyla, sonuç girilenlerde tek satır özet;
       erken yapılan görev altta ayrı satırda
 - [ ] Günlük yüzde planlanan güne göre: yarının görevi bugün yapılınca bugünün yüzdesi değişmiyor
+- [ ] Kaynaklar → mevcut kitap "Konu Testleri / Tümü" bölümüyle görünüyor; Düzenle → içindekileri
+      yaz (ör. `Üslü Sayılar | 1-74`, `Köklü Sayılar | 8 test`), önizlemede konular eşleşiyor,
+      eşleşmeyen "yeni konu · ekle" ile eklenebiliyor
+- [ ] Bölüm sınırı değiştirilip kaydedilince bağlı görevler kopmuyor (kutucuk rengi aynı kalıyor);
+      bağlı bir bölüm silinecekse form uyarıyor

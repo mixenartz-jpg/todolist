@@ -24,6 +24,14 @@ export interface TaskResult {
    * damgalar — istemci yazmaz.
    */
   doneOn: DateStr | null;
+  /** İlerlet: en son gelinen sayfa/soru/ders numarası (0034). */
+  reachedTo?: number | null;
+  /** İzle: 1 anlamadım · 2 kısmen · 3 anladım. */
+  understanding?: number | null;
+  /** İzle + Feynman: öğrencinin kendi cümleleriyle kısa özet. */
+  feynmanNote?: string | null;
+  /** Yarım kalan çok testli görevde öğrencinin yaptığı testler (item id). */
+  doneItems?: string[] | null;
   updatedAt: string;
 }
 

@@ -82,12 +82,23 @@ export interface Task {
    */
   createdBy?: string | null;
   /**
-   * Koçun ELLE bağladığı kaynak ve aralık (0029). null → başlıktan
-   * çıkarılır (bkz. `features/sources/parse.ts`).
+   * Kaynak bağı (0029/0034). YALNIZCA görev katalogdan oluşturulunca
+   * kurulur; başlıktan tahmin yok. Test birimli kaynakta testler
+   * `task_items`'ta, diğer birimlerde `sectionId` + aralık.
    */
   sourceId?: string | null;
+  sectionId?: string | null;
   rangeFrom?: number | null;
+  /** İlerlet görevinde REZERVASYON sonu (başlangıç + hedef − 1). */
   rangeTo?: number | null;
+  /** İlerlet hedefi (~10 sayfa); null → kesin aralık. */
+  targetAmount?: number | null;
+  /** "Çöz + Analiz", "İzle + Feynman", "İlerlet"… */
+  action?: string | null;
+  /** Dağıt ile birlikte oluşturulan görevler (0038). */
+  planBatchId?: string | null;
+  /** Öğrenci rutininden üretilen görev (0037). */
+  routineId?: string | null;
 }
 
 export interface TaskDraft {

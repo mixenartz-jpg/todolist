@@ -57,6 +57,12 @@ export interface TaskRow {
   source_id?: string | null;
   range_from?: number | null;
   range_to?: number | null;
+  /** Kaynak ağacı bağları (0034). Opsiyonel: migration öncesi gelmez. */
+  section_id?: string | null;
+  target_amount?: number | null;
+  action?: string | null;
+  plan_batch_id?: string | null;
+  routine_id?: string | null;
   title: string;
   due_date: string | null;
   done: boolean;
@@ -436,6 +442,11 @@ export interface TaskResultRow {
   note: string | null;
   /** Gerçekten yapıldığı gün (0033); `date` planlanan gündür. */
   done_on: string | null;
+  /** 0034 — İlerlet bitişi, izleme anlama/Feynman, yarım görevde yapılan testler. */
+  reached_to?: number | null;
+  understanding?: number | null;
+  feynman_note?: string | null;
+  done_items?: string[] | null;
   updated_at: string;
 }
 
@@ -469,10 +480,70 @@ export interface SourceRow {
   title: string;
   subject: string | null;
   total_tests: number;
-  unit: "test" | "soru" | "sayfa";
+  unit: "test" | "soru" | "sayfa" | "ders";
   aliases: string[];
   sort_order: number;
   archived_at: string | null;
+  created_at: string;
+  // 0034 — opsiyonel: migration öncesi alanlar gelmez.
+  student_id?: string | null;
+  kind?: "kitap" | "video";
+  publisher?: string | null;
+  exam?: "TYT" | "AYT" | "LGS" | null;
+  level?: "temel" | "orta" | "ileri" | null;
+  minutes_per_unit?: number | string | null;
+  status?: "sirada" | "devam" | "bitti";
+}
+
+// ──────────────────────── 0034: kaynak ağacı ────────────────────────
+
+export interface TopicRow {
+  id: string;
+  subject: string;
+  exam: "TYT" | "AYT" | "LGS";
+  name: string;
+  aliases: string[];
+  sort_order: number;
+  created_at: string;
+}
+
+export interface SourceSeriesRow {
+  id: string;
+  source_id: string;
+  name: string;
+  kind: "konu" | "osym" | "sarmal" | "simulasyon" | "diger";
+  sort_order: number;
+  created_at: string;
+}
+
+export interface SourceSectionRow {
+  id: string;
+  series_id: string;
+  topic_id: string | null;
+  label: string;
+  unit_from: number;
+  unit_to: number;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface SourceItemRow {
+  id: string;
+  section_id: string;
+  number: number;
+  topic_id: string | null;
+}
+
+export interface TaskItemRow {
+  task_id: string;
+  item_id: string;
+}
+
+export interface TaskActionRow {
+  id: string;
+  coach_id: string;
+  label: string;
+  sort_order: number;
   created_at: string;
 }
 

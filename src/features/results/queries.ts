@@ -98,6 +98,10 @@ export function toTaskResult(row: TaskResultRow): TaskResult {
     reason: row.reason,
     note: row.note,
     doneOn: row.done_on ? asDateStr(row.done_on) : null,
+    reachedTo: row.reached_to ?? null,
+    understanding: row.understanding ?? null,
+    feynmanNote: row.feynman_note ?? null,
+    doneItems: row.done_items ?? null,
     updatedAt: row.updated_at,
   };
 }

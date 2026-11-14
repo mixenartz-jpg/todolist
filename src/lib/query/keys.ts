@@ -282,7 +282,14 @@ export const qk = {
   coachNotesRange: (studentId: string, from: DateStr, to: DateStr) =>
     ["coach-notes", studentId, from, to] as const,
 
+  /** Kaynak ağaçları (0034): kaynak → seri → bölüm → test. */
   sources: () => ["sources"] as const,
+  topics: () => ["topics"] as const,
+  /** Görev ↔ test bağları; görev eklenince/silinince geçersiz. */
+  taskItems: () => ["task-items"] as const,
+  taskActions: () => ["task-actions"] as const,
+  /** Kaynağa bağlı görevlerin TÜM sonuçları (pencere yok — ilerleme). */
+  sourceResults: (studentId: string) => ["task-results", studentId, "sources"] as const,
 
   gapItems: () => ["gap-items"] as const,
 } as const;

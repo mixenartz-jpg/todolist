@@ -54,8 +54,13 @@ export function toTask(row: TaskRow): Task {
     estimateMinutes: row.estimate_minutes ?? null,
     createdBy: row.created_by ?? null,
     sourceId: row.source_id ?? null,
+    sectionId: row.section_id ?? null,
     rangeFrom: row.range_from ?? null,
     rangeTo: row.range_to ?? null,
+    targetAmount: row.target_amount ?? null,
+    action: row.action ?? null,
+    planBatchId: row.plan_batch_id ?? null,
+    routineId: row.routine_id ?? null,
   };
 }
 
