@@ -18,3 +18,12 @@ export const ALERT_THRESHOLDS = {
 } as const;
 
 export type AlertThresholds = typeof ALERT_THRESHOLDS;
+
+/**
+ * Planlama eşikleri — Dağıt önizlemesi. Günün toplam süresi (mevcut
+ * görevler + dağıtım) bunu aşarsa satır sarı olur.
+ */
+export const PLAN_THRESHOLDS = {
+  /** Dakika. 6 sa. */
+  dailyMinutesWarn: 360,
+} as const;

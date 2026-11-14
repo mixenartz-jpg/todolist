@@ -13,6 +13,7 @@ import { Button } from "@/components/Button";
 import { ScreenBody } from "@/components/Screen";
 import { DayView } from "@/features/day/DayView";
 import { CatalogToggle, useCatalogPanel } from "@/features/sources/CatalogPanel";
+import { DistributeButton } from "@/features/sources/DistributeDrawer";
 import { useRoutineTaskSync } from "@/features/routines/useRoutineTaskSync";
 import { Toast, useToast } from "@/components/Toast";
 import { useTasks } from "@/features/tasks/queries";
@@ -235,6 +236,7 @@ export function PlanlamaScreen() {
             <>
               <PlanScaleToggle value={view} onChange={setView} />
               <CatalogToggle />
+              <DistributeButton />
             </>
           }
         />
@@ -290,6 +292,7 @@ export function PlanlamaScreen() {
         <div className="flex flex-wrap items-center gap-2">
           <PlanScaleToggle value={view} onChange={setView} />
           <CatalogToggle />
+              <DistributeButton />
           <CategoryFilterMenu
             categories={categories.active}
             value={category}

@@ -21,6 +21,7 @@ Supabase → Database → Backups. Ayrıca SQL Editor'den CSV olarak dışa al:
 | 4 | `0035_topics_seed.sql` | Ortak konu listesi (TYT/AYT Mat, Geo, Fiz, Kim, Biy; LGS Mat, Fen). Düzenleyip yeniden çalıştırılabilir. |
 | 5 | `0036_source_marks.sql` | Elle işaretler: `source_item_marks` (test), `source_range_marks` (soru/sayfa/ders). |
 | 6 | `0037_student_routines.sql` | `routines.student_id`, `estimate_minutes`; günlük rutin görevi için kısmi unique index ve `insert_routine_tasks` (sunucuda doğrular, idempotent). |
+| 7 | `0038_plan_batches.sql` | Dağıtım kayıtları (`plan_batches`) ve `tasks.plan_batch_id` FK. |
 
 Hepsi yalnızca ekleme/kısıtlama yapar; satır silmez. Geri almak için `.down.sql`
 dosyalarını **ters sırayla** çalıştır.
@@ -62,3 +63,8 @@ dosyalarını **ters sırayla** çalıştır.
       matris/istatistik ekranında görünmüyor (seri hesabına girmiyor)
 - [ ] Esnek programlı öğrenci rutini otomatik düşmüyor; Rutinler sayfasında "Güne ekle" ile ekleniyor
 - [ ] **Koçun kendi rutinleri eskisi gibi çalışıyor** (matris, seri, Bugün)
+- [ ] Planlama → Dağıt → Konu: Üslü Sayılar → konuyu içeren kaynaklar listeleniyor; 3 gün, Pazar
+      atlanıyor; önizlemede günler × kaynaklar, 6 sa üstü satır sarı; hücre düzenlenebiliyor
+- [ ] **Elle "ödevlendirildi" işaretlenen test Dağıt'ta önerilmiyor**
+- [ ] Onaylayınca görevler oluşuyor; Dağıtımlar → "Kaydır" (şu günden sonra, 1 gün) yalnızca sonuçsuz
+      görevleri itiyor ve atlanan güne düşürmüyor; "Dağıtımı sil" sonuçluları bırakıyor

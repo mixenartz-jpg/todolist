@@ -290,6 +290,8 @@ export const qk = {
   taskActions: () => ["task-actions"] as const,
   /** Elle işaretler (0036): test ve aralık. */
   sourceMarks: () => ["source-marks"] as const,
+  /** Dağıtımlar (0038). */
+  planBatches: () => ["plan-batches"] as const,
   /** Kaynağa bağlı görevlerin TÜM sonuçları (pencere yok — ilerleme). */
   sourceResults: (studentId: string) => ["task-results", studentId, "sources"] as const,
 

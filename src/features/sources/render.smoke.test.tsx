@@ -93,3 +93,17 @@ describe("katalog bileşenleri", () => {
     expect(html).toContain("yeni konu");
   });
 });
+
+describe("Dağıt çekmecesi", () => {
+  it("veri gelmeden de hatasız çizilir", async () => {
+    const { DistributeDrawer } = await import("./DistributeDrawer");
+    const html = renderToString(
+      <QueryClientProvider client={new QueryClient()}>
+        <DistributeDrawer onClose={noop} />
+      </QueryClientProvider>,
+    );
+    expect(html).toContain("Konuya göre");
+    expect(html).toContain("Atlanacak günler");
+    expect(html).toContain("Onayla ve oluştur");
+  });
+});

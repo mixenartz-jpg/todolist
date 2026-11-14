@@ -559,6 +559,18 @@ export interface SourceRangeMarkRow {
   note: string | null;
 }
 
+export interface PlanBatchRow {
+  id: string;
+  coach_id: string;
+  student_id: string | null;
+  label: string;
+  topic_id: string | null;
+  source_id: string | null;
+  series_id: string | null;
+  skip_weekdays: number[];
+  created_at: string;
+}
+
 export interface TaskActionRow {
   id: string;
   coach_id: string;
