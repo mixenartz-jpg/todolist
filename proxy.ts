@@ -1,7 +1,12 @@
 import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-export async function middleware(request: NextRequest) {
+/*
+ * Next 16'da `middleware.ts` → `proxy.ts` oldu (eski ad deprecated).
+ * Davranış aynı: oturumu tazeler, girişsizleri ve rol dışı yolları
+ * kapıda tutar.
+ */
+export async function proxy(request: NextRequest) {
   return updateSession(request);
 }
 

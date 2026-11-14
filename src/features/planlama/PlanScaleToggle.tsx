@@ -17,7 +17,7 @@ const OPTIONS: ReadonlyArray<{ value: PlanScale; label: string }> = [
  * Plan yüzeyinin ölçek anahtarı: Ay ⇄ Hafta.
  *
  * ── Neden sekme DEĞİL? ──
- * Önce `/planlama/ay` ve `/planlama/hafta` ayrı rotalardı ve alt sekme
+ * Önce `/koc/planlama/ay` ve `/koc/planlama/hafta` ayrı rotalardı ve alt sekme
  * çubuğunda duruyorlardı. Ama ikisi ayrı EKRAN değil, aynı ekranın iki
  * ölçeği: aynı satırı, aynı davranışla, farklı aralıkta çiziyorlar.
  * Sekme "başka bir yere git" der; bu ise "aynı yere başka ölçekte bak".

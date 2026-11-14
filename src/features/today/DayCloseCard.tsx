@@ -48,7 +48,7 @@ export function DayCloseCard({
           alt çubuğa gitmesini beklemek bağlamı koparırdı. Sekme bir
           yer, bu bir akış. */}
       <Link
-        href="/arsiv"
+        href="/koc/arsiv"
         className="text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-accent)]"
       >
         Arşive git

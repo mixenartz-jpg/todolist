@@ -13,6 +13,7 @@ import {
   ChartIcon,
   CheckIcon,
   HomeIcon,
+  PersonIcon,
   TargetIcon,
 } from "@/components/icons";
 import "./nav-bar.css";
@@ -39,15 +40,14 @@ interface NavItem {
  * indirir ve "İstat." etiketi kırpılmaya başlar. Yeni bir yüzey
  * gerektiğinde sekme EKLENMEZ, var olanın içine girer.
  */
-const NAV: NavItem[] = [
+const COACH_NAV: NavItem[] = [
   /*
    * Panel AÇILIŞ ekranı ve sekmelerin başında duruyor: "neyin nerede
    * olduğu" sorusunun cevabı, günün işine girmeden ÖNCE gelir.
    */
-  { href: "/", label: "Panel", icon: <HomeIcon /> },
-  { href: "/bugun", label: "Bugün", icon: <CheckIcon /> },
+  { href: "/koc/panel", label: "Panel", icon: <HomeIcon /> },
   {
-    href: "/planlama",
+    href: "/koc/planlama",
     label: "Planlama",
     // Kısa etiket "Plan": 64px'e "Planlama" sığmaz ve kısaltma
     // bağlamda belirsiz değil.
@@ -68,9 +68,16 @@ const NAV: NavItem[] = [
    * kısayolu da duruyor. Sekmeden çıkarmak SİLMEK değil, sıklığa
    * göre bir kat aşağı indirmek.
    */
-  { href: "/arsiv", label: "Arşiv", icon: <ArchiveIcon /> },
+  { href: "/koc/arsiv", label: "Arşiv", icon: <ArchiveIcon /> },
+  /*
+   * Öğrenci — sonuçlar, günlük formlar, "öğrenci gözüyle önizle".
+   * Koçun eski "Bugün" sekmesinin yerini aldı: koç artık günü kendisi
+   * işaretlemiyor, öğrencinin işaretlediğini okuyor. Sayfa
+   * (`/koc/bugun`) silinmedi, yalnızca menüden indi.
+   */
+  { href: "/koc/ogrenci", label: "Öğrenci", icon: <PersonIcon /> },
   {
-    href: "/istatistik",
+    href: "/koc/istatistik",
     label: "İstatistik",
     // "İstatistik" yerine "Durum" DEĞİL: sekme adı içeriğini
     // söylemeli. Kısaltma aynı kelimenin yaygın kısa biçimidir.
@@ -79,13 +86,45 @@ const NAV: NavItem[] = [
   },
 ];
 
-export function AppShell({ children }: { children: ReactNode }) {
+/*
+ * Öğrenci menüsü bilerek minimal: günün işi ve geçmiş günler.
+ * Planlama, istatistik ve rutinler koçun yüzeyi.
+ */
+const STUDENT_NAV: NavItem[] = [
+  { href: "/ogrenci/bugun", label: "Bugün", icon: <CheckIcon /> },
+  { href: "/ogrenci/gecmis", label: "Geçmiş", icon: <ArchiveIcon /> },
+];
+
+/**
+ * Kabuğun kipi. `coach-preview`: koç öğrenci ekranını salt okunur
+ * önizliyor — menü öğrencininki, rozet "Önizleme", çıkış yerine
+ * koç paneline dönüş bağlantısı.
+ */
+export type ShellRole = "coach" | "student" | "coach-preview";
+
+function navFor(role: ShellRole): NavItem[] {
+  return role === "coach" ? COACH_NAV : STUDENT_NAV;
+}
+
+const ROLE_BADGE: Record<ShellRole, string> = {
+  coach: "Koç",
+  student: "Öğrenci",
+  "coach-preview": "Önizleme",
+};
+
+export function AppShell({
+  children,
+  role,
+}: {
+  children: ReactNode;
+  role: ShellRole;
+}) {
   return (
     /* Zen sağlayıcısı EN DIŞTA: katman tüm kabuğun üstüne biniyor ve
        ona iki farklı yerden giriliyor (odak kartı, hızlı panel). */
     <ZenProvider>
     <div className="flex min-h-dvh flex-col md:flex-row">
-      <NavRail />
+      <NavRail role={role} />
       {/* overflow-x-hidden değil min-w-0: geniş içerik kendi kaydırma
           konteynerinde kalsın, sayfayı yana itmesin. */}
       {/* Alt boşluk: sekme çubuğu + iPhone ana ekran çizgisi + hızlı
@@ -99,17 +138,18 @@ export function AppShell({ children }: { children: ReactNode }) {
           bugünün bir işini işaretlemek isterse, sekme değiştirip geri
           dönmek zorunda kalmasın. Kabuk düzeyinde duruyor çünkü
           hiçbir ekrana ait değil. */}
-      <QuickPanel />
+      {role === "coach" && <QuickPanel />}
 
-      <MobileTabBar />
+      <MobileTabBar role={role} />
     </div>
     </ZenProvider>
   );
 }
 
 /** Masaüstü kenar çubuğu. */
-function NavRail() {
+function NavRail({ role }: { role: ShellRole }) {
   const pathname = usePathname();
+  const nav = navFor(role);
 
   return (
     <nav
@@ -130,10 +170,11 @@ function NavRail() {
           olması bir tekrar değil — biri gezinme, biri kimliktir. */}
       <div className="mb-6 px-2">
         <BrandMark href="/" className="inline-flex items-center" />
+        <RoleBadge role={role} />
       </div>
 
       <ul className="flex flex-col gap-0.5">
-        {NAV.map((item) => (
+        {nav.map((item) => (
           <li key={item.href}>
             <Link
               href={item.href}
@@ -170,8 +211,25 @@ function NavRail() {
         ))}
       </ul>
 
-      <div className="mt-auto px-1">
-        <SignOutButton />
+      <div className="mt-auto flex flex-col gap-1 px-1">
+        {role === "coach" && (
+          <Link
+            href="/ogrenci/bugun"
+            className="flex h-8 items-center rounded-md px-2.5 text-[length:var(--text-sm)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink-2)]"
+          >
+            Öğrenci gözüyle önizle
+          </Link>
+        )}
+        {role === "coach-preview" ? (
+          <Link
+            href="/koc/panel"
+            className="flex h-8 items-center rounded-md px-2.5 text-[length:var(--text-sm)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-ink-2)]"
+          >
+            ← Koç paneline dön
+          </Link>
+        ) : (
+          <SignOutButton />
+        )}
       </div>
     </nav>
   );
@@ -183,8 +241,9 @@ function NavRail() {
  * Beş sekme çubuğu eşit bölüşür; kaydırma YOK, hepsi ilk bakışta
  * görünür. Ölçüler ve aritmetik nav-bar.css'te.
  */
-function MobileTabBar() {
+function MobileTabBar({ role }: { role: ShellRole }) {
   const pathname = usePathname();
+  const nav = navFor(role);
 
   return (
     <nav
@@ -201,7 +260,7 @@ function MobileTabBar() {
        */
       className="tabBar glassChrome glassChrome--bottom flex fixed inset-x-0 bottom-0 z-[var(--z-sticky)] pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      {NAV.map((item) => {
+      {nav.map((item) => {
         const active = isActive(pathname, item.href);
 
         return (
@@ -235,6 +294,25 @@ function MobileTabBar() {
   );
 }
 
+/**
+ * Hangi kipte olunduğu — küçük, sessiz bir etiket. Önizleme kipinde
+ * vurgu rengini alır: koç salt okunur bir ekranda olduğunu unutmasın.
+ */
+function RoleBadge({ role }: { role: ShellRole }) {
+  return (
+    <span
+      className={cn(
+        "mt-2 inline-flex h-5 items-center rounded-full border px-2 text-[length:var(--text-2xs)] font-medium uppercase tracking-[0.06em]",
+        role === "coach-preview"
+          ? "border-[color-mix(in_oklch,var(--color-accent)_45%,transparent)] text-[var(--color-accent)]"
+          : "border-[var(--color-line)] text-[var(--color-ink-3)]",
+      )}
+    >
+      {ROLE_BADGE[role]}
+    </span>
+  );
+}
+
 function SignOutButton() {
   const router = useRouter();
 
@@ -263,7 +341,7 @@ function SignOutButton() {
  * ve hiçbir sekme `/` değildi); F8'de kök kontrol paneli olunca geri
  * geldi.
  *
- * Diğer sekmelerde önek DOĞRU olan: `/planlama/hedefler` açıkken Plan
+ * Diğer sekmelerde önek DOĞRU olan: `/koc/planlama/hedefler` açıkken Plan
  * sekmesi aktif kalmalı.
  */
 function isActive(pathname: string, href: string): boolean {

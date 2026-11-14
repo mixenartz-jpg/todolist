@@ -90,7 +90,7 @@ function TekrarSatiri({
          * demek.
          */}
         <Link
-          href={`/istatistik/denemeler/${yanlis.denemeId}`}
+          href={`/koc/istatistik/denemeler/${yanlis.denemeId}`}
           className="block truncate text-[length:var(--text-sm)] text-[var(--color-ink)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-accent)]"
         >
           {etiket}

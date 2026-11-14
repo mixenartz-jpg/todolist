@@ -23,7 +23,7 @@ interface PlanGoalStripProps {
  * Hedef şeridi — ekranın tepesinde, sabit.
  *
  * ── Neden burada? ──
- * Hedefler ayrı bir sekmedeydi (`/planlama/hedefler`) ve plan yaparken
+ * Hedefler ayrı bir sekmedeydi (`/koc/planlama/hedefler`) ve plan yaparken
  * görünmüyorlardı. "Neyi hedefliyorum" ile "bu hafta ne yapacağım"
  * ayrı ekranlarda durunca, ikisi arasındaki bağ kullanıcının
  * hafızasına kalıyordu. Şerit bu bağı ekrana taşıyor: planı yaparken
@@ -62,7 +62,7 @@ export function PlanGoalStrip({
           Hedefler
         </h2>
         <Link
-          href="/planlama/hedefler"
+          href="/koc/planlama/hedefler"
           className="text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-accent)]"
         >
           Yönet

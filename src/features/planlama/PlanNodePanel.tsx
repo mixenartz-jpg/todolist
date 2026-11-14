@@ -332,6 +332,6 @@ export function PlanNodePanel({
 /** Ağaç sayfasının adresi — sahip türüne göre (0025). */
 export function treeHref(owner: NodeOwner): string {
   return owner.kind === "week"
-    ? `/planlama/hedefler/hafta/${owner.id}`
-    : `/planlama/hedefler/${owner.id}`;
+    ? `/koc/planlama/hedefler/hafta/${owner.id}`
+    : `/koc/planlama/hedefler/${owner.id}`;
 }

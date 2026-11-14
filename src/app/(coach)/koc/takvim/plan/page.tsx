@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 /**
  * Eski Plan ekranı /planlama'ya taşındı.
  *
- * Hedef bir ara `/planlama/ay`dı; F5'te o da `/planlama`ya yönlenen
+ * Hedef bir ara `/koc/planlama/ay`dı; F5'te o da `/koc/planlama`ya yönlenen
  * bir ara durak oldu ve zincir iki atlamaya çıkmıştı. Doğrudan son
  * adrese gidiyor: ara durak ilk yönlendirmeyi yavaşlatmaktan başka
  * bir iş görmüyordu.
@@ -23,5 +23,5 @@ import { redirect } from "next/navigation";
  * kendine belgeliyor.
  */
 export default function TakvimPlanPage() {
-  redirect("/planlama");
+  redirect("/koc/planlama");
 }

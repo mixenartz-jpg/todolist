@@ -75,7 +75,7 @@ export function ArchiveScreen() {
                anlatıyor, "kayıt yok" demiyor. */
             description="Bir görevi tamamladığında burada gününe göre birikir. Her işin altına ne yaptığını yazabilirsin — 'ne kadar sürdü' değil, 'ne oldu'."
             actionLabel="Bugüne git"
-            actionHref="/bugun"
+            actionHref="/koc/bugun"
           />
         ) : (
           <div className="flex flex-col gap-[var(--stack-gap)]">

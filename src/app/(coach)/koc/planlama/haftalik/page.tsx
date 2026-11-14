@@ -12,5 +12,5 @@ import { redirect } from "next/navigation";
  * PWA'da 404 çıkmaz sokaktır.
  */
 export default function PlanlamaHaftalikPage() {
-  redirect("/planlama/hedefler");
+  redirect("/koc/planlama/hedefler");
 }

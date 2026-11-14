@@ -149,3 +149,18 @@ export function ListIcon({ size = 16 }: IconProps) {
     </svg>
   );
 }
+
+/** Öğrenci — koç menüsündeki öğrenci sonuçları sekmesi. */
+export function PersonIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...svgProps(size)}>
+      <circle cx="8" cy="5.25" r="2.5" stroke="currentColor" strokeWidth="1.4" />
+      <path
+        d="M3 13.5c.6-2.4 2.6-3.75 5-3.75s4.4 1.35 5 3.75"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}

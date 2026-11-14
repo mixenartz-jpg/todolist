@@ -10,19 +10,19 @@ const TABS = [
    * işaretlenen), denemeler haftalık ölçüm (arada bir girilen),
    * tablo aylık genel görünüm. Sık bakılan önce.
    */
-  { href: "/istatistik", label: "Rutinler" },
-  { href: "/istatistik/denemeler", label: "Denemeler" },
+  { href: "/koc/istatistik", label: "Rutinler" },
+  { href: "/koc/istatistik/denemeler", label: "Denemeler" },
   /*
    * Tablo (rutin × gün matrisi) buraya ana sekmeden indi — yeri
    * Arşiv'e verildi (gerekçe `AppShell.tsx`'te). Kendi rotası
-   * `/tablo` olarak duruyor; burası ona giden sekme.
+   * `/koc/tablo` olarak duruyor; burası ona giden sekme.
    *
-   * `/istatistik/tablo` DEĞİL `/tablo`: matris kendi tam genişlikli
+   * `/koc/istatistik/tablo` DEĞİL `/koc/tablo`: matris kendi tam genişlikli
    * kaydırıcısını kuruyor ve İstatistik'in `3xl` gövdesine
    * sığmıyor. Sekme başka bir rotaya götürebilir — `aria-current`
    * doğru kaldığı sürece kullanıcı için fark yok.
    */
-  { href: "/tablo", label: "Tablo" },
+  { href: "/koc/tablo", label: "Tablo" },
 ] as const;
 
 /**
@@ -52,14 +52,14 @@ export function IstatistikTabs() {
     >
       {TABS.map((tab) => {
         /*
-         * `/istatistik` HER yolun öneki olduğu için `startsWith` onu
+         * `/koc/istatistik` HER yolun öneki olduğu için `startsWith` onu
          * daima aktif gösterirdi — `PlanlamaTabs`'in aynı tuzağı.
          * Kök sekme tam eşleşme ister, alt sekme önek yeter (detay
          * sayfası `/denemeler/[id]` de sekmeyi aktif tutmalı).
          */
         const active =
-          tab.href === "/istatistik"
-            ? pathname === "/istatistik"
+          tab.href === "/koc/istatistik"
+            ? pathname === "/koc/istatistik"
             : pathname.startsWith(tab.href);
 
         return (

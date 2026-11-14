@@ -26,6 +26,20 @@ const nextConfig: NextConfig = {
       // yol kalıcı olarak yönlendirilir: yer imleri ve ana ekrana
       // eklenmiş PWA kısayolları kırılmamalı.
       { source: "/notlar", destination: "/defter/notlar", permanent: true },
+
+      /*
+       * Koç / öğrenci ayrımı: koç sayfaları `/koc` altına taşındı.
+       * Eski adresler (yer imleri, PWA kısayolları) kırılmasın.
+       * `permanent: false` — geri alma ihtimaline karşı tarayıcı 308'i
+       * önbelleğe almasın. Öğrenci buraya düşerse proxy onu kendi
+       * ekranına geri yollar.
+       */
+      ...["bugun", "planlama", "arsiv", "istatistik", "tablo", "rutinler", "takvim"].flatMap(
+        (seg) => [
+          { source: `/${seg}`, destination: `/koc/${seg}`, permanent: false },
+          { source: `/${seg}/:path*`, destination: `/koc/${seg}/:path*`, permanent: false },
+        ],
+      ),
     ];
   },
 };

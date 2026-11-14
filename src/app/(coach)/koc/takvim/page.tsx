@@ -12,5 +12,5 @@ import { redirect } from "next/navigation";
  * çıkmaz sokaktır ve tarayıcı geçmişi bu adresi hatırlıyor olabilir.
  */
 export default function TakvimPage() {
-  redirect("/planlama");
+  redirect("/koc/planlama");
 }

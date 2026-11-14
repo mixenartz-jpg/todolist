@@ -48,7 +48,7 @@ import "./planlama.css";
  * Planlamanın takvim yüzeyi — TEK ekran, iki ölçek.
  *
  * ── Neden birleşti? ──
- * `/planlama/ay` ve `/planlama/hafta` ayrı rotalardı ve aynı satırı
+ * `/koc/planlama/ay` ve `/koc/planlama/hafta` ayrı rotalardı ve aynı satırı
  * çiziyorlardı; farkları görünmez ve tutarsızdı (gün numarasına basmak
  * ayda panel açıyor, haftada hiçbir şey yapmıyordu). İkisi ayrı ekran
  * değil, tek ekranın iki ölçeği — rota birleşince davranış da birleşti.

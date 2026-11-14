@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { IstatistikTabs } from "@/app/(app)/istatistik/IstatistikTabs";
+import { IstatistikTabs } from "@/app/(coach)/koc/istatistik/IstatistikTabs";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { Screen, ScreenBody, ScreenHeader } from "@/components/Screen";
@@ -23,7 +23,7 @@ import type { DenemeDetayli } from "./types";
 /**
  * Deneme listesi — "nasıl gidiyorum" sorusunun ana ekranı.
  *
- * ── Neden `/istatistik` altında? ──
+ * ── Neden `/koc/istatistik` altında? ──
  * `AppShell`'in nav kuralı bağlayıcı: beş sekme üst sınır, yeni yüzey
  * sekme EKLEMEZ, var olanın içine girer. Deneme tam olarak "nasıl
  * gidiyorum" sorusudur ve İstatistik o sekme.
@@ -217,7 +217,7 @@ function DenemeSatiri({ deneme }: { deneme: DenemeDetayli }) {
 
   return (
     <Link
-      href={`/istatistik/denemeler/${deneme.id}`}
+      href={`/koc/istatistik/denemeler/${deneme.id}`}
       className={cn(
         "flex items-center gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] p-4",
         "transition-[border-color,background-color] duration-[var(--duration-fast)] ease-[var(--ease-out-quart)]",

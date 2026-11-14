@@ -48,6 +48,11 @@ export interface EntryRow {
 export interface TaskRow {
   id: string;
   user_id: string;
+  /**
+   * Görevi yazan (0028). Koçun görevinde koç, öğrencinin "ek
+   * çalışma"sında öğrenci. Opsiyonel: migration öncesi alan gelmez.
+   */
+  created_by?: string | null;
   title: string;
   due_date: string | null;
   done: boolean;
@@ -397,4 +402,55 @@ export interface FocusSessionRow {
   ended_at: string;
   net_seconds: number;
   created_at: string;
+}
+
+// ─────────────────────────── 0028: roller ───────────────────────────
+
+export interface ProfileRow {
+  user_id: string;
+  role: "coach" | "student";
+  coach_id: string | null;
+  display_name: string | null;
+  created_at: string;
+}
+
+export type TaskResultStatus = "done" | "partial" | "skipped";
+
+/** Bir görevin BİR gündeki sonucu; anahtar (task_id, date). */
+export interface TaskResultRow {
+  task_id: string;
+  date: string;
+  student_id: string;
+  status: TaskResultStatus | null;
+  total: number | null;
+  correct: number | null;
+  wrong: number | null;
+  empty: number | null;
+  actual_minutes: number | null;
+  missing_topics: string[];
+  reason: string | null;
+  note: string | null;
+  updated_at: string;
+}
+
+export interface DailyLogRow {
+  student_id: string;
+  date: string;
+  /** "HH:MM:SS" — Postgres `time`. */
+  sleep_at: string | null;
+  wake_at: string | null;
+  study_bucket: number | null;
+  screen_bucket: number | null;
+  energy: number | null;
+  note: string | null;
+  updated_at: string;
+}
+
+export interface CoachNoteRow {
+  coach_id: string;
+  student_id: string;
+  date: string;
+  scale: "day" | "week";
+  note: string;
+  updated_at: string;
 }

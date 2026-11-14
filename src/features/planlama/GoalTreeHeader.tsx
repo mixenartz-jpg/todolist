@@ -48,7 +48,7 @@ export function GoalTreeHeader({
   return (
     <header className="mb-4 flex flex-col gap-3">
       <Link
-        href="/planlama/hedefler"
+        href="/koc/planlama/hedefler"
         className="w-fit text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-accent)]"
       >
         ← Hedefler

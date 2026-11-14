@@ -346,7 +346,7 @@ export function TodayScreen() {
                     title="Bugün için rutin yok"
                     description="Bugüne denk gelen bir rutinin yok. Yeni bir tane ekleyebilir ya da tablodan geçmiş günleri doldurabilirsin."
                     actionLabel="Rutin ekle"
-                    actionHref="/rutinler"
+                    actionHref="/koc/rutinler"
                   />
                 ) : (
                   <ul className="flex flex-col gap-2">

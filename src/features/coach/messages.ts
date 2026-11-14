@@ -80,7 +80,7 @@ export function streakLine(streak: StreakResult): CoachLine {
         streak.longest > 0
           ? `En uzun serin ${streak.longest} ${unit}. Bugün yeniden başlayabilirsin.`
           : "Bugün işaretlersen seri başlar.",
-      action: { label: "Bugüne git", href: "/bugun" },
+      action: { label: "Bugüne git", href: "/koc/bugun" },
       tone: "neutral",
     };
   }
@@ -100,7 +100,7 @@ export function streakLine(streak: StreakResult): CoachLine {
     return {
       headline: `${streak.current} ${unit}`,
       detail: `En uzun serine eşitledin. Bir ${unit} daha rekor demek.`,
-      action: { label: "Bugüne git", href: "/bugun" },
+      action: { label: "Bugüne git", href: "/koc/bugun" },
       tone: "good",
     };
   }
@@ -115,7 +115,7 @@ export function streakLine(streak: StreakResult): CoachLine {
      * birlikte bir hedef olur.
      */
     detail: `En uzun serin ${streak.longest} ${unit} — ${remaining} ${unit} kaldı.`,
-    action: { label: "Bugüne git", href: "/bugun" },
+    action: { label: "Bugüne git", href: "/koc/bugun" },
     tone: "neutral",
   };
 }
@@ -149,7 +149,7 @@ export function trendLine(delta: TrendDelta | null): CoachLine | null {
        * dediğinde kullanıcının yapabileceği bir şey hâlâ var ve
        * çıkmaz sokak yorum yasak.
        */
-      action: { label: "Bugüne git", href: "/bugun" },
+      action: { label: "Bugüne git", href: "/koc/bugun" },
       tone: "neutral",
     };
   }
@@ -167,7 +167,7 @@ export function trendLine(delta: TrendDelta | null): CoachLine | null {
     headline: `Geçen haftadan %${points} geridesin`,
     // Suçlama yok, gerçek var — ve arkasından bir eylem.
     detail: `Bu hafta ${formatPercent(delta.current)}, geçen hafta ${formatPercent(delta.previous)}.`,
-    action: { label: "Bugüne git", href: "/bugun" },
+    action: { label: "Bugüne git", href: "/koc/bugun" },
     tone: "warn",
   };
 }
@@ -181,7 +181,7 @@ export function atRiskLine(routineName: string, streak: number): CoachLine {
   return {
     headline: `${streak} günlük serin bugüne bakıyor`,
     detail: `${routineName} bugün henüz işaretlenmedi.`,
-    action: { label: "Şimdi işaretle", href: "/bugun" },
+    action: { label: "Şimdi işaretle", href: "/koc/bugun" },
     tone: "warn",
   };
 }
@@ -206,7 +206,7 @@ export function dayLine(close: DayClose): CoachLine {
     return {
       headline: "Bugün için planlanmış iş yok",
       detail: "Bir görev ekleyerek güne yön verebilirsin.",
-      action: { label: "Görev ekle", href: "/bugun" },
+      action: { label: "Görev ekle", href: "/koc/bugun" },
       tone: "neutral",
     };
   }
@@ -226,7 +226,7 @@ export function dayLine(close: DayClose): CoachLine {
     return {
       headline: `0/${total}`,
       detail: `Bugün için ${total} iş duruyor. İlkini bitirmek en zoru.`,
-      action: { label: "Bugüne git", href: "/bugun" },
+      action: { label: "Bugüne git", href: "/koc/bugun" },
       tone: "neutral",
     };
   }
@@ -234,7 +234,7 @@ export function dayLine(close: DayClose): CoachLine {
   return {
     headline: `${done}/${total}`,
     detail: `${remaining} iş kaldı.`,
-    action: { label: "Bugüne git", href: "/bugun" },
+    action: { label: "Bugüne git", href: "/koc/bugun" },
     tone: "neutral",
   };
 }
@@ -270,7 +270,7 @@ export function paceLine(pace: GoalPace, goalTitle: string): CoachLine | null {
       headline: `${goalTitle} — geridesin`,
       // Suçlama yok: iki sayı ve bir talimat.
       detail: `${formatPercent(pace.actual)} tamam, bu tarihte beklenen ${formatPercent(pace.expected)}.${needed ? ` ${needed}` : ""}`,
-      action: { label: "Görev ekle", href: "/bugun" },
+      action: { label: "Görev ekle", href: "/koc/bugun" },
       tone: "warn",
     };
   }
@@ -279,7 +279,7 @@ export function paceLine(pace: GoalPace, goalTitle: string): CoachLine | null {
     headline: `${goalTitle} — yolunda`,
     detail: needed ?? `${formatPercent(pace.actual)} tamam.`,
     // Kutlama değil durum bildirimi; eylem düşmez (bkz. trendLine).
-    action: { label: "Görev ekle", href: "/bugun" },
+    action: { label: "Görev ekle", href: "/koc/bugun" },
     tone: "neutral",
   };
 }
@@ -307,7 +307,7 @@ export function idleGoalLine(
   return {
     headline: `${goalTitle} bekliyor`,
     detail: `${daysIdle} gündür bu hedefe hiç görev bağlamadın.`,
-    action: { label: "Görev ekle", href: "/bugun" },
+    action: { label: "Görev ekle", href: "/koc/bugun" },
     tone: "warn",
   };
 }
@@ -342,7 +342,7 @@ export function weakDayLine(
   return {
     headline: `${weekdayNames[worst.weekday]} günleri zayıf`,
     detail: `O günlerde ortalama ${formatPercent(worst.ratio)}, en iyi günün ${weekdayNames[best.weekday]} (${formatPercent(best.ratio)}).`,
-    action: { label: "Planı gözden geçir", href: "/planlama" },
+    action: { label: "Planı gözden geçir", href: "/koc/planlama" },
     tone: "warn",
   };
 }

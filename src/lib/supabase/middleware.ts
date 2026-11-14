@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { HOME_BY_ROLE, roleFromClaims, routeFor } from "@/lib/auth/roles";
 import { supabaseAnonKey, supabaseUrl } from "./env";
 
 /** Giriş yapılmamışken erişilebilen yollar. */
@@ -49,12 +50,30 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  if (!user) return supabaseResponse;
+
+  const role = roleFromClaims(user);
+
   // Giriş yapmış kullanıcı giriş sayfasında durmasın.
-  if (user && pathname.startsWith("/giris")) {
+  const target = pathname.startsWith("/giris")
+    ? HOME_BY_ROLE[role]
+    : routeFor(role, pathname);
+
+  if (target) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
+    url.pathname = target;
+    url.search = "";
+    return redirectWithCookies(url, supabaseResponse);
   }
 
   return supabaseResponse;
+}
+
+/**
+ * Yönlendirirken tazelenmiş oturum cookie'lerini kaybetme (kural 2).
+ */
+function redirectWithCookies(url: URL, from: NextResponse) {
+  const response = NextResponse.redirect(url);
+  for (const cookie of from.cookies.getAll()) response.cookies.set(cookie);
+  return response;
 }

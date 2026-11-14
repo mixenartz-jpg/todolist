@@ -75,6 +75,12 @@ export interface Task {
    * yer tutmaz; satırın sağındaki çipte görünür (bkz. `estimate.ts`).
    */
   estimateMinutes: number | null;
+  /**
+   * Görevi yazan kullanıcı (0028). Koçun `user_id`'sinden farklıysa
+   * görev öğrencinin "ek çalışma"sıdır. Opsiyonel: migration öncesi
+   * ve test fikstürlerinde yok.
+   */
+  createdBy?: string | null;
 }
 
 export interface TaskDraft {

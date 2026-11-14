@@ -297,7 +297,7 @@ function WeekStrip({
           Bu hafta
         </h2>
         <Link
-          href="/planlama"
+          href="/koc/planlama"
           className="text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-accent)]"
         >
           Planlamaya git
@@ -380,7 +380,7 @@ function GoalList({
           Bu ayın hedefleri
         </h2>
         <Link
-          href="/planlama/hedefler"
+          href="/koc/planlama/hedefler"
           className="text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-accent)]"
         >
           Hedeflere git
@@ -444,7 +444,7 @@ function RoutineHeat({
           Rutin doluluğu
         </h2>
         <Link
-          href="/tablo"
+          href="/koc/tablo"
           className="text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-accent)]"
         >
           Tabloya git

@@ -5,7 +5,7 @@ import { minDate, todayStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
 import { formatPercent } from "@/lib/ui/tr";
-import { IstatistikTabs } from "@/app/(app)/istatistik/IstatistikTabs";
+import { IstatistikTabs } from "@/app/(coach)/koc/istatistik/IstatistikTabs";
 import { Screen, ScreenHeader, ScreenBody } from "@/components/Screen";
 import { EmptyState } from "@/components/EmptyState";
 import { ChartIcon } from "@/components/icons";
@@ -126,7 +126,7 @@ export function StatsScreen() {
           title="Henüz veri yok"
           description="Rutin ekleyip birkaç gün işaretledikten sonra burada serilerini, tamamlanma oranlarını ve yıllık ısı haritanı göreceksin."
           actionLabel="Rutin ekle"
-          actionHref="/rutinler"
+          actionHref="/koc/rutinler"
         />
       </Screen>
     );

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { IstatistikTabs } from "@/app/(app)/istatistik/IstatistikTabs";
+import { IstatistikTabs } from "@/app/(coach)/koc/istatistik/IstatistikTabs";
 import { ScreenHeader } from "@/components/Screen";
 import { Button } from "@/components/Button";
 import { formatMonthYear } from "@/lib/ui/tr";
@@ -29,7 +29,7 @@ export function MonthSwitcher({
           {/*
             Rutin yönetimine TEK kalıcı giriş.
 
-            `/rutinler` üst çubuktan çıktı: rutin CRUD'u nadir yapılan
+            `/koc/rutinler` üst çubuktan çıktı: rutin CRUD'u nadir yapılan
             bir iş ve altı sekme, 320px'te etiketleri kırpma sınırına
             dayıyordu. Ama rotayı sekmeden almak, ona yalnızca boş
             durum bağlantılarından ulaşılabilmesi demekti — yani
@@ -37,7 +37,7 @@ export function MonthSwitcher({
             ekranın kendisi zaten rutinlerin listesi.
           */}
           <Link
-            href="/rutinler"
+            href="/koc/rutinler"
             className="rounded-md px-2 py-1 text-[length:var(--text-sm)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-accent)]"
           >
             Rutinleri yönet

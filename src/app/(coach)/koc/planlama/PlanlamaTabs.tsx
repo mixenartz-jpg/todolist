@@ -16,9 +16,9 @@ const TABS = [
    * Sıra YAPMAKTAN ÖLÇMEYE gider: takvim (günleri kur) → hedefler
    * (neyi hedefliyorum) → özet (nasıl gitti).
    */
-  { href: "/planlama", label: "Plan", filters: true },
-  { href: "/planlama/hedefler", label: "Hedefler", filters: false },
-  { href: "/planlama/ozet", label: "Özet", filters: false },
+  { href: "/koc/planlama", label: "Plan", filters: true },
+  { href: "/koc/planlama/hedefler", label: "Hedefler", filters: false },
+  { href: "/koc/planlama/ozet", label: "Özet", filters: false },
 ] as const;
 
 /** Kategori filtresinin sorgu parametresi (usePlanlamaSurface ile aynı). */
@@ -32,7 +32,7 @@ const CATEGORY_PARAM = "kat";
  *
  *   · **Ay ve Hafta birleşti.** İkisi ayrı EKRAN değil, aynı ekranın
  *     iki ölçeğiydi — aynı satırı, aynı davranışla çiziyorlardı. Şimdi
- *     `/planlama` içinde bir ölçek düğmesi (bkz. PlanScaleToggle).
+ *     `/koc/planlama` içinde bir ölçek düğmesi (bkz. PlanScaleToggle).
  *     Sekme "başka bir yere git" der; ölçek "aynı yere başka ölçekte
  *     bak" — ikisi farklı şeyler ve aynı çubuğa konmamalıydı.
  *
@@ -77,14 +77,14 @@ export function PlanlamaTabs() {
   }
 
   /*
-   * Aktiflik: `/planlama` HER yolun öneki olduğu için `startsWith`
+   * Aktiflik: `/koc/planlama` HER yolun öneki olduğu için `startsWith`
    * onu daima aktif gösterirdi. Takvim sekmesi tam eşleşme ister,
    * diğerleri önek yeter (alt rota yok ama sorgu dizesi var ve o
    * `pathname`'e girmiyor).
    */
   function isActive(tab: (typeof TABS)[number]): boolean {
-    return tab.href === "/planlama"
-      ? pathname === "/planlama"
+    return tab.href === "/koc/planlama"
+      ? pathname === "/koc/planlama"
       : pathname.startsWith(tab.href);
   }
 

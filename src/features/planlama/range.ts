@@ -251,7 +251,7 @@ export function scaleFromParam(raw: string | null): PlanScale {
 /**
  * Ölçeği URL değerine çevirir; `null` → parametre SİLİNİR.
  *
- * Varsayılan ölçek URL'e yazılmaz ki temiz `/planlama` adresi
+ * Varsayılan ölçek URL'e yazılmaz ki temiz `/koc/planlama` adresi
  * varsayılan görünümü göstersin.
  */
 export function scaleToParam(scale: PlanScale): string | null {

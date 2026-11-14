@@ -52,6 +52,7 @@ export function toTask(row: TaskRow): Task {
     colorSlot: row.color_slot,
     // `?? null`: 0023 henüz çalıştırılmadıysa alan HİÇ gelmez.
     estimateMinutes: row.estimate_minutes ?? null,
+    createdBy: row.created_by ?? null,
   };
 }
 

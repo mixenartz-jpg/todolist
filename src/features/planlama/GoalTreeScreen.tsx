@@ -220,7 +220,7 @@ export function GoalTreeScreen({ owner }: GoalTreeScreenProps) {
       ) : (
         <header className="mb-4">
           <Link
-            href="/planlama/hedefler"
+            href="/koc/planlama/hedefler"
             className="text-[length:var(--text-xs)] text-[var(--color-ink-3)] hover:text-[var(--color-accent)]"
           >
             ← Hedefler

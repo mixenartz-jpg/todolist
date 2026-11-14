@@ -247,7 +247,7 @@ export function MatrixScreen() {
           title="Henüz rutin yok"
           description="Takip etmek istediğin ilk rutini ekle — her gün, haftanın belirli günleri veya haftada birkaç kez olabilir."
           actionLabel="Rutin ekle"
-          actionHref="/rutinler"
+          actionHref="/koc/rutinler"
         />
       ) : (
         <div className="matrixScroll min-h-0 w-full min-w-0 flex-1">

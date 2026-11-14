@@ -68,7 +68,7 @@ export function FocusCard({
           havuzdan bir iş çekebilirsin.
         </p>
         <Link
-          href="/planlama"
+          href="/koc/planlama"
           className="mt-4 inline-flex h-9 items-center rounded-lg border border-[var(--color-line-2)] px-3.5 text-[length:var(--text-sm)] transition-colors duration-[var(--duration-fast)] hover:border-[var(--color-accent)]"
         >
           Planlamaya git

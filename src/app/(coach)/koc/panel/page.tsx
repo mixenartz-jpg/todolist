@@ -7,8 +7,8 @@ export const metadata: Metadata = { title: "Panel · Kero YKS" };
  * Kök — kontrol paneli.
  *
  * Açılış "şimdi ne yapmalıyım" sorusunu cevaplar. Eskiden burası rutin
- * matrisiydi ("bu ay nasıl gidiyorum" — geriye bakmak) ve o `/tablo`ya
- * taşındı; bir süre de `/bugun`'e yönlendiren boş bir dosyaydı.
+ * matrisiydi ("bu ay nasıl gidiyorum" — geriye bakmak) ve o `/koc/tablo`ya
+ * taşındı; bir süre de `/koc/bugun`'e yönlendiren boş bir dosyaydı.
  *
  * Public landing YOK: uygulama tek kullanıcılı ve girişsiz gelen
  * zaten `middleware.ts` tarafından `/giris`e yollanıyor. Tanıtım

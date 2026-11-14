@@ -176,7 +176,7 @@ export function WeekGoalCard({
 
         {/* Ağaç sayfasına geçiş — aylık karttaki bağlantının ikizi (0025). */}
         <Link
-          href={`/planlama/hedefler/hafta/${goal.id}`}
+          href={`/koc/planlama/hedefler/hafta/${goal.id}`}
           aria-label={`${goal.title}: ağacı aç`}
           className="shrink-0 rounded-lg px-2 py-1 text-[length:var(--text-xs)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-quart)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-accent)]"
         >

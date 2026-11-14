@@ -160,7 +160,7 @@ export function SummaryScreen() {
 
                 <div className="mt-2">
                   <Link
-                    href="/planlama/hedefler"
+                    href="/koc/planlama/hedefler"
                     className="text-[length:var(--text-sm)] text-[var(--color-accent)] hover:underline"
                   >
                     Hedefleri düzenle

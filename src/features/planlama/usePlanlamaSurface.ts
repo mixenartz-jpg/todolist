@@ -82,7 +82,7 @@ export interface PlanlamaSurface {
  * Plan yüzeyinin durumu: çapa, ölçek ve kategori filtresi.
  *
  * ── Neden ölçek artık URL'de, ayrı bir ROTA değil? ──
- * Ay ve Hafta eskiden `/planlama/ay` ve `/planlama/hafta` idi ve aynı
+ * Ay ve Hafta eskiden `/koc/planlama/ay` ve `/koc/planlama/hafta` idi ve aynı
  * `PlanDayRow`'u çiziyorlardı — `PlanWeekGrid`'in kendi yorumu bunu
  * itiraf ediyordu: "Yerleşim, ölçüler ve davranış birebir aynı."
  * Aynı görünen iki ekran sessizce farklı davranıyordu: gün numarasına
@@ -184,7 +184,7 @@ export function usePlanlamaSurface(): PlanlamaSurface {
     (next: DateStr) => {
       /*
        * Bugünün aralığı ise parametre SİLİNİR, yazılmaz. Böylece temiz
-       * `/planlama` adresi varsayılan görünümü gösterir ve "bu hafta"ya
+       * `/koc/planlama` adresi varsayılan görünümü gösterir ve "bu hafta"ya
        * dönmek URL'i de sıfırlar — kullanıcı adres çubuğunda eski bir
        * tarih görmez.
        *

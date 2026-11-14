@@ -14,7 +14,7 @@ import type { GoalNode, NodeOwner } from "./types";
  * özyinelemeli bir CTE gerekirdi — supabase-js onu ifade edemez — ya
  * da seviye başına bir ağ turu atılırdı.
  *
- * `owner` null olabilir: `/planlama` yan paneli hedef
+ * `owner` null olabilir: `/koc/planlama` yan paneli hedef
  * seçilmeden monte oluyor ve o sırada sorgu hiç açılmamalı.
  *
  * ── Neden `useTasks` gibi "hepsini çek, bellekte filtrele" değil? ──

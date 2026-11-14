@@ -74,7 +74,7 @@ export function DenemeDetay({ denemeId }: { denemeId: string }) {
           <p className="text-[length:var(--text-base)] text-[var(--color-ink-2)]">
             Bu deneme silinmiş olabilir.{" "}
             <Link
-              href="/istatistik/denemeler"
+              href="/koc/istatistik/denemeler"
               className="text-[var(--color-accent)] underline"
             >
               Denemelere dön
@@ -113,7 +113,7 @@ export function DenemeDetay({ denemeId }: { denemeId: string }) {
         actions={
           <>
             <Link
-              href="/istatistik/denemeler"
+              href="/koc/istatistik/denemeler"
               className="rounded-md px-2 py-1 text-[length:var(--text-sm)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-accent)]"
             >
               Tüm denemeler
@@ -212,7 +212,7 @@ export function DenemeDetay({ denemeId }: { denemeId: string }) {
           pending={deleteDeneme.isPending}
           onConfirm={() =>
             deleteDeneme.mutate(deneme.id, {
-              onSuccess: () => router.push("/istatistik/denemeler"),
+              onSuccess: () => router.push("/koc/istatistik/denemeler"),
             })
           }
           onCancel={() => setSilinecek(false)}
