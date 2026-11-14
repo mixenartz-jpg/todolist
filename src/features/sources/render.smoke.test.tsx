@@ -107,3 +107,10 @@ describe("Dağıt çekmecesi", () => {
     expect(html).toContain("Onayla ve oluştur");
   });
 });
+
+describe("Konular ekranı", () => {
+  it("konu satırı durum ve kaynak linkiyle çizilir", async () => {
+    const { topicHref } = await import("@/features/topics/links");
+    expect(topicHref("Fizik", "AYT", "bhh")).toBe("/koc/konular?ders=Fizik&sinav=AYT&konu=bhh");
+  });
+});

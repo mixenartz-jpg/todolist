@@ -20,6 +20,12 @@ const TABS = [
   { href: "/koc/planlama/hedefler", label: "Hedefler", filters: false },
   { href: "/koc/planlama/ozet", label: "Özet", filters: false },
   { href: "/koc/planlama/kaynaklar", label: "Kaynaklar", filters: false },
+  /*
+   * Konu takibi kendi rotasında (`/koc/konular`) ama ana menüye
+   * girmez — beş sekme sınırı (AppShell). Kaynaklarla karşılıklı
+   * bağlı olduğu için onun yanında durur.
+   */
+  { href: "/koc/konular", label: "Konular", filters: false },
 ] as const;
 
 /** Kategori filtresinin sorgu parametresi (usePlanlamaSurface ile aynı). */

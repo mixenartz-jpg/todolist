@@ -30,16 +30,21 @@ export function useSourceProgress({ autoStatus = false }: { autoStatus?: boolean
   const trees = useMemo(() => treesQuery.data ?? [], [treesQuery.data]);
   const topics = useMemo(() => topicsQuery.data ?? [], [topicsQuery.data]);
 
-  const progress = useMemo(() => {
-    const ix = indexProgress({
-      tasks: tasksQuery.data ?? [],
-      taskItems: itemsQuery.data ?? [],
-      results: resultsQuery.data ?? [],
-      itemMarks: marksQuery.data?.items ?? [],
-      rangeMarks: marksQuery.data?.ranges ?? [],
-    });
-    return new Map<string, SourceProgress>(trees.map((t) => [t.id, sourceProgress(t, ix)]));
-  }, [trees, tasksQuery.data, itemsQuery.data, resultsQuery.data, marksQuery.data]);
+  const index = useMemo(
+    () =>
+      indexProgress({
+        tasks: tasksQuery.data ?? [],
+        taskItems: itemsQuery.data ?? [],
+        results: resultsQuery.data ?? [],
+        itemMarks: marksQuery.data?.items ?? [],
+        rangeMarks: marksQuery.data?.ranges ?? [],
+      }),
+    [tasksQuery.data, itemsQuery.data, resultsQuery.data, marksQuery.data],
+  );
+  const progress = useMemo(
+    () => new Map<string, SourceProgress>(trees.map((t) => [t.id, sourceProgress(t, index)])),
+    [trees, index],
+  );
 
   // Kaynak durumu otomatik İLERİ gider (sırada → devam → bitti).
   const { mutate: setStatus } = useSetSourceStatus();
@@ -66,6 +71,8 @@ export function useSourceProgress({ autoStatus = false }: { autoStatus?: boolean
     trees,
     topics,
     progress,
+    index,
+    results: resultsQuery.data ?? [],
     studentId,
     loading:
       treesQuery.isPending ||

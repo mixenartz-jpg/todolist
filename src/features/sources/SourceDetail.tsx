@@ -35,6 +35,7 @@ import { KindIcon, percent, StatusBadge, SummaryBar } from "./ui";
 import { RangeBar, TestGrid } from "./UnitGrid";
 import { nextFreeRun, nextFreeUnits } from "./unitStatus";
 import { useSourceProgress } from "./useSourceProgress";
+import { topicHref } from "@/features/topics/links";
 
 /**
  * Kaynak detayı: seriler başlık, altında bölümler; her bölümde ilerleme,
@@ -321,7 +322,17 @@ function SectionRow({
           <p className="font-medium">{sec.section.label}</p>
           <p className="text-[length:var(--text-2xs)] text-[var(--color-ink-3)]">
             {sec.section.unitFrom}-{sec.section.unitTo}
-            {topic && topic.name !== sec.section.label ? ` · ${topic.name}` : ""}
+            {topic && (
+              <>
+                {" · "}
+                <Link
+                  href={topicHref(topic.subject, topic.exam, topic.id)}
+                  className="text-[var(--color-accent)] hover:underline"
+                >
+                  {topic.name}
+                </Link>
+              </>
+            )}
             {next !== undefined ? ` · sıradaki: ${next}` : " · hepsi atandı"}
           </p>
         </div>
@@ -376,7 +387,22 @@ function SectionRow({
       </div>
       {itemTopics.length > 0 && (
         <p className="mt-1 text-[length:var(--text-2xs)] text-[var(--color-ink-3)]">
-          {itemTopics.map((i) => `${i.number}: ${topics.get(i.topicId!)?.name ?? "?"}`).join(" · ")}
+          {itemTopics.map((i, k) => {
+            const t = topics.get(i.topicId!);
+            return (
+              <span key={i.id}>
+                {k > 0 ? " · " : ""}
+                {i.number}:{" "}
+                {t ? (
+                  <Link href={topicHref(t.subject, t.exam, t.id)} className="hover:underline">
+                    {t.name}
+                  </Link>
+                ) : (
+                  "?"
+                )}
+              </span>
+            );
+          })}
         </p>
       )}
       {sec.tasks.length > 0 && (

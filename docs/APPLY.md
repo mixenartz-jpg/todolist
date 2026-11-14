@@ -68,3 +68,18 @@ dosyalarını **ters sırayla** çalıştır.
 - [ ] **Elle "ödevlendirildi" işaretlenen test Dağıt'ta önerilmiyor**
 - [ ] Onaylayınca görevler oluşuyor; Dağıtımlar → "Kaydır" (şu günden sonra, 1 gün) yalnızca sonuçsuz
       görevleri itiyor ve atlanan güne düşürmüyor; "Dağıtımı sil" sonuçluları bırakıyor
+- [ ] Planlama → Konular (`/koc/konular`): ders seç → konular; çözülen, doğruluk, kaynak dağılımı,
+      video, son tarih; renkler (gri başlanmadı, sarı çalışılıyor, yeşil ≥ %80, kırmızı < %60 — eşikler
+      `src/features/alerts/thresholds.ts`); konu ↔ kaynak linkleri iki yönde çalışıyor
+
+## 4. Eşikler
+
+`src/features/alerts/thresholds.ts`:
+
+- `PLAN_THRESHOLDS.dailyMinutesWarn`: Dağıt önizlemesinde günlük toplam (dk), varsayılan 360
+- `TOPIC_THRESHOLDS`: konu renkleri (`good` 0.8, `weak` 0.6, `recentCount` 2)
+
+## 5. Konu listesini düzenlemek
+
+`supabase/migrations/0035_topics_seed.sql` dosyasını düzenleyip yeniden çalıştır. Var olan
+satırlar yinelenmez, yalnızca sıra ve takma adlar güncellenir.

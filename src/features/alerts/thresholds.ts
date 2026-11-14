@@ -27,3 +27,15 @@ export const PLAN_THRESHOLDS = {
   /** Dakika. 6 sa. */
   dailyMinutesWarn: 360,
 } as const;
+
+/**
+ * Konu takibi renkleri (/koc/konular). Doğruluk = D / (D + Y).
+ *   iyi    son `recentCount` sonuçta doğruluk ≥ `good`
+ *   zayıf  son `recentCount` sonuçta doğruluk < `weak`
+ *   aradaki ya da D/Y'siz çalışma → "çalışılıyor"
+ */
+export const TOPIC_THRESHOLDS = {
+  good: 0.8,
+  weak: 0.6,
+  recentCount: 2,
+} as const;
