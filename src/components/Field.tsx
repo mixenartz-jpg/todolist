@@ -3,6 +3,7 @@
 import { useId, type ReactNode } from "react";
 import type {
   InputHTMLAttributes,
+  SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from "react";
 import { cn } from "@/lib/ui/cn";
@@ -158,5 +159,33 @@ export function Field({
         </p>
       ) : null}
     </div>
+  );
+}
+
+interface SelectInputProps
+  extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "size"> {
+  size?: FieldSize;
+}
+
+/**
+ * Yerel `<select>` — mobilde işletim sisteminin seçicisini açar, bu
+ * yüzden özel bir açılır liste yazılmadı. Görünüm TextInput ile aynı
+ * aileden; ok işareti arka plan görseli olarak çizilir.
+ */
+export function SelectInput({ size = "md", className, children, ...props }: SelectInputProps) {
+  return (
+    <select
+      {...props}
+      className={cn(
+        BASE,
+        SIZES[size],
+        "appearance-none pr-8",
+        "bg-[image:linear-gradient(45deg,transparent_50%,var(--color-ink-3)_50%),linear-gradient(135deg,var(--color-ink-3)_50%,transparent_50%)]",
+        "bg-[length:5px_5px,5px_5px] bg-[position:calc(100%-15px)_50%,calc(100%-10px)_50%] bg-no-repeat",
+        className,
+      )}
+    >
+      {children}
+    </select>
   );
 }

@@ -255,4 +255,23 @@ export const qk = {
   focusSessions: () => ["focus-sessions"] as const,
   focusSessionsDay: (date: DateStr) =>
     ["focus-sessions", "day", date] as const,
+
+  /*
+   * Öğrenci verisi (0028). Anahtarda öğrenci kimliği var: koç
+   * önizlemesi ile öğrencinin kendi oturumu aynı istemcide hiç
+   * buluşmaz ama anahtar yine de kimin verisi olduğunu söylemeli.
+   * Aralık sorguları `[kök, öğrenci, from, to]` şeklinde — iyimser
+   * güncelleme anahtarın 2. ve 3. öğesinden aralığı okur.
+   */
+  taskResults: () => ["task-results"] as const,
+  taskResultsRange: (studentId: string, from: DateStr, to: DateStr) =>
+    ["task-results", studentId, from, to] as const,
+
+  dailyLogs: () => ["daily-logs"] as const,
+  dailyLogsRange: (studentId: string, from: DateStr, to: DateStr) =>
+    ["daily-logs", studentId, from, to] as const,
+
+  coachNotes: () => ["coach-notes"] as const,
+  coachNotesRange: (studentId: string, from: DateStr, to: DateStr) =>
+    ["coach-notes", studentId, from, to] as const,
 } as const;
