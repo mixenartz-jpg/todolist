@@ -274,4 +274,6 @@ export const qk = {
   coachNotes: () => ["coach-notes"] as const,
   coachNotesRange: (studentId: string, from: DateStr, to: DateStr) =>
     ["coach-notes", studentId, from, to] as const,
+
+  sources: () => ["sources"] as const,
 } as const;

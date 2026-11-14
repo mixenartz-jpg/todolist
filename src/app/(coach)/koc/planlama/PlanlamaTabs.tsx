@@ -19,6 +19,7 @@ const TABS = [
   { href: "/koc/planlama", label: "Plan", filters: true },
   { href: "/koc/planlama/hedefler", label: "Hedefler", filters: false },
   { href: "/koc/planlama/ozet", label: "Özet", filters: false },
+  { href: "/koc/planlama/kaynaklar", label: "Kaynaklar", filters: false },
 ] as const;
 
 /** Kategori filtresinin sorgu parametresi (usePlanlamaSurface ile aynı). */

@@ -81,6 +81,13 @@ export interface Task {
    * ve test fikstürlerinde yok.
    */
   createdBy?: string | null;
+  /**
+   * Koçun ELLE bağladığı kaynak ve aralık (0029). null → başlıktan
+   * çıkarılır (bkz. `features/sources/parse.ts`).
+   */
+  sourceId?: string | null;
+  rangeFrom?: number | null;
+  rangeTo?: number | null;
 }
 
 export interface TaskDraft {

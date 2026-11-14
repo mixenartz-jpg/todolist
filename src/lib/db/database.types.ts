@@ -53,6 +53,10 @@ export interface TaskRow {
    * çalışma"sında öğrenci. Opsiyonel: migration öncesi alan gelmez.
    */
   created_by?: string | null;
+  /** Elle kaynak bağı (0029). */
+  source_id?: string | null;
+  range_from?: number | null;
+  range_to?: number | null;
   title: string;
   due_date: string | null;
   done: boolean;
@@ -453,4 +457,19 @@ export interface CoachNoteRow {
   scale: "day" | "week";
   note: string;
   updated_at: string;
+}
+
+// ────────────────────────── 0029: kaynaklar ─────────────────────────
+
+export interface SourceRow {
+  id: string;
+  coach_id: string;
+  title: string;
+  subject: string | null;
+  total_tests: number;
+  unit: "test" | "soru" | "sayfa";
+  aliases: string[];
+  sort_order: number;
+  archived_at: string | null;
+  created_at: string;
 }

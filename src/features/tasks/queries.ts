@@ -53,6 +53,9 @@ export function toTask(row: TaskRow): Task {
     // `?? null`: 0023 henüz çalıştırılmadıysa alan HİÇ gelmez.
     estimateMinutes: row.estimate_minutes ?? null,
     createdBy: row.created_by ?? null,
+    sourceId: row.source_id ?? null,
+    rangeFrom: row.range_from ?? null,
+    rangeTo: row.range_to ?? null,
   };
 }
 
