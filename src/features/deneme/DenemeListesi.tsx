@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { IstatistikTabs } from "@/app/(coach)/koc/istatistik/IstatistikTabs";
+import { useDenemePaths } from "./paths";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { Screen, ScreenBody, ScreenHeader } from "@/components/Screen";
@@ -29,6 +30,7 @@ import type { DenemeDetayli } from "./types";
  * gidiyorum" sorusudur ve İstatistik o sekme.
  */
 export function DenemeListesi() {
+  const paths = useDenemePaths();
   const toast = useToast();
   const { data: denemeler, isPending } = useDenemeler();
   const createDeneme = useCreateDeneme(toast.show);
@@ -53,7 +55,7 @@ export function DenemeListesi() {
         }
         width="3xl"
         actions={
-          !formAcik && (
+          !formAcik && !paths.readOnly && (
             <Button
               variant="primary"
               size="sm"
@@ -64,7 +66,7 @@ export function DenemeListesi() {
           )
         }
       >
-        <IstatistikTabs />
+        {!paths.student && <IstatistikTabs />}
       </ScreenHeader>
 
       <ScreenBody width="3xl">
@@ -103,6 +105,7 @@ export function DenemeListesi() {
               title="Henüz deneme yok"
               description="İlk denemeni gir; netini, ders kırılımını ve zamanla nasıl ilerlediğini burada göreceksin."
             >
+              {!paths.readOnly && (
               <Button
                 variant="primary"
                 className="mt-5"
@@ -110,6 +113,7 @@ export function DenemeListesi() {
               >
                 İlk denemeni ekle
               </Button>
+              )}
             </EmptyState>
           )
         ) : (
@@ -213,11 +217,12 @@ const TUR_ADI: Record<DenemeTur, string> = {
 };
 
 function DenemeSatiri({ deneme }: { deneme: DenemeDetayli }) {
+  const paths = useDenemePaths();
   const net = toplamNet(deneme.dersler);
 
   return (
     <Link
-      href={`/koc/istatistik/denemeler/${deneme.id}`}
+      href={paths.detail(deneme.id)}
       className={cn(
         "flex items-center gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] p-4",
         "transition-[border-color,background-color] duration-[var(--duration-fast)] ease-[var(--ease-out-quart)]",

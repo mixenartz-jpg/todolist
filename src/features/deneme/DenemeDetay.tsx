@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useDenemePaths } from "./paths";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Button } from "@/components/Button";
@@ -50,6 +51,7 @@ const TUR_ADI: Record<DenemeTur, string> = {
  */
 export function DenemeDetay({ denemeId }: { denemeId: string }) {
   const router = useRouter();
+  const paths = useDenemePaths();
   const toast = useToast();
 
   const { data: deneme, isPending, error } = useDeneme(denemeId);
@@ -74,7 +76,7 @@ export function DenemeDetay({ denemeId }: { denemeId: string }) {
           <p className="text-[length:var(--text-base)] text-[var(--color-ink-2)]">
             Bu deneme silinmiş olabilir.{" "}
             <Link
-              href="/koc/istatistik/denemeler"
+              href={paths.list}
               className="text-[var(--color-accent)] underline"
             >
               Denemelere dön
@@ -113,7 +115,7 @@ export function DenemeDetay({ denemeId }: { denemeId: string }) {
         actions={
           <>
             <Link
-              href="/koc/istatistik/denemeler"
+              href={paths.list}
               className="rounded-md px-2 py-1 text-[length:var(--text-sm)] text-[var(--color-ink-3)] transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-accent)]"
             >
               Tüm denemeler
@@ -212,7 +214,7 @@ export function DenemeDetay({ denemeId }: { denemeId: string }) {
           pending={deleteDeneme.isPending}
           onConfirm={() =>
             deleteDeneme.mutate(deneme.id, {
-              onSuccess: () => router.push("/koc/istatistik/denemeler"),
+              onSuccess: () => router.push(paths.list),
             })
           }
           onCancel={() => setSilinecek(false)}

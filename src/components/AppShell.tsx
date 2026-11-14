@@ -93,6 +93,7 @@ const COACH_NAV: NavItem[] = [
 const STUDENT_NAV: NavItem[] = [
   { href: "/ogrenci/bugun", label: "Bugün", icon: <CheckIcon /> },
   { href: "/ogrenci/gecmis", label: "Geçmiş", icon: <ArchiveIcon /> },
+  { href: "/ogrenci/denemeler", label: "Denemeler", icon: <ChartIcon /> },
 ];
 
 /**
