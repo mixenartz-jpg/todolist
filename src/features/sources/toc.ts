@@ -9,7 +9,8 @@ import type { SeriesKind, SourceKind, SourceUnit } from "./types";
  *
  *   # Konu Testleri              yeni seri; tür addan tahmin edilir
  *   Basit Harmonik Hareket | 39-46
- *   Dalga Mekaniği | 5 test      sayı → önceki bölümün devamı (47-51)
+ *   Dalga Mekaniği | 5 test      test birimi: bölümün KENDİ numarası (1-5)
+ *   Atom | 5 sayfa               diğer birimler: önceki bölümün devamı
  *   # ÖSYM Tipi | 1-10           aralıklı seri başlığı: serinin tek bölümü
  *   7 = Basit Harmonik Hareket   o serideki 7. testin konusu
  *
@@ -30,12 +31,19 @@ export interface ParsedSection {
   line: number;
   /** Aralıklı seri başlığından doğdu ("# ÖSYM Tipi | 1-10"): konusu yok. */
   implicit: boolean;
+  /**
+   * Kendi numarası ("Köklü | 13 test" → 1-13): diğer bölümlerle aynı
+   * numaraları taşıyabilir, çakışma sayılmaz.
+   */
+  own: boolean;
 }
 
 export interface ParsedItemTopic {
   number: number;
   topic: string;
   line: number;
+  /** Testin ait olduğu bölümün satırı (numarayı içeren en yakın önceki bölüm). */
+  sectionLine: number;
 }
 
 export interface ParsedSeries {
@@ -138,7 +146,7 @@ export function parseToc(text: string, opts: TocOptions): ParsedToc {
       errors.push({ line: sec.line, text: raw, message: `En fazla ${MAX_UNIT}` });
       return;
     }
-    const clash = s.sections.find((o) => sec.from <= o.to && o.from <= sec.to);
+    const clash = !sec.own && s.sections.find((o) => !o.own && sec.from <= o.to && o.from <= sec.to);
     if (clash) {
       errors.push({
         line: sec.line,
@@ -175,7 +183,7 @@ export function parseToc(text: string, opts: TocOptions): ParsedToc {
         }
         const from = amount.kind === "range" ? amount.from : 1;
         const to = amount.kind === "range" ? amount.to : amount.count;
-        addSection(current, { label: name, from, to, line, implicit: true }, raw);
+        addSection(current, { label: name, from, to, line, implicit: true, own: false }, raw);
       }
       return;
     }
@@ -190,12 +198,13 @@ export function parseToc(text: string, opts: TocOptions): ParsedToc {
       const s = ensureSeries();
       const number = Number(itemTopic[1]);
       const topic = cleanLabel(itemTopic[2]);
-      if (!s.sections.some((sec) => number >= sec.from && number <= sec.to)) {
+      const owner = s.sections.findLast((sec) => number >= sec.from && number <= sec.to);
+      if (!owner) {
         errors.push({ line, text: raw, message: `${number}. test bu seride yok` });
         return;
       }
-      s.itemTopics = s.itemTopics.filter((t) => t.number !== number);
-      s.itemTopics.push({ number, topic, line });
+      s.itemTopics = s.itemTopics.filter((t) => t.number !== number || t.sectionLine !== owner.line);
+      s.itemTopics.push({ number, topic, line, sectionLine: owner.line });
       return;
     }
 
@@ -230,10 +239,13 @@ export function parseToc(text: string, opts: TocOptions): ParsedToc {
         errors.push({ line, text: raw, message: "Adet en az 1" });
         return;
       }
-      const from = nextStart(s);
-      addSection(s, { label, from, to: from + amount.count - 1, line, implicit: false }, raw);
+      // Test kitaplarında her konu testlerini 1'den numaralar; diğer
+      // birimler (sayfa, ders) kitap boyunca sürer.
+      const own = opts.unit === "test";
+      const from = own ? 1 : nextStart(s);
+      addSection(s, { label, from, to: from + amount.count - 1, line, implicit: false, own }, raw);
     } else {
-      addSection(s, { label, from: amount.from, to: amount.to, line, implicit: false }, raw);
+      addSection(s, { label, from: amount.from, to: amount.to, line, implicit: false, own: false }, raw);
     }
   });
 
@@ -255,7 +267,8 @@ export function tocText(
   series: ReadonlyArray<{
     name: string;
     sections: ReadonlyArray<{ label: string; from: number; to: number }>;
-    itemTopics?: ReadonlyArray<{ number: number; topic: string }>;
+    /** `section`: testin bölümünün sırası (numaralar bölümler arasında tekrar edebilir). */
+    itemTopics?: ReadonlyArray<{ number: number; topic: string; section?: number }>;
   }>,
   opts: TocOptions,
 ): string {
@@ -267,20 +280,32 @@ export function tocText(
       if (i > 0) out.push("");
       out.push(onlyImplicit ? `# ${s.name} | ${rangeText(s.sections[0])}` : `# ${s.name}`);
     }
+    // Kendi numaralı bölümler (aynı numaralar birden çok bölümde): 1'den
+    // başlayan bölüm "N test" yazılır, test konuları bölümünün altına.
+    const overlapping = hasOverlap(s.sections);
+    const topicLine = (t: { number: number; topic: string }) => `${t.number} = ${t.topic}`;
+    const sortedTopics = [...(s.itemTopics ?? [])].sort((a, b) => a.number - b.number);
     if (!onlyImplicit || single) {
-      for (const sec of s.sections) {
+      s.sections.forEach((sec, k) => {
         out.push(
           opts.kind === "video" && sec.from === sec.to
             ? `${sec.from} | ${sec.label}`
-            : `${sec.label} | ${rangeText(sec)}`,
+            : overlapping && opts.unit === "test" && sec.from === 1
+              ? `${sec.label} | ${sec.to} test`
+              : `${sec.label} | ${rangeText(sec)}`,
         );
-      }
+        if (overlapping) for (const t of sortedTopics) if (t.section === k) out.push(topicLine(t));
+      });
     }
-    for (const t of [...(s.itemTopics ?? [])].sort((a, b) => a.number - b.number)) {
-      out.push(`${t.number} = ${t.topic}`);
-    }
+    for (const t of sortedTopics) if (!overlapping || t.section === undefined) out.push(topicLine(t));
   });
   return out.join("\n");
+}
+
+/** Seride aynı numarayı taşıyan iki bölüm var mı. */
+export function hasOverlap(sections: ReadonlyArray<{ from: number; to: number }>): boolean {
+  const sorted = [...sections].sort((a, b) => a.from - b.from);
+  return sorted.some((sec, i) => i > 0 && sec.from <= Math.max(...sorted.slice(0, i).map((o) => o.to)));
 }
 
 function rangeText(r: { from: number; to: number }): string {

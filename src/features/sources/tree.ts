@@ -1,5 +1,5 @@
 import { matchTopic, topicKey } from "@/features/topics/match";
-import type { ParsedToc } from "./toc";
+import { hasOverlap, type ParsedToc } from "./toc";
 import type { Exam, SeriesKind, SeriesNode, SourceUnit, Topic } from "./types";
 
 /*
@@ -11,12 +11,18 @@ import type { Exam, SeriesKind, SeriesNode, SourceUnit, Topic } from "./types";
  * Eşleştirme kuralları:
  *   seri    ad (Türkçe duyarsız)
  *   bölüm   aynı seride etiket; yoksa aynı aralık (etiket düzeltmesi)
- *   test    aynı seride aynı numara — bölüm sınırı kaysa da test aynı
- *           test kalır, yalnızca bölümü değişir.
+ *   test    önce aynı bölümde aynı numara. Bölüm 1'den numaralanmaya
+ *           geçtiyse (13-26 → "14 test") sırayla: eski 13 → yeni 1, ki
+ *           işaretler ve görev bağları doğru teste kalsın.
+ *           Sonra (yalnızca numaraların tekrar etmediği seride) aynı seride
+ *           aynı numara — bölüm sınırı kaysa da test aynı test kalır,
+ *           yalnızca bölümü değişir.
  */
 
 export interface DraftItemTopic {
   number: number;
+  /** Testin bölümünün satırı (`DraftSection.line`). */
+  sectionLine: number;
   topicName: string;
   topicId: string | null;
 }
@@ -107,6 +113,7 @@ export function buildDraft(
       sections,
       itemTopics: ps.itemTopics.map((t) => ({
         number: t.number,
+        sectionLine: t.sectionLine,
         topicName: t.topic,
         topicId: matchTopic(t.topic, topics, scope)?.id ?? null,
       })),
@@ -179,11 +186,33 @@ export function diffTree(
     keepSeries.add(s.id);
     ops.series.push({ id: s.id, source_id: sourceId, name: s.name, kind: s.kind, sort_order: si });
 
-    // Bu serinin mevcut testleri: numara → item (bölümden bağımsız).
     const old = existing.find((e) => e.id === s.id);
+    const itemTopic = new Map(s.itemTopics.map((t) => [`${t.sectionLine}:${t.number}`, t.topicId]));
+    const used = new Set<string>();
+    const ids = new Map<string, string>(); // "bölümId:numara" → item id
+
+    // 1) Aynı bölüm: aynı numara, ya da 1'den numaralanmaya geçtiyse sırayla.
+    if (unit === "test") {
+      for (const sec of s.sections) {
+        const oldSec = old?.sections.find((o) => o.id === sec.id);
+        if (!oldSec) continue;
+        const renumbered = sec.from === 1 && oldSec.unitFrom !== 1;
+        const byNumber = new Map(oldSec.items.map((it) => [it.number, it.id]));
+        for (let n = sec.from; n <= sec.to; n++) {
+          const id = byNumber.get(renumbered ? oldSec.unitFrom + n - 1 : n);
+          if (id && !used.has(id)) {
+            used.add(id);
+            ids.set(`${sec.id}:${n}`, id);
+          }
+        }
+      }
+    }
+
+    // 2) Numaralar seri boyunca tekilse: bölüm sınırı kayan test aynı kalır.
+    const crossSection =
+      !hasOverlap(s.sections) && !hasOverlap(old?.sections.map((o) => ({ from: o.unitFrom, to: o.unitTo })) ?? []);
     const oldItems = new Map<number, string>();
-    for (const sec of old?.sections ?? []) for (const it of sec.items) oldItems.set(it.number, it.id);
-    const itemTopic = new Map(s.itemTopics.map((t) => [t.number, t.topicId]));
+    if (crossSection) for (const sec of old?.sections ?? []) for (const it of sec.items) oldItems.set(it.number, it.id);
 
     s.sections.forEach((sec, ci) => {
       keepSections.add(sec.id);
@@ -199,9 +228,14 @@ export function diffTree(
       });
       if (unit !== "test") return;
       for (let n = sec.from; n <= sec.to; n++) {
-        const id = oldItems.get(n) ?? newId();
+        let id = ids.get(`${sec.id}:${n}`);
+        if (!id) {
+          const shifted = oldItems.get(n);
+          id = shifted && !used.has(shifted) ? shifted : newId();
+          used.add(id);
+        }
         keepItems.add(id);
-        ops.items.push({ id, section_id: sec.id, number: n, topic_id: itemTopic.get(n) ?? null });
+        ops.items.push({ id, section_id: sec.id, number: n, topic_id: itemTopic.get(`${sec.line}:${n}`) ?? null });
       }
     });
   });
@@ -223,16 +257,16 @@ export function treeAsToc(
 ): Array<{
   name: string;
   sections: Array<{ label: string; from: number; to: number }>;
-  itemTopics: Array<{ number: number; topic: string }>;
+  itemTopics: Array<{ number: number; topic: string; section: number }>;
 }> {
   const nameOf = new Map(topics.map((t) => [t.id, t.name]));
   return tree.map((s) => ({
     name: s.name,
     sections: s.sections.map((sec) => ({ label: sec.label, from: sec.unitFrom, to: sec.unitTo })),
-    itemTopics: s.sections.flatMap((sec) =>
+    itemTopics: s.sections.flatMap((sec, section) =>
       sec.items.flatMap((it) => {
         const name = it.topicId ? nameOf.get(it.topicId) : undefined;
-        return name ? [{ number: it.number, topic: name }] : [];
+        return name ? [{ number: it.number, topic: name, section }] : [];
       }),
     ),
   }));

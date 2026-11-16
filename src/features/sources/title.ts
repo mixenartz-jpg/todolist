@@ -1,5 +1,6 @@
 import type { DateStr } from "@/lib/date/types";
 import { PROGRESS_ACTION } from "./actions";
+import { hasOverlap } from "./toc";
 import type { SectionNode, SeriesNode, SourceTree, Topic } from "./types";
 
 /*
@@ -112,7 +113,12 @@ export function planTasks(input: PlanInput): TaskPlan[] {
       const sectionNames = distinct(chosen.map(({ sec }) => sectionName(sec, series, topics)));
 
       let middle: string[];
-      if (series.kind === "konu") {
+      const ownNumbering = hasOverlap(series.sections.map((sec) => ({ from: sec.unitFrom, to: sec.unitTo })));
+      if (series.kind === "konu" && ownNumbering && chosen.length > 1) {
+        // Kendi numaralı bölümler: numara tek başına belirsiz, bölüm bölüm yaz.
+        const perSection = chosen.map(({ sec, numbers: ns }) => `${sectionName(sec, series, topics) ?? series.name} ${formatNumbers(ns, "-")}`);
+        middle = [`${perSection.join(", ")}. Testler`];
+      } else if (series.kind === "konu") {
         const count = numbers.length === 1 ? `${numbers[0]}. Test` : `${formatNumbers(numbers)}. Testler`;
         middle = [sectionNames.join(", ") || series.name, count];
       } else if (series.kind === "osym") {

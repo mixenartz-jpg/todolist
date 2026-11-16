@@ -50,6 +50,20 @@ const BS = tree("BilgiSarmal AYT Fizik SB", "test", [
 const pick = (entries: Array<[string, number[]]>) => new Map(entries.map(([k, v]) => [k, new Set(v)]));
 
 describe("başlık üretimi — test serileri", () => {
+  it("kendi numaralı bölümler: tek konu düz, aynı numaralar bölüm bölüm", () => {
+    const own = tree("Hız Yayınları", "test", [
+      { id: "konu", name: "Konu Testleri", kind: "konu", sections: [
+        { id: "s-uslu", label: "Üslü", from: 1, to: 14 },
+        { id: "s-koklu", label: "Köklü", from: 1, to: 13 },
+      ] },
+    ]);
+    const [a] = planTasks({ source: own, topics, picks: pick([["s-koklu", [13]]]), action: "Çöz", dueDate: day });
+    expect(a.title).toBe("Hız Yayınları | Köklü | 13. Test | Çöz");
+    expect(a.itemIds).toEqual(["s-koklu-13"]);
+    const [b] = planTasks({ source: own, topics, picks: pick([["s-uslu", [13, 14]], ["s-koklu", [1, 2]]]), action: "Çöz", dueDate: day });
+    expect(b.title).toBe("Hız Yayınları | Üslü 13-14, Köklü 1-2. Testler | Çöz");
+  });
+
   it("konu serisi: aralık ve tek test", () => {
     const [a] = planTasks({ source: BS, topics, picks: pick([["s-bhh", [39, 40, 41, 42]]]), action: "Çöz", dueDate: day });
     expect(a.title).toBe("BilgiSarmal AYT Fizik SB | Basit Harmonik Hareket | 39 - 42. Testler | Çöz");
