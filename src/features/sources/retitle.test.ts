@@ -60,6 +60,13 @@ describe("retitleTasks", () => {
     ).toEqual([]);
   });
 
+  it("bölümler kaymış olsa da 'Kaynak | … | Eylem' kalıbındaki başlık düzelir", () => {
+    const spread = { ...task, title: "Güçlendiren Matematik | Üslü İfadeler | 16 - 23. Testler | Çöz + Analiz" };
+    expect(retitleTasks(NEW, NEW, [], [{ ...spread, itemIds: items(NEW, "Üslü İfadeler", [1, 6]) }])).toEqual([
+      { id: "t1", title: "Güçlendiren Matematik | Üslü İfadeler | 1, 6. Testler | Çöz + Analiz" },
+    ]);
+  });
+
   it("bağlı test silinmişse dokunulmaz", () => {
     expect(retitleTasks(OLD, NEW, [], [{ ...task, itemIds: [...linked, "yok"] }])).toEqual([]);
   });

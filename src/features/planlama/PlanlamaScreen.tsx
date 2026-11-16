@@ -19,13 +19,11 @@ import { Toast, useToast } from "@/components/Toast";
 import { useTasks } from "@/features/tasks/queries";
 import { monthGrid } from "./monthgrid";
 import { buildPlanRange, VIEW_DAY_PARAM } from "./range";
-import { goalProgress } from "./rollup";
 import { CategoryFilterMenu } from "./CategoryFilterMenu";
 import { daySummaries } from "./dayplan";
 import { useSetTaskCategory, useSetTaskGoal } from "./mutations";
 import { useMonthPlanDays, usePlanGoals } from "./queries";
 import { PlanBacklog } from "./PlanBacklog";
-import { PlanGoalStrip } from "./PlanGoalStrip";
 import { PlanDayRow } from "./PlanDayRow";
 import { PlanDaySheet } from "./PlanDaySheet";
 import { PlanMonthMap } from "./PlanMonthMap";
@@ -167,21 +165,6 @@ export function PlanlamaScreen() {
   const goalsQuery = usePlanGoals(startOfMonth(anchor));
 
 
-  /*
-   * Hedef şeridinin satırları — ilerlemeleriyle.
-   *
-   * İlerleme `goalProgress`'ten geliyor ve o bağlı GÖREVLERE bakıyor;
-   * bu yüzden filtrelenmiş `categories.visible` değil TÜM görevler
-   * geçiliyor. Filtrelenmiş liste verilseydi kategori süzgeci açıkken
-   * hedefin ilerlemesi düşer ve kullanıcı "hedefim geriledi" sanırdı —
-   * halbuki yalnızca bakış daralmış olurdu.
-   */
-  const goalRows = useMemo(
-    () => (goalsQuery.data ?? []).map((g) => goalProgress(g, tasksQuery.data ?? [])),
-    [goalsQuery.data, tasksQuery.data],
-  );
-
-
   const isPlacing = placing !== null;
 
   useEffect(() => {
@@ -308,22 +291,6 @@ export function PlanlamaScreen() {
           <PlanSkeleton scale={scale} />
         ) : (
           <>
-            {/*
-              * Hedefler EN ÜSTTE: planı yaparken "neden" gözün
-              * önünde olmalı. Gecikenler ve ızgara "ne" — onlar
-              * hedefin altında geliyor.
-              */}
-            <PlanGoalStrip
-              goals={goalRows}
-              /* Türetilen iş ÇAPAYA düşer: hafta ölçeğinde haftanın
-                 Pazartesi'si, ay ölçeğinde ayın 1'i. Kullanıcının
-                 baktığı dönemin başı, bugün DEĞİL — geçmiş bir aya
-                 bakarken bugüne iş düşmesi şaşırtıcı olurdu. */
-              defaultDate={anchor}
-              addPending={actions.addPending}
-              onAddTask={actions.onAddForGoal}
-            />
-
             <PlanOverdue
               tasks={range.overdue}
               today={today}

@@ -9,9 +9,9 @@ import type { SourceDraft, SourceTree, Topic } from "./types";
  * kalır. Saf; useSaveSource yazar.
  *
  * Yalnızca başlığı otomatik biçimde kalan görevler güncellenir: mevcut
- * başlık, eski ağaçtan üretilen başlıkla RAKAMLAR DIŞINDA aynıysa. Elle
- * değiştirilmiş başlığa dokunulmaz. Rakamları yok saymak, numarası
- * zaten değişmiş (önceden kaydedilmiş) kaynakları da yakalar.
+ * başlık eski ağaçtan üretilenle RAKAMLAR DIŞINDA aynıysa, ya da
+ * "Kaynak adı | … | Eylem" kalıbındaysa (bölümler kaymış olabilir).
+ * Bu kalıbın dışına çıkarılmış (elle yazılmış) başlığa dokunulmaz.
  */
 
 export interface LinkedTask {
@@ -99,7 +99,11 @@ export function retitleTasks(
   for (const task of tasks) {
     if (!task.action || task.itemIds.length === 0) continue;
     const old = titleFor(before, byId, task.itemIds, task.action);
-    if (old === null || shape(old) !== shape(task.title)) continue;
+    const t = task.title.trim();
+    const auto =
+      (old !== null && shape(old) === shape(t)) ||
+      (t.startsWith(`${before.title} | `) && t.endsWith(` | ${task.action}`));
+    if (!auto) continue;
     const next = titleFor(after, byId, task.itemIds, task.action);
     if (next !== null && next !== task.title) out.push({ id: task.id, title: next });
   }
