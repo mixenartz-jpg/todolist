@@ -14,6 +14,7 @@ import type {
 } from "@/lib/db/database.types";
 import { qk } from "@/lib/query/keys";
 import { createClient } from "@/lib/supabase/client";
+import { retitleTasks, treeFromOps } from "./retitle";
 import type { TreeOps } from "./tree";
 import type { Exam, SourceDraft, SourceStatus, SourceTree, Topic } from "./types";
 
@@ -163,6 +164,9 @@ export function useSaveSource(onError?: (m: string) => void) {
       draft: SourceDraft;
       studentId: string | null;
       ops: TreeOps;
+      /** Kaydetmeden önceki ağaç (düzenlemede): bağlı görev başlıkları tazelenir. */
+      previous?: SourceTree | null;
+      topics?: readonly Topic[];
     }): Promise<string> => {
       const supabase = createClient();
       const row = { ...draftRow(input.draft), total_tests: Math.max(1, input.ops.totalUnits) };
@@ -186,6 +190,30 @@ export function useSaveSource(onError?: (m: string) => void) {
       for (const step of steps) {
         const { error } = await step();
         if (error) throw error;
+      }
+
+      // Numaralandırma değiştiyse otomatik görev başlıkları eski numarada kalmasın.
+      if (input.previous && input.draft.unit === "test") {
+        const linked = await supabase
+          .from("tasks")
+          .select("id, title, action, task_items(item_id)")
+          .eq("source_id", input.id);
+        if (linked.error) throw linked.error;
+        const updates = retitleTasks(
+          input.previous,
+          treeFromOps(input.id, input.draft, input.ops, input.previous),
+          input.topics ?? [],
+          (linked.data ?? []).map((t) => ({
+            id: t.id,
+            title: t.title,
+            action: t.action,
+            itemIds: (t.task_items ?? []).map((x) => x.item_id),
+          })),
+        );
+        for (const u of updates) {
+          const { error } = await supabase.from("tasks").update({ title: u.title }).eq("id", u.id);
+          if (error) throw error;
+        }
       }
       return input.id;
     },

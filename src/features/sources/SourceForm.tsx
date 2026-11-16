@@ -48,6 +48,8 @@ export interface SourceFormSave {
   isNew: boolean;
   draft: SourceDraft;
   ops: TreeOps;
+  previous: SourceTree | null;
+  topics: readonly Topic[];
 }
 
 /**
@@ -153,6 +155,8 @@ export function SourceForm({
         minutesPerUnit: minutesNum,
       },
       ops: diffTree(sourceId, effectiveUnit, realDraft, initial?.series ?? [], newId),
+      previous: initial ?? null,
+      topics,
     });
   }
 
