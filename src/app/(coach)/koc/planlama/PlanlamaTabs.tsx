@@ -17,8 +17,11 @@ const TABS = [
    * (neyi hedefliyorum) → özet (nasıl gitti).
    */
   { href: "/koc/planlama", label: "Plan", filters: true },
-  { href: "/koc/planlama/hedefler", label: "Hedefler", filters: false },
-  { href: "/koc/planlama/ozet", label: "Özet", filters: false },
+  /*
+   * Hedefler ve Özet menüden kaldırıldı (sadeleştirme). Sayfalar ve
+   * veriler duruyor: /koc/planlama/hedefler ve /koc/planlama/ozet
+   * adresleri çalışır, geri açmak bu iki satırı geri koymak.
+   */
   { href: "/koc/planlama/kaynaklar", label: "Kaynaklar", filters: false },
   /*
    * Konu takibi kendi rotasında (`/koc/konular`) ama ana menüye

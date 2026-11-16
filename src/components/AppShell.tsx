@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/ui/cn";
 import { BrandMark } from "@/components/BrandMark";
 import { createClient } from "@/lib/supabase/client";
@@ -29,6 +29,11 @@ interface NavItem {
    */
   shortLabel?: string;
   icon: ReactNode;
+  /**
+   * İkincil: masaüstünde kenar çubuğunun ALTINDA küçük; mobilde
+   * "Diğer" menüsünün içinde. Ana yüzey (Planlama) üstte tek başına.
+   */
+  secondary?: boolean;
 }
 
 /*
@@ -42,48 +47,20 @@ interface NavItem {
  */
 const COACH_NAV: NavItem[] = [
   /*
-   * Panel AÇILIŞ ekranı ve sekmelerin başında duruyor: "neyin nerede
-   * olduğu" sorusunun cevabı, günün işine girmeden ÖNCE gelir.
+   * Sadeleştirme: Planlama koçun asıl işi, üstte tek başına. Panel,
+   * Öğrenci, İstatistik ve Arşiv daha seyrek açılır; sol altta (mobilde
+   * "Diğer" içinde) durur. Sayfaların hiçbiri silinmedi.
    */
-  { href: "/koc/panel", label: "Panel", icon: <HomeIcon /> },
   {
     href: "/koc/planlama",
     label: "Planlama",
-    // Kısa etiket "Plan": 64px'e "Planlama" sığmaz ve kısaltma
-    // bağlamda belirsiz değil.
     shortLabel: "Plan",
     icon: <TargetIcon />,
   },
-  /*
-   * Arşiv — "ne yaptım", gün gün.
-   *
-   * ── Burada eskiden Tablo (rutin × gün matrisi) vardı ──
-   * İkisi de geriye bakma yüzeyi ve beş sekme sınırı ikisini birden
-   * taşımıyor (altıncı sekme 320px'te 53px'e düşer ve "İstat."
-   * kırpılır). Seçim KULLANIM SIKLIĞINA göre yapıldı: arşiv
-   * "dün ne yaptım, bu hafta ne bitirdim" diye günlük açılan bir
-   * yüzey; matris ise ayda birkaç kez bakılan bir genel görünüm.
-   *
-   * Tablo kaybolmadı: İstatistik'in alt sekmesi oldu ve Panel'deki
-   * kısayolu da duruyor. Sekmeden çıkarmak SİLMEK değil, sıklığa
-   * göre bir kat aşağı indirmek.
-   */
-  { href: "/koc/arsiv", label: "Arşiv", icon: <ArchiveIcon /> },
-  /*
-   * Öğrenci — sonuçlar, günlük formlar, "öğrenci gözüyle önizle".
-   * Koçun eski "Bugün" sekmesinin yerini aldı: koç artık günü kendisi
-   * işaretlemiyor, öğrencinin işaretlediğini okuyor. Sayfa
-   * (`/koc/bugun`) silinmedi, yalnızca menüden indi.
-   */
-  { href: "/koc/ogrenci", label: "Öğrenci", icon: <PersonIcon /> },
-  {
-    href: "/koc/istatistik",
-    label: "İstatistik",
-    // "İstatistik" yerine "Durum" DEĞİL: sekme adı içeriğini
-    // söylemeli. Kısaltma aynı kelimenin yaygın kısa biçimidir.
-    shortLabel: "İstat.",
-    icon: <ChartIcon />,
-  },
+  { href: "/koc/panel", label: "Panel", icon: <HomeIcon />, secondary: true },
+  { href: "/koc/ogrenci", label: "Öğrenci", icon: <PersonIcon />, secondary: true },
+  { href: "/koc/istatistik", label: "İstatistik", shortLabel: "İstat.", icon: <ChartIcon />, secondary: true },
+  { href: "/koc/arsiv", label: "Arşiv", icon: <ArchiveIcon />, secondary: true },
 ];
 
 /*
@@ -175,44 +152,27 @@ function NavRail({ role }: { role: ShellRole }) {
       </div>
 
       <ul className="flex flex-col gap-0.5">
-        {nav.map((item) => (
-          <li key={item.href}>
-            <Link
-              href={item.href}
-              aria-current={isActive(pathname, item.href) ? "page" : undefined}
-              className={cn(
-                "group flex h-9 items-center gap-2.5 rounded-md px-2.5 text-[length:var(--text-base)]",
-                "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-quart)]",
-                // Vurgu mevcut seçimi bildirir — dekorasyon değil.
-                // Yan şerit KULLANILMAZ; ikon aydınlanır ve zemin
-                // vurgunun kendi tonuna kayar.
-                //
-                // Zemin oranı %10 → %12: vurgu beyazdan turuncuya
-                // döndü ve turuncunun %10'u koyu yüzeyde beyazınki
-                // kadar okunmuyordu. Metin İNK kalır (turuncu metin
-                // okunabilirliği düşürürdü); rengi ikon taşır.
-                isActive(pathname, item.href)
-                  ? "bg-[color-mix(in_oklch,var(--color-accent)_12%,transparent)] font-medium text-[var(--color-ink)]"
-                  : "text-[var(--color-ink-2)] hover:bg-[color-mix(in_oklch,var(--color-ink)_5%,transparent)] hover:text-[var(--color-ink)]",
-              )}
-            >
-              <span
-                className={cn(
-                  "shrink-0 transition-colors duration-[var(--duration-fast)]",
-                  isActive(pathname, item.href)
-                    ? "text-[var(--color-accent)]"
-                    : "text-[var(--color-ink-3)] group-hover:text-[var(--color-ink-2)]",
-                )}
-              >
-                {item.icon}
-              </span>
-              {item.label}
-            </Link>
-          </li>
-        ))}
+        {nav
+          .filter((item) => !item.secondary)
+          .map((item) => (
+            <li key={item.href}>
+              <RailLink item={item} active={isActive(pathname, item.href)} />
+            </li>
+          ))}
       </ul>
 
       <div className="mt-auto flex flex-col gap-1 px-1">
+        {nav.some((item) => item.secondary) && (
+          <ul className="mb-2 flex flex-col gap-0.5 border-b border-[var(--color-line)] pb-2">
+            {nav
+              .filter((item) => item.secondary)
+              .map((item) => (
+                <li key={item.href}>
+                  <RailLink item={item} active={isActive(pathname, item.href)} small />
+                </li>
+              ))}
+          </ul>
+        )}
         {role === "coach" && (
           <Link
             href="/ogrenci/bugun"
@@ -236,6 +196,35 @@ function NavRail({ role }: { role: ShellRole }) {
   );
 }
 
+function RailLink({ item, active, small = false }: { item: NavItem; active: boolean; small?: boolean }) {
+  return (
+    <Link
+      href={item.href}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "group flex items-center gap-2.5 rounded-md px-2.5",
+        small ? "h-8 text-[length:var(--text-sm)]" : "h-9 text-[length:var(--text-base)]",
+        "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out-quart)]",
+        active
+          ? "bg-[color-mix(in_oklch,var(--color-accent)_12%,transparent)] font-medium text-[var(--color-ink)]"
+          : small
+            ? "text-[var(--color-ink-3)] hover:bg-[color-mix(in_oklch,var(--color-ink)_5%,transparent)] hover:text-[var(--color-ink)]"
+            : "text-[var(--color-ink-2)] hover:bg-[color-mix(in_oklch,var(--color-ink)_5%,transparent)] hover:text-[var(--color-ink)]",
+      )}
+    >
+      <span
+        className={cn(
+          "shrink-0 transition-colors duration-[var(--duration-fast)]",
+          active ? "text-[var(--color-accent)]" : "text-[var(--color-ink-3)] group-hover:text-[var(--color-ink-2)]",
+        )}
+      >
+        {item.icon}
+      </span>
+      {item.label}
+    </Link>
+  );
+}
+
 /**
  * Mobil alt sekme çubuğu.
  *
@@ -245,53 +234,86 @@ function NavRail({ role }: { role: ShellRole }) {
 function MobileTabBar({ role }: { role: ShellRole }) {
   const pathname = usePathname();
   const nav = navFor(role);
+  const primary = nav.filter((item) => !item.secondary);
+  const secondary = nav.filter((item) => item.secondary);
+  // Açıldığı sayfayı tutar: sayfa değişince "Diğer" kendiliğinden kapanır.
+  const [openOn, setOpenOn] = useState<string | null>(null);
+  const moreOpen = openOn === pathname;
+  const setMoreOpen = (open: boolean) => setOpenOn(open ? pathname : null);
+  const moreActive = secondary.some((item) => isActive(pathname, item.href));
+
+  const itemClass = (active: boolean) =>
+    cn(
+      "tabBarItem",
+      "flex flex-col items-center justify-center gap-1 px-0.5 py-2.5",
+      "text-[length:var(--text-2xs)]",
+      "transition-[color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out-expo)]",
+      "active:scale-[0.97]",
+      active
+        ? "font-medium text-[var(--color-accent)] [&>svg]:drop-shadow-[0_0_6px_oklch(0.72_0.14_245/0.55)]"
+        : "text-[var(--color-ink-3)]",
+    );
 
   return (
-    <nav
-      aria-label="Ana gezinme"
-      /*
-       * `pb-[env(safe-area-inset-bottom)]` KAYDIRMA KONTEYNERİNDE
-       * kalır. Sekmelere taşımak her sekmeye ayrı boşluk verir ve
-       * flex-basis hesabını bozardı; burada iPhone home indicator
-       * alanı sekmelerin altında tek parça boş durur.
-       *
-       * `.tabBar`'a tabindex VERİLMEZ: içindeki beş <Link> zaten
-       * odaklanabilir. Ayrı bir odak durağı, klavye kullanıcısına
-       * anlamsız bir fazladan Tab bastırırdı.
-       */
-      className="tabBar glassChrome glassChrome--bottom flex fixed inset-x-0 bottom-0 z-[var(--z-sticky)] pb-[env(safe-area-inset-bottom)] md:hidden"
-    >
-      {nav.map((item) => {
-        const active = isActive(pathname, item.href);
-
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={active ? "page" : undefined}
-            className={cn(
-              "tabBarItem",
-              "flex flex-col items-center justify-center gap-1 px-0.5 py-2.5",
-              "text-[length:var(--text-2xs)]",
-              "transition-[color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out-expo)]",
-              "active:scale-[0.97]",
-              // Aktif sekme ışır — "buradasın"ın dört meşru
-              // ışıma yerinden biri (bkz. globals.css glow bloğu).
-              // İkon ve etiket maviye döner, ışıma ikonun
-              // arkasından gelir.
-              active
-                ? "font-medium text-[var(--color-accent)] [&>svg]:drop-shadow-[0_0_6px_oklch(0.72_0.14_245/0.55)]"
-                : "text-[var(--color-ink-3)]",
-            )}
+    <>
+      {moreOpen && (
+        <>
+          <button
+            type="button"
+            aria-label="Menüyü kapat"
+            className="fixed inset-0 z-[var(--z-sticky)] bg-black/40 md:hidden"
+            onClick={() => setMoreOpen(false)}
+          />
+          <ul
+            id="tabbar-more"
+            className="glassChrome fixed inset-x-3 z-[var(--z-sticky)] flex flex-col gap-0.5 rounded-xl border border-[var(--color-line)] p-2 md:hidden"
+            style={{ bottom: "calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 0.5rem)" }}
           >
-            {item.icon}
-            <span className="max-w-full truncate">
-              {item.shortLabel ?? item.label}
-            </span>
-          </Link>
-        );
-      })}
-    </nav>
+            {secondary.map((item) => (
+              <li key={item.href}>
+                <RailLink item={item} active={isActive(pathname, item.href)} />
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <nav
+        aria-label="Ana gezinme"
+        className="tabBar glassChrome glassChrome--bottom flex fixed inset-x-0 bottom-0 z-[var(--z-sticky)] pb-[env(safe-area-inset-bottom)] md:hidden"
+      >
+        {primary.map((item) => {
+          const active = isActive(pathname, item.href);
+          return (
+            <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={itemClass(active)}>
+              {item.icon}
+              <span className="max-w-full truncate">{item.shortLabel ?? item.label}</span>
+            </Link>
+          );
+        })}
+        {secondary.length > 0 && (
+          <button
+            type="button"
+            aria-expanded={moreOpen}
+            aria-controls="tabbar-more"
+            onClick={() => setMoreOpen(!moreOpen)}
+            className={itemClass(moreActive || moreOpen)}
+          >
+            <MoreIcon />
+            <span className="max-w-full truncate">Diğer</span>
+          </button>
+        )}
+      </nav>
+    </>
+  );
+}
+
+function MoreIcon() {
+  return (
+    <svg width={16} height={16} viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <circle cx="3" cy="8" r="1.4" />
+      <circle cx="8" cy="8" r="1.4" />
+      <circle cx="13" cy="8" r="1.4" />
+    </svg>
   );
 }
 
