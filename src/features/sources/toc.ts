@@ -302,6 +302,34 @@ export function tocText(
   return out.join("\n");
 }
 
+/**
+ * Eski (kitap boyunca) numaralı metni konu başına numaraya çevir:
+ * "Üslü | 8-16" → "Üslü | 9 test", "12 = Konu" bölüm içi sıraya. Aralıklı
+ * seri başlıkları (# ÖSYM Tipi | 1-10) dokunulmaz. Kaydedilince testler
+ * sırayla eşleşir (tree.ts), işaretler kaymaz.
+ */
+export function toOwnNumbering(text: string, opts: TocOptions): string {
+  const parsed = parseToc(text, opts);
+  const series = parsed.series.map((s) => ({
+    name: s.name,
+    sections: s.sections.map((sec) =>
+      sec.implicit ? sec : { ...sec, from: 1, to: sec.to - sec.from + 1 },
+    ),
+    itemTopics: s.itemTopics.map((t) => {
+      const k = s.sections.findIndex((sec) => sec.line === t.sectionLine);
+      const sec = s.sections[k];
+      return { topic: t.topic, section: k, number: sec.implicit ? t.number : t.number - sec.from + 1 };
+    }),
+  }));
+  return tocText(series, opts);
+}
+
+/** Metinde 1'den başlamayan (kitap boyunca numaralı) konu bölümü var mı. */
+export function canConvertToOwn(text: string, opts: TocOptions): boolean {
+  if (opts.unit !== "test") return false;
+  return parseToc(text, opts).series.some((s) => s.sections.some((sec) => !sec.implicit && sec.from !== 1));
+}
+
 /** Seride aynı numarayı taşıyan iki bölüm var mı. */
 export function hasOverlap(sections: ReadonlyArray<{ from: number; to: number }>): boolean {
   const sorted = [...sections].sort((a, b) => a.from - b.from);
