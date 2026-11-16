@@ -41,7 +41,7 @@ describe("buildDraft", () => {
     expect(d[0].sections.map((s) => s.topicId)).toEqual([null, "t-bhh"]);
     expect(d[1].sections[0]).toMatchObject({ implicit: true, topicId: null });
     expect(d[1].kind).toBe("osym");
-    expect(d[1].itemTopics).toEqual([{ number: 7, topicName: "Dalga Mekaniği", topicId: "t-dalga" }]);
+    expect(d[1].itemTopics).toEqual([{ number: 7, sectionLine: 3, topicName: "Dalga Mekaniği", topicId: "t-dalga" }]);
   });
 
   it("mevcut seri/bölüm kimlikleri korunur; etiket düzeltilse aralıktan eşleşir", () => {
@@ -106,5 +106,30 @@ describe("diffTree", () => {
     const osym = draftFor("# ÖSYM Tipi | 1-3\n2 = Dalga Mekaniği");
     const ops = diffTree("src", "test", osym, [], ids());
     expect(ops.items.map((i) => i.topic_id)).toEqual([null, "t-dalga", null]);
+  });
+
+  it("1'den numaralanmaya geçiş: testler sırayla eşleşir (işaretler kaymaz)", () => {
+    const draft = draftFor("Basit Harmonik Hareket | 3 test\nDalga Mekaniği | 3 test", EXISTING);
+    const ops = diffTree("src", "test", draft, EXISTING, ids());
+    const dalga = ops.items.filter((i) => i.section_id === "sec-dalga");
+    expect(dalga.map((i) => [i.number, i.id])).toEqual([
+      [1, "i4"],
+      [2, "i5"],
+      [3, "new-1"],
+    ]);
+    expect(ops.items.filter((i) => i.section_id === "sec-bhh").map((i) => i.id)).toEqual(["i1", "i2", "i3"]);
+    expect(new Set(ops.items.map((i) => i.id)).size).toBe(ops.items.length);
+    expect(ops.deleteItems).toEqual([]);
+  });
+
+  it("aynı numaralı bölümlerde test konusu kendi bölümüne yazılır", () => {
+    const draft = draftFor("Basit Harmonik Hareket | 2 test\n2 = Dalga Mekaniği\nDalga Mekaniği | 2 test");
+    const ops = diffTree("src", "test", draft, [], ids());
+    expect(ops.items.map((i) => [i.number, i.topic_id])).toEqual([
+      [1, null],
+      [2, "t-dalga"],
+      [1, null],
+      [2, null],
+    ]);
   });
 });

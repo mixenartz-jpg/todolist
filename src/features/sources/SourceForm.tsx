@@ -7,7 +7,7 @@ import { Field, SelectInput, TextArea, TextInput } from "@/components/Field";
 import { topicKey } from "@/features/topics/match";
 import { cn } from "@/lib/ui/cn";
 import { useAddTopic } from "./queries";
-import { parseToc, tocText } from "./toc";
+import { canConvertToOwn, hasOverlap, parseToc, toOwnNumbering, tocText } from "./toc";
 import { buildDraft, diffTree, sectionKey, treeAsToc, type TreeOps } from "./tree";
 import {
   EXAMS,
@@ -266,7 +266,7 @@ export function SourceForm({
           hint={
             kind === "video"
               ? "Her satır bir bölüm: '12 | Konu' (ders no) ya da 'Konu | 10-14'."
-              : "Her satır bir bölüm: 'Konu | 1-74' ya da 'Konu | 8 test'. '# Seri' yeni seri açar, '7 = Konu' teste konu verir."
+              : "Her satır bir bölüm: 'Konu | 1-74' ya da 'Konu | 8 test' (konunun kendi 1-8. testleri). '# Seri' yeni seri açar, '7 = Konu' teste konu verir."
           }
           className="col-span-2 md:col-span-4"
         >
@@ -285,6 +285,23 @@ export function SourceForm({
             />
           )}
         </Field>
+
+        {canConvertToOwn(toc, { kind, unit: effectiveUnit }) && (
+          <div className="col-span-2 flex flex-wrap items-center gap-2 text-[length:var(--text-sm)] text-[var(--color-ink-2)] md:col-span-4">
+            <span>{"Kitap her konuda testleri 1'den mi numaralıyor?"}</span>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setToc(toOwnNumbering(toc, { kind, unit: effectiveUnit }));
+                setConfirmLoss(false);
+              }}
+            >
+              {"Her konuyu 1'den numarala"}
+            </Button>
+          </div>
+        )}
 
         {parsed.errors.length > 0 && (
           <ul className="col-span-2 flex flex-col gap-0.5 text-[length:var(--text-sm)] text-[var(--color-danger)] md:col-span-4">
@@ -457,8 +474,9 @@ function SeriesRows({
         </tr>
       ))}
       {series.itemTopics.map((t) => (
-        <tr key={`it-${t.number}`}>
+        <tr key={`it-${t.sectionLine}-${t.number}`}>
           <td className="py-0.5 pr-2 pl-6 text-[var(--color-ink-2)]">
+            {hasOverlap(series.sections) && `${series.sections.find((sec) => sec.line === t.sectionLine)?.label ?? ""} `}
             {t.number}. test
           </td>
           <td />

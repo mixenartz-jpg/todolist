@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { guessSeriesKind, parseAmount, parseToc, tocText } from "./toc";
+import { canConvertToOwn, guessSeriesKind, parseAmount, parseToc, toOwnNumbering, tocText } from "./toc";
 
 const BOOK = { kind: "kitap", unit: "test" } as const;
 const PAGES = { kind: "kitap", unit: "sayfa" } as const;
@@ -32,13 +32,13 @@ describe("parseAmount", () => {
 });
 
 describe("parseToc — kitap", () => {
-  it("'Üslü Sayılar | 1-74' ve '8 test' önceki bölümün devamı", () => {
+  it("'8 test' konunun kendi 1-8. testleri; açık aralıkla çakışmaz", () => {
     expect(brief("Üslü Sayılar | 1-74\nKöklü Sayılar | 8 test\nÇarpanlara Ayırma | 8 test")).toEqual({
       series: [
         {
           name: "Konu Testleri",
           kind: "konu",
-          sections: ["Üslü Sayılar:1-74", "Köklü Sayılar:75-82", "Çarpanlara Ayırma:83-90"],
+          sections: ["Üslü Sayılar:1-74", "Köklü Sayılar:1-8", "Çarpanlara Ayırma:1-8"],
           items: [],
         },
       ],
@@ -46,10 +46,19 @@ describe("parseToc — kitap", () => {
     });
   });
 
-  it("ilk satır '8 test' ise 1'den başlar", () => {
-    expect(brief("Köklü Sayılar | 8 test\nÜslü | 8 test").series[0].sections).toEqual([
-      "Köklü Sayılar:1-8",
-      "Üslü:9-16",
+  it("her konu 1'den: 'Köklü | 12 test', 'Üslü | 14 test'", () => {
+    expect(brief("Köklü | 12 test\nÜslü | 14 test").series[0].sections).toEqual(["Köklü:1-12", "Üslü:1-14"]);
+  });
+
+  it("test dışı birimde adet önceki bölümün devamı", () => {
+    expect(brief("A | 1-20\nB | 10 sayfa", PAGES).series[0].sections).toEqual(["A:1-20", "B:21-30"]);
+  });
+
+  it("'N = Konu' numarayı içeren en yakın önceki bölüme bağlanır", () => {
+    const r = parseToc("Köklü | 5 test\n3 = Dalga\nÜslü | 5 test\n3 = Atom", BOOK);
+    expect(r.series[0].itemTopics.map((t) => [t.number, t.topic, t.sectionLine])).toEqual([
+      [3, "Dalga", 1],
+      [3, "Atom", 3],
     ]);
   });
 
@@ -164,5 +173,47 @@ describe("tocText gidiş-dönüş", () => {
       opts,
     );
     expect(again).toBe(text);
+  });
+
+  it("kendi numaralı bölümler 'N test' ve altında test konuları olarak döner", () => {
+    const text = "Köklü | 12 test\n3 = Dalga\nÜslü | 14 test\nÇarpanlar | 15-20";
+    const parsed = parseToc(text, BOOK);
+    const s = parsed.series[0];
+    const again = tocText(
+      [
+        {
+          name: s.name,
+          sections: s.sections,
+          itemTopics: s.itemTopics.map((t) => ({ ...t, section: s.sections.findIndex((x) => x.line === t.sectionLine) })),
+        },
+      ],
+      BOOK,
+    );
+    expect(again).toBe(text);
+  });
+});
+
+describe("toOwnNumbering", () => {
+  const OLD = "Çarpanlar ve Katlar | 1-7\nÜslü İfadeler | 8-16\nKareköklü İfadeler | 17-27\n10 = Dalga\nVeri Analizi | 28-32";
+
+  it("kitap boyunca numarayı konu başına çevirir; test konusu bölümüyle gider", () => {
+    expect(canConvertToOwn(OLD, BOOK)).toBe(true);
+    const next = toOwnNumbering(OLD, BOOK);
+    expect(next).toBe(
+      "Çarpanlar ve Katlar | 7 test\nÜslü İfadeler | 9 test\n3 = Dalga\nKareköklü İfadeler | 11 test\nVeri Analizi | 5 test",
+    );
+    // Eski 10. test Üslü'de (8-16) → Üslü'nün 3. testi, Üslü'nün altına.
+    expect(brief(next).series[0].sections).toEqual([
+      "Çarpanlar ve Katlar:1-7",
+      "Üslü İfadeler:1-9",
+      "Kareköklü İfadeler:1-11",
+      "Veri Analizi:1-5",
+    ]);
+    expect(canConvertToOwn(next, BOOK)).toBe(false);
+  });
+
+  it("aralıklı seri başlığı ve test dışı birim dokunulmaz", () => {
+    expect(canConvertToOwn("# ÖSYM Tipi | 1-10", BOOK)).toBe(false);
+    expect(canConvertToOwn("A | 1-20\nB | 21-30", PAGES)).toBe(false);
   });
 });
