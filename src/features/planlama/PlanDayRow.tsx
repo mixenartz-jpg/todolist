@@ -1,14 +1,13 @@
 "use client";
 
 import { Chevron } from "@/components/Chevron";
-import { isoWeekday, toParts } from "@/lib/date/date";
+import { isoWeekday } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import { cn } from "@/lib/ui/cn";
-import { formatShortDate, WEEKDAYS_SHORT } from "@/lib/ui/tr";
+import { formatShortDate, WEEKDAYS_LONG } from "@/lib/ui/tr";
 import { TaskQuickAdd } from "@/features/tasks/TaskQuickAdd";
 import type { Task } from "@/features/tasks/types";
 import { DayLoad } from "@/features/tasks/DayLoad";
-import { dayLoad } from "@/features/tasks/estimate";
 import { DayStudentBar } from "@/features/coachview/DayStudentBar";
 import { CatalogAddButton } from "@/features/sources/CatalogPanel";
 import { PlanTaskList } from "./PlanTaskList";
@@ -129,16 +128,14 @@ export function PlanDayRow({
   onDragTaskStart,
   onDragTaskEnd,
 }: PlanDayRowProps) {
-  const day = toParts(bucket.date).day;
   const weekday = isoWeekday(bucket.date);
-  const weekdayLabel = WEEKDAYS_SHORT[weekday];
+  const weekdayLabel = WEEKDAYS_LONG[weekday];
   const isToday = bucket.date === today;
   const isPast = inScope && bucket.date < today;
   /* 6 = Cumartesi, 7 = Pazar (ISO). Kağıt ajandalarda hafta sonu farklı
    * tonda basılır; ayın nerede bölündüğünü gösteren ritim budur. */
   const isWeekend = weekday >= 6;
   const isEmpty = bucket.tasks.length === 0;
-  const hasLoad = dayLoad(bucket.tasks) !== null;
   /*
    * Boş gün KATLANMAZ: katlanacak görev yok, katlama oku da çizilmiyor
    * ve katlı sayılsaydı ekleme kutusu gizlenip güne iş eklemenin yolu
@@ -177,17 +174,20 @@ export function PlanDayRow({
   const summary =
     bucket.openCount > 0 ? `${bucket.openCount} açık iş` : "tamamlandı";
 
+  /* Kart başlığı: "Pazartesi · 16 Kasım". Gün numarası ayrı sütunda
+   * değil, okunan bir başlık — günler kart kart ayrışsın. */
   const gutterInner = (
     <>
-      <span className="planDayNum tabular">{day}</span>
-      <span className="planDayWeekday">{weekdayLabel}</span>
+      <span className="planDayTitle">
+        <span className="planDayWeekday">{weekdayLabel}</span>
+        <span aria-hidden> · </span>
+        <span className="planDayNum tabular">{dayName}</span>
+      </span>
       {bucket.openCount > 0 && (
         <span aria-hidden className="planDayCount tabular">
-          {bucket.openCount}
+          {bucket.openCount} iş
         </span>
       )}
-      {/* Plan noktası sayaçtan AYRI bir işaret: planı yazılmış ama işi
-          olmayan bir gün de "dolu"dur ve bunu sayı gösteremezdi. */}
       {hasPlan && <span aria-hidden className="planDayDot" />}
     </>
   );
@@ -240,46 +240,21 @@ export function PlanDayRow({
         yutar, iç içe interaktif eleman hem geçersiz HTML hem klavye
         erişilemez olurdu.
       */}
-      {onOpenDay ? (
-        <button
-          type="button"
-          aria-label={openLabel}
-          onClick={() => onOpenDay(bucket.date)}
-          className="planDayGutter planDayGutterButton"
-        >
-          {gutterInner}
-        </button>
-      ) : (
-        <div className="planDayGutter">{gutterInner}</div>
-      )}
+      <div className="planDayHead">
+        {onOpenDay ? (
+          <button
+            type="button"
+            aria-label={openLabel}
+            onClick={() => onOpenDay(bucket.date)}
+            className="planDayGutter planDayGutterButton"
+          >
+            {gutterInner}
+          </button>
+        ) : (
+          <div className="planDayGutter">{gutterInner}</div>
+        )}
 
-      <div className="planDayField">
-        {/*
-          Katlama oku — YALNIZCA görevi olan günde.
-          Boş bir günde katlanacak bir şey yok ve ok "burada gizli
-          bir şey var" diye yalan söylerdi.
-
-          Tarih kanalına konulamaz: orası zaten gün panelini açan bir
-          düğme ve aynı hedefe iki işlev bindirmek, hangisinin
-          olacağını tahmin edilemez kılardı.
-        */}
-        {/*
-          Özet satırı: katlama oku solda, günün tahmini yükü sağda.
-          Yük katlı günde de görünür — "bu gün ne kadar dolu" sorusu
-          tam da görevler gizliyken sorulur. Açık günde ok mutlak
-          konumlu (planlama.css), satırda yalnızca yük kalır; tahmin
-          yoksa `DayLoad` hiçbir şey çizmez.
-
-          Tahmin yoksa kap `contents`: açık günde içinde yalnızca
-          mutlak konumlu ok kalır ve kutu olarak dursaydı, sıfır
-          yükseklikte olsa bile `.planDayField`'ın flex boşluğunu yiyip
-          tahmini olmayan HER günü bir tık uzatırdı.
-        */}
-        <div
-          className={
-            hasLoad ? "flex items-center justify-between gap-2" : "contents"
-          }
-        >
+        <div className="planDayHeadSide">
           {!isEmpty && (
             <button
               type="button"
@@ -290,20 +265,20 @@ export function PlanDayRow({
               }
               className="planDayCollapse"
             >
-              <Chevron open={!collapsed} />
-              {/* Kapalıyken özet görünür: satır "boş" sanılmasın.
-                  Açıkken gereksiz — görevler zaten ortada. */}
-              {collapsed && (
+              {/* Açık iş sayısı başlıktaki rozette; yazı yalnızca gün bitince. */}
+              {collapsed && bucket.openCount === 0 && (
                 <span aria-hidden className="tabular">
                   {summary}
                 </span>
               )}
+              <Chevron open={!collapsed} />
             </button>
           )}
-
-          <DayLoad tasks={bucket.tasks} compact className="ml-auto" />
+          <DayLoad tasks={bucket.tasks} compact />
         </div>
+      </div>
 
+      <div className="planDayField">
         {/* Öğrencinin günlük formu + koç notu (sağlayıcı yoksa boş). */}
         {inScope && <DayStudentBar date={bucket.date} />}
 

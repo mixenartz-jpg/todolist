@@ -23,7 +23,7 @@ import { CategoryFilterMenu } from "./CategoryFilterMenu";
 import { daySummaries } from "./dayplan";
 import { useSetTaskCategory, useSetTaskGoal } from "./mutations";
 import { useMonthPlanDays, usePlanGoals } from "./queries";
-import { PlanBacklog } from "./PlanBacklog";
+import { PlanBacklogButton } from "./PlanBacklogButton";
 import { PlanDayRow } from "./PlanDayRow";
 import { PlanDaySheet } from "./PlanDaySheet";
 import { PlanMonthMap } from "./PlanMonthMap";
@@ -220,6 +220,15 @@ export function PlanlamaScreen() {
               <PlanScaleToggle value={view} onChange={setView} />
               <CatalogToggle />
               <DistributeButton />
+          <PlanBacklogButton
+            tasks={range.backlog}
+            categoryById={categories.categoryById}
+            selectedId={isPlacingTask(placing) ? placing.id : null}
+            addPending={actions.addPending}
+            onSelect={(id) => setPlacing(id === null ? null : { kind: "task", id })}
+            onAdd={actions.addBacklog}
+            onError={toast.show}
+          />
             </>
           }
         />
@@ -382,15 +391,6 @@ export function PlanlamaScreen() {
                 />
               )}
 
-              <PlanBacklog
-                tasks={range.backlog}
-                categoryById={categories.categoryById}
-                selectedId={isPlacingTask(placing) ? placing.id : null}
-                addPending={actions.addPending}
-                onSelect={(id) => setPlacing(id === null ? null : { kind: "task", id })}
-                onAdd={actions.addBacklog}
-                onError={toast.show}
-              />
             </div>
           </>
         )}

@@ -225,7 +225,9 @@ export const TaskItem = memo(function TaskItem({
         // sarabiliyor ve ortalama, kutucuğu ile simgeleri metnin
         // ortasında asılı bırakırdı. Tepeden hizalanınca kutucuk her
         // zaman ilk satırın hizasında durur.
-        "items-start gap-3",
+        // `flex-wrap`: dar satırda (telefon, katalog açıkken) simgeler
+        // başlığı sıkıştırmak yerine alt satıra, sağa kayar.
+        "flex-wrap items-start gap-x-3 gap-y-1",
         "transition-[color,background-color,border-color,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-out-quart)]",
         /*
          * Üzerine gelince AÇIK satır ısınır.
@@ -284,7 +286,7 @@ export const TaskItem = memo(function TaskItem({
         </span>
       </button>
 
-      <div className="min-w-0 flex-1">
+      <div className="min-w-[min(13rem,100%)] flex-1 basis-0">
         {/* Süre çipi başlık satırının SAĞINDA ama üstü çizili kabın
             DIŞINDA: `line-through` flex çocuklarına da yayılır ve
             bitmiş işin "30 dak"ı da çizilirdi. */}
@@ -439,7 +441,7 @@ export const TaskItem = memo(function TaskItem({
 
       <div
         className={cn(
-          "revealTarget flex shrink-0 gap-0.5 transition-opacity duration-[var(--duration-fast)]",
+          "revealTarget ml-auto flex shrink-0 gap-0.5 transition-opacity duration-[var(--duration-fast)]",
           /* Bölme açıkken simgeler GÖRÜNÜR kalır: kullanıcı fareyi
              panele indirdiğinde satırdan çıkmış sayılır ve kapatma
              düğmesi altından kaybolurdu. */
