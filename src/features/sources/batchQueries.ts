@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Task } from "@/features/tasks/types";
 import type { DateStr, IsoWeekday } from "@/lib/date/types";
 import type { PlanBatchRow } from "@/lib/db/database.types";
+import { forActiveStudent } from "@/lib/auth/activeStudent";
 import { qk } from "@/lib/query/keys";
 import { createClient } from "@/lib/supabase/client";
 
@@ -21,9 +22,7 @@ export function usePlanBatches() {
   return useQuery({
     queryKey: qk.planBatches(),
     queryFn: async (): Promise<PlanBatch[]> => {
-      const { data, error } = await createClient()
-        .from("plan_batches")
-        .select("*")
+      const { data, error } = await forActiveStudent(createClient().from("plan_batches").select("*"))
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;

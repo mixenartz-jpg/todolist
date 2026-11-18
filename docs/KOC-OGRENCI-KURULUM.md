@@ -31,6 +31,36 @@ Mevcut hesap otomatik olarak **koç** olur. Mevcut görevler koçta kalır.
 select public.move_denemeler_to_student('kardes@ornek.com', 'koc@ornek.com');
 ```
 
+## 2b. İkinci öğrenci
+
+Önce `0039_multi_student.sql` çalışmış olmalı (bkz. [APPLY.md](./APPLY.md)).
+
+1. Authentication → **Add user** ile öğrencinin hesabını aç.
+2. SQL Editor:
+   ```sql
+   select public.link_student('ikinci@ornek.com', 'koc@ornek.com');
+   ```
+3. Seçicide görünecek adları ver (yoksa "Öğrenci 1", "Öğrenci 2" yazar):
+   ```sql
+   update public.profiles p set display_name = 'Ayşe'
+     from auth.users u where u.id = p.user_id and u.email = 'kardes@ornek.com';
+   update public.profiles p set display_name = 'Berk'
+     from auth.users u where u.id = p.user_id and u.email = 'ikinci@ornek.com';
+   ```
+4. Koç sayfayı yenileyince menüde (mobilde sayfa başlığının sağında) **Öğrenci**
+   seçicisi çıkar. Seçim cihaz başınadır; telefonda değiştirmek bilgisayarı etkilemez.
+
+Nasıl ayrılıyor:
+
+- **Öğrenci başına:** görevler, aylık/haftalık hedefler ve amaç notları, kaynaklar,
+  dağıtımlar, öğrenci rutinleri, sonuçlar, günlük formlar, koç notları, eksik havuzu, denemeler.
+- **Ortak (koçun):** kategoriler, eylem listesi, konu listesi, koçun kendi rutinleri
+  ve günlük notları.
+- İkinci öğrenci boş bir planla başlar. Mevcut plan ilk öğrencide kalır.
+- Öğrenciler birbirinin hiçbir satırını göremez (RLS). Koç hangi öğrenciyi seçtiyse
+  yeni kayıt ona yazılır. Seçim bir şekilde iletilemezse kayıt **hata verir**,
+  yanlış öğrenciye düşmez.
+
 ## 3. Rotalar
 
 | Koç | Öğrenci |
@@ -58,3 +88,13 @@ Koç `/ogrenci/*` adresini **salt okunur önizleme** olarak açar (menüde "Öğ
 - [ ] Öğrenci "eksik konu" yazar → `/koc/ogrenci` havuzunda görünür;
       "Göreve çevir" → görev tamamlanınca konu "Kapandı" olur
 - [ ] Öğrenci gelecek günde günlük form giremez; görev sonucunu girebilir (erken yapma)
+
+### İki öğrenci (0039 sonrası)
+
+- [ ] Tek öğrenciyken: seçici görünmüyor, Planlama eskisiyle birebir aynı
+- [ ] İkinci öğrenci bağlanınca seçici çıkıyor; ilk öğrencinin planı yerinde
+- [ ] Seçiciden B'ye geç → Planlama boş; bir görev ekle → **B'nin** Bugün ekranında var,
+      **A'nın** ekranında yok (en kritik kontrol: özel başlık Supabase'e ulaşıyor demek)
+- [ ] A'ya dön → A'nın görevleri, hedefleri, kaynakları geri geldi; B'nin görevi yok
+- [ ] Kaynaklar, Dağıt, Rutinler, Eksik havuzu, Denemeler seçili öğrenciye göre değişiyor
+- [ ] Görev eklerken "Öğrenci seçilmedi" hatası çıkarsa: başlık iletilmiyor, haber ver

@@ -1,12 +1,15 @@
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { STUDENT_COOKIE } from "./activeStudent";
 import { roleFromClaims, type Role } from "./roles";
+import { pickStudent, studentOptions, type ProfileRow, type StudentOption } from "./students";
 
 /**
  * Sayfayı kim görüyor ve kimin verisine bakıyor.
  *
  * `studentId` ekranların "öğrenci verisi" sorgularının hedefi:
- * öğrencide kendisi, koçta bağlı İLK öğrenci (şu an tek öğrenci var;
- * şema çoğuna hazır). Koçun henüz öğrencisi yoksa null.
+ * öğrencide kendisi; koçta SEÇİLİ öğrenci (çerez `kero_student`,
+ * geçersizse/yoksa ilk bağlanan). Koçun henüz öğrencisi yoksa null.
  */
 export interface Viewer {
   userId: string;
@@ -15,13 +18,8 @@ export interface Viewer {
   coachId: string | null;
   studentId: string | null;
   studentName: string | null;
-}
-
-interface ProfileRow {
-  user_id: string;
-  role: Role;
-  coach_id: string | null;
-  display_name: string | null;
+  /** Koçun bütün öğrencileri (bağlanma sırasıyla); öğrencide boş. */
+  students: StudentOption[];
 }
 
 export async function getViewer(): Promise<Viewer | null> {
@@ -40,10 +38,10 @@ export async function getViewer(): Promise<Viewer | null> {
    */
   const { data: rows, error } = await supabase
     .from("profiles")
-    .select("user_id, role, coach_id, display_name");
+    .select("user_id, role, coach_id, display_name, created_at");
 
   if (error || !rows) {
-    return { userId, role, coachId: null, studentId: null, studentName: null };
+    return { userId, role, coachId: null, studentId: null, studentName: null, students: [] };
   }
 
   const profiles = rows as ProfileRow[];
@@ -58,15 +56,20 @@ export async function getViewer(): Promise<Viewer | null> {
       coachId: me?.coach_id ?? null,
       studentId: userId,
       studentName: me?.display_name ?? null,
+      students: [],
     };
   }
 
-  const student = profiles.find((p) => p.coach_id === userId && p.role === "student");
+  const students = studentOptions(profiles, userId);
+  const wanted = (await cookies()).get(STUDENT_COOKIE)?.value;
+  const selected = pickStudent(students, wanted);
+
   return {
     userId,
     role,
     coachId: null,
-    studentId: student?.user_id ?? null,
-    studentName: student?.display_name ?? null,
+    studentId: selected?.id ?? null,
+    studentName: selected?.name ?? null,
+    students,
   };
 }

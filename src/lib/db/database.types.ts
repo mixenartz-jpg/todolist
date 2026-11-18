@@ -105,6 +105,8 @@ export interface TaskRow {
    */
   estimate_minutes?: number | null;
   created_at: string;
+  /** 0039: hangi öğrencinin planı (koçun öğrencisi yoksa null). */
+  student_id?: string | null;
 }
 
 /**
@@ -148,6 +150,8 @@ export interface PlanGoalRow {
   archived_at: string | null;
   created_at: string;
   updated_at: string;
+  /** 0039: hangi öğrencinin planı (koçun öğrencisi yoksa null). */
+  student_id?: string | null;
 }
 
 /**
@@ -185,6 +189,8 @@ export interface WeekGoalRow {
   plan_goal_id: string | null;
   created_at: string;
   updated_at: string;
+  /** 0039: hangi öğrencinin planı (koçun öğrencisi yoksa null). */
+  student_id?: string | null;
 }
 
 /**
@@ -235,6 +241,8 @@ export interface PeriodNoteRow {
   body: string;
   created_at: string;
   updated_at: string;
+  /** 0039: hangi öğrencinin planı (koçun öğrencisi yoksa null). */
+  student_id?: string | null;
 }
 
 export interface DayNoteRow {

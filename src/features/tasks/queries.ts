@@ -5,6 +5,7 @@ import { asDateStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import type { TaskRow } from "@/lib/db/database.types";
 import { qk } from "@/lib/query/keys";
+import { forActiveStudent } from "@/lib/auth/activeStudent";
 import { createClient } from "@/lib/supabase/client";
 import type { Task } from "./types";
 
@@ -25,9 +26,8 @@ export function useTasks() {
 async function fetchTasks(): Promise<Task[]> {
   const supabase = createClient();
 
-  const { data, error } = await supabase
-    .from("tasks")
-    .select("*")
+  // Koç bütün öğrencilerinin görevlerini okuyabilir; ekran seçili olanı gösterir.
+  const { data, error } = await forActiveStudent(supabase.from("tasks").select("*"))
     .order("done", { ascending: true })
     .order("due_date", { ascending: true, nullsFirst: false })
     .order("sort_order", { ascending: true })

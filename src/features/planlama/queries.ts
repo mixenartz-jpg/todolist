@@ -8,6 +8,7 @@ import type {
   WeekGoalRow,
 } from "@/lib/db/database.types";
 import { qk } from "@/lib/query/keys";
+import { forActiveStudent } from "@/lib/auth/activeStudent";
 import { createClient } from "@/lib/supabase/client";
 import type { DateStr } from "@/lib/date/types";
 import type { Category, PlanGoal, WeekGoal } from "./types";
@@ -85,9 +86,7 @@ export function usePlanGoals(month: DateStr) {
 async function fetchPlanGoals(month: DateStr): Promise<PlanGoal[]> {
   const supabase = createClient();
 
-  const { data, error } = await supabase
-    .from("plan_goals")
-    .select("*")
+  const { data, error } = await forActiveStudent(supabase.from("plan_goals").select("*"))
     .eq("month", month)
     .order("archived_at", { ascending: true, nullsFirst: true })
     .order("sort_order", { ascending: true })
@@ -130,9 +129,7 @@ export function useWeekGoals(weekStart: DateStr) {
 async function fetchWeekGoals(weekStart: DateStr): Promise<WeekGoal[]> {
   const supabase = createClient();
 
-  const { data, error } = await supabase
-    .from("week_goals")
-    .select("*")
+  const { data, error } = await forActiveStudent(supabase.from("week_goals").select("*"))
     .eq("week_start", weekStart)
     /*
      * `completed_at`'e göre SIRALANMAZ — `fetchPlanGoals`'un

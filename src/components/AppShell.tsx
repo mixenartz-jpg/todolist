@@ -6,6 +6,7 @@ import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/ui/cn";
 import { BrandMark } from "@/components/BrandMark";
 import { createClient } from "@/lib/supabase/client";
+import { StudentPicker } from "@/features/coach/StudentPicker";
 import { QuickPanel } from "@/features/quickpanel/QuickPanel";
 import { ZenProvider } from "@/features/zen/ZenProvider";
 import {
@@ -149,6 +150,7 @@ function NavRail({ role }: { role: ShellRole }) {
       <div className="mb-6 px-2">
         <BrandMark href="/" className="inline-flex items-center" />
         <RoleBadge role={role} />
+        <StudentPicker variant="rail" />
       </div>
 
       <ul className="flex flex-col gap-0.5">

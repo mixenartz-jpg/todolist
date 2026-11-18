@@ -22,9 +22,15 @@ Supabase → Database → Backups. Ayrıca SQL Editor'den CSV olarak dışa al:
 | 5 | `0036_source_marks.sql` | Elle işaretler: `source_item_marks` (test), `source_range_marks` (soru/sayfa/ders). |
 | 6 | `0037_student_routines.sql` | `routines.student_id`, `estimate_minutes`; günlük rutin görevi için kısmi unique index ve `insert_routine_tasks` (sunucuda doğrular, idempotent). |
 | 7 | `0038_plan_batches.sql` | Dağıtım kayıtları (`plan_batches`) ve `tasks.plan_batch_id` FK. |
+| 8 | `0039_multi_student.sql` | Birden çok öğrenci: `tasks`, `plan_goals`, `week_goals`, `period_notes` → `student_id`. Mevcut her şey koçun (ilk) öğrencisine yazılır, yani tek öğrencide hiçbir şey değişmez. Öğrenci artık yalnızca KENDİ görevlerini/kaynaklarını görür. Ayrıntı: [KOC-OGRENCI-KURULUM.md §2b](./KOC-OGRENCI-KURULUM.md#2b-ikinci-öğrenci). |
 
-Hepsi yalnızca ekleme/kısıtlama yapar; satır silmez. Geri almak için `.down.sql`
+Hepsi yalnızca ekleme/kısıtlama yapar; satır silmez. (0039 istisna: `period_notes`'un birincil
+anahtarı öğrenci başına tekil kısıtla değişir; satır silinmez.) Geri almak için `.down.sql`
 dosyalarını **ters sırayla** çalıştır.
+
+> **0039 ÖNCE çalıştırılmalı, kod SONRA yayınlanmalı.** Yeni kod `student_id`
+> sütununa göre süzer; sütun yokken görev/hedef listeleri hata verir. Ters yön
+> güvenli: 0039 eski kodla tek öğrencide sorunsuz çalışır.
 
 > Kod migration'lardan önce yayınlanırsa: `done_on` sütunu yokken "erken yapıldı"
 > rozeti çıkmaz, Panel'deki "bugün erken yapıldı" satırı hata verir. Önce migration.

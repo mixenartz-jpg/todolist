@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { asDateStr } from "@/lib/date/date";
 import type { DateStr } from "@/lib/date/types";
 import type { GapItemRow, TaskRow } from "@/lib/db/database.types";
+import { forActiveOwner } from "@/lib/auth/activeStudent";
 import { qk } from "@/lib/query/keys";
 import { createClient } from "@/lib/supabase/client";
 
@@ -38,9 +39,7 @@ export function useGapItems(enabled: boolean) {
     queryKey: qk.gapItems(),
     enabled,
     queryFn: async (): Promise<GapItem[]> => {
-      const { data, error } = await createClient()
-        .from("gap_items")
-        .select("*")
+      const { data, error } = await forActiveOwner(createClient().from("gap_items").select("*"), "student_id")
         .order("last_seen", { ascending: false });
       if (error) throw error;
       return (data as GapItemRow[]).map(toGap);
