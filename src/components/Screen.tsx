@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { StudentPicker } from "@/features/coach/StudentPicker";
 import { cn } from "@/lib/ui/cn";
 import "./glass.css";
 
@@ -156,6 +157,11 @@ export function ScreenHeader({
                 {subtitle}
               </p>
             )}
+          </div>
+
+          {/* Mobilde kenar çubuğu yok: koç kime baktığını her ekranda görsün. */}
+          <div className="shrink-0 md:hidden">
+            <StudentPicker variant="compact" />
           </div>
 
           {actions && (

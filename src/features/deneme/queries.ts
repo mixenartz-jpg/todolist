@@ -7,6 +7,7 @@ import type {
   DenemeRow,
   DenemeYanlisRow,
 } from "@/lib/db/database.types";
+import { forActiveOwner } from "@/lib/auth/activeStudent";
 import { qk } from "@/lib/query/keys";
 import { createClient } from "@/lib/supabase/client";
 import type { HataTuru } from "./hatasepeti";
@@ -45,9 +46,8 @@ type DenemeWithDersler = DenemeRow & { deneme_dersleri: DenemeDersRow[] };
 async function fetchDenemeler(): Promise<DenemeDetayli[]> {
   const supabase = createClient();
 
-  const { data, error } = await supabase
-    .from("denemeler")
-    .select(DENEME_SELECT)
+  // Koç birden çok öğrencinin denemesini okuyabilir: seçili olanınki.
+  const { data, error } = await forActiveOwner(supabase.from("denemeler").select(DENEME_SELECT), "user_id")
     /*
      * Index ile aynı sıra (denemeler_user_tarih_idx): en yeni deneme
      * üstte. Kullanıcı listeyi "son ne yaptım" diye açar; kronolojik
@@ -148,9 +148,7 @@ export function useDenemeTekrarlari(bugun: string) {
 async function fetchDenemeTekrarlari(bugun: string): Promise<DenemeYanlis[]> {
   const supabase = createClient();
 
-  const { data, error } = await supabase
-    .from("deneme_yanlislari")
-    .select("*")
+  const { data, error } = await forActiveOwner(supabase.from("deneme_yanlislari").select("*"), "user_id")
     /*
      * Mezun olanlar (`next_review_date is null`) bu filtreyle
      * kendiliğinden dışarıda kalır: SQL'de `null <= tarih` NULL'dır,

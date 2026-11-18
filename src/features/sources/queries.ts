@@ -12,6 +12,7 @@ import type {
   TaskResultRow,
   TopicRow,
 } from "@/lib/db/database.types";
+import { forActiveStudent } from "@/lib/auth/activeStudent";
 import { qk } from "@/lib/query/keys";
 import { createClient } from "@/lib/supabase/client";
 import { retitleTasks, treeFromOps } from "./retitle";
@@ -31,9 +32,9 @@ export function useSourceTrees() {
   return useQuery({
     queryKey: qk.sources(),
     queryFn: async (): Promise<SourceTree[]> => {
-      const { data, error } = await createClient()
-        .from("sources")
-        .select("*, source_series(*, source_sections(*, source_items(*)))")
+      const { data, error } = await forActiveStudent(
+        createClient().from("sources").select("*, source_series(*, source_sections(*, source_items(*)))"),
+      )
         .is("archived_at", null)
         .order("sort_order")
         .order("created_at");

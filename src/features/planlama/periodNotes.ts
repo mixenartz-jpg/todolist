@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { PeriodNoteRow } from "@/lib/db/database.types";
 import type { DateStr } from "@/lib/date/types";
+import { activeStudentId, forActiveStudent } from "@/lib/auth/activeStudent";
 import { qk } from "@/lib/query/keys";
 import { createClient } from "@/lib/supabase/client";
 import type { PeriodNote } from "./types";
@@ -23,9 +24,7 @@ export function usePeriodNote(scale: Scale, periodStart: DateStr) {
     queryKey: qk.periodNote(scale, periodStart),
     queryFn: async (): Promise<PeriodNote> => {
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from("period_notes")
-        .select("*")
+      const { data, error } = await forActiveStudent(supabase.from("period_notes").select("*"))
         .eq("scale", scale)
         .eq("period_start", periodStart)
         .maybeSingle();
@@ -55,8 +54,9 @@ export function useSavePeriodNote(onError?: (message: string) => void) {
       const { error } = await supabase
         .from("period_notes")
         .upsert(
-          { scale, period_start: periodStart, body },
-          { onConflict: "user_id,scale,period_start" },
+          // Dönem başına tek satır ÖĞRENCİ başına (0039).
+          { scale, period_start: periodStart, body, student_id: activeStudentId() },
+          { onConflict: "user_id,student_id,scale,period_start" },
         );
       if (error) throw error;
     },

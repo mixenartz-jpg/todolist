@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { asDateStr } from "@/lib/date/date";
 import type { IsoWeekday } from "@/lib/date/types";
+import { activeStudentId } from "@/lib/auth/activeStudent";
 import { qk } from "@/lib/query/keys";
 import { createClient } from "@/lib/supabase/client";
 import type { RoutineRow, RoutineScheduleRow } from "@/lib/db/database.types";
@@ -49,9 +50,7 @@ async function fetchRoutines(): Promise<RoutineWithSchedule[]> {
   const supabase = createClient();
 
   const [routinesResult, schedulesResult] = await Promise.all([
-    supabase
-      .from("routines")
-      .select("*")
+    routinesFor(supabase.from("routines").select("*"))
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true }),
     supabase
@@ -67,6 +66,15 @@ async function fetchRoutines(): Promise<RoutineWithSchedule[]> {
     routinesResult.data as RoutineRow[],
     schedulesResult.data as RoutineScheduleRow[],
   );
+}
+
+/**
+ * Koçun kişisel rutinleri (student_id boş) + SEÇİLİ öğrencinin rutinleri.
+ * Öğrencide RLS zaten yalnızca kendininkileri verir.
+ */
+function routinesFor<Q extends { or(filter: string): Q }>(query: Q): Q {
+  const student = activeStudentId();
+  return student ? query.or(`student_id.is.null,student_id.eq.${student}`) : query;
 }
 
 /** Satırları bellek modeline dönüştürür. Saf — test edilebilir. */
