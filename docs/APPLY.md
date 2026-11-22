@@ -24,6 +24,7 @@ Supabase → Database → Backups. Ayrıca SQL Editor'den CSV olarak dışa al:
 | 7 | `0038_plan_batches.sql` | Dağıtım kayıtları (`plan_batches`) ve `tasks.plan_batch_id` FK. |
 | 8 | `0039_multi_student.sql` | Birden çok öğrenci: `tasks`, `plan_goals`, `week_goals`, `period_notes` → `student_id`. Mevcut her şey koçun (ilk) öğrencisine yazılır, yani tek öğrencide hiçbir şey değişmez. Öğrenci artık yalnızca KENDİ görevlerini/kaynaklarını görür. Ayrıntı: [KOC-OGRENCI-KURULUM.md §2b](./KOC-OGRENCI-KURULUM.md#2b-ikinci-öğrenci). |
 | 9 | `0040_topic_school.sql` | Okul nerede: `topic_school_status` — konu başına okulun durumu (işleniyor / işlendi + tarih), öğrenci başına. Koç yazar, öğrenci yalnızca kendi satırını okur. **Kod yayınlanmadan önce çalıştırılmalı** (Ders takip ekranı bu tabloyu okur). |
+| 10 | `0041_exam_track.sql` | Öğrencinin sınavı: `profiles.exam_track` (LGS / YKS) ve koçun yazdığı `set_student_exam_track` işlevi. LGS konu listesine Türkçe, İnkılap Tarihi, Din Kültürü, İngilizce eklenir. Kod önce yayınlanırsa bozulmaz: sınav seçimi kaydedilemez, ekran atanmamış gibi davranır. |
 
 Hepsi yalnızca ekleme/kısıtlama yapar; satır silmez. (0039 istisna: `period_notes`'un birincil
 anahtarı öğrenci başına tekil kısıtla değişir; satır silinmez.) Geri almak için `.down.sql`

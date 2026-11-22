@@ -41,7 +41,19 @@ export const SERIES_KIND_LABELS: Record<SeriesKind, string> = {
 export const EXAMS: readonly Exam[] = ["TYT", "AYT", "LGS"];
 
 /** Konu listesi (0035 seed) olan dersler; kaynak başka ders de alabilir. */
-export const SUBJECTS = ["Matematik", "Geometri", "Fizik", "Kimya", "Biyoloji", "Fen"] as const;
+export const SUBJECTS = [
+  "Matematik",
+  "Geometri",
+  "Fizik",
+  "Kimya",
+  "Biyoloji",
+  "Fen",
+  // LGS (0041)
+  "Türkçe",
+  "İnkılap Tarihi",
+  "Din Kültürü",
+  "İngilizce",
+] as const;
 
 export interface Source {
   id: string;

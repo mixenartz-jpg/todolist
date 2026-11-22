@@ -23,9 +23,11 @@ import {
 } from "@/features/school/school";
 import { EXAMS } from "@/features/sources/types";
 import { useSourceProgress } from "@/features/sources/useSourceProgress";
+import { useOptionalViewer } from "@/lib/auth/ViewerProvider";
 import { todayStr } from "@/lib/date/date";
 import { formatShortDate } from "@/lib/ui/tr";
 import { cn } from "@/lib/ui/cn";
+import { EXAM_TRACKS, examsForTrack, pickExam, pickSubject, topicsForTrack, useExamTrack, useSetExamTrack, type ExamTrack } from "./examTrack";
 import { topicStats, type TopicStats, type TopicStatus } from "./stats";
 
 const STATUS: Record<TopicStatus, { label: string; color: string }> = {
@@ -52,14 +54,23 @@ export function TopicsScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const toast = useToast();
-  const { topics, progress, index, results, loading } = useSourceProgress();
+  const { topics: allTopics, progress, index, results, loading } = useSourceProgress();
+  const studentId = useOptionalViewer()?.studentId ?? null;
+  const trackQuery = useExamTrack(studentId);
+  const track = trackQuery.data ?? null;
+  const setTrack = useSetExamTrack(studentId, toast.show);
+  // Öğrencinin sınavı konu listesini daraltır: LGS → LGS dersleri, YKS → TYT + AYT.
+  const topics = useMemo(() => topicsForTrack(allTopics, track), [allTopics, track]);
   const schoolQuery = useSchoolStatus();
   const setSchool = useSetSchoolStatus(toast.show);
   const marks = useMemo(() => schoolQuery.data ?? new Map<string, SchoolMark>(), [schoolQuery.data]);
 
   const subjects = useMemo(() => [...new Set(topics.map((t) => t.subject))].sort((a, b) => a.localeCompare(b, "tr")), [topics]);
-  const subject = params.get("ders") ?? subjects[0] ?? "";
-  const exam = params.get("sinav");
+  // Adres çubuğundaki ders/sınav bu öğrencinin sınavında yoksa yok sayılır.
+  const subject = pickSubject(params.get("ders"), subjects);
+  const examChoices = useMemo(() => examsForTrack(track) ?? EXAMS, [track]);
+  const wantedExam = params.get("sinav");
+  const exam = useMemo(() => pickExam(wantedExam, examChoices), [wantedExam, examChoices]);
   const focus = params.get("konu");
   const filter = parseTopicFilter(params.get("goster"));
 
@@ -94,13 +105,51 @@ export function TopicsScreen() {
     (m, s) => ({ ...m, [s.status]: (m[s.status] ?? 0) + 1 }),
     {} as Partial<Record<TopicStatus, number>>,
   );
-  const busy = loading || schoolQuery.isPending;
+  const busy = loading || schoolQuery.isPending || (studentId !== null && trackQuery.isPending);
+
+  function onTrack(next: ExamTrack | null) {
+    if (next === track) return;
+    setTrack.mutate(next);
+    // Ders ve sınav seçimi yeni sınavın listesine göre baştan seçilsin.
+    const q = new URLSearchParams(params.toString());
+    q.delete("ders");
+    q.delete("sinav");
+    q.delete("konu");
+    router.replace(`${pathname}?${q.toString()}`);
+  }
   const schoolPct = summary.total ? (summary.done / summary.total) * 100 : 0;
 
   return (
     <ScreenBody width="3xl">
       <SectionTitle>Ders takip</SectionTitle>
-      <div className="grid grid-cols-2 gap-2">
+      {studentId !== null && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]">Öğrencinin sınavı</span>
+          <div role="group" aria-label="Öğrencinin sınavı" className="flex items-center gap-0.5 rounded-lg bg-[var(--color-surface-2)] p-0.5">
+            {EXAM_TRACKS.map((t) => (
+              <button
+                key={t}
+                type="button"
+                aria-pressed={track === t}
+                onClick={() => onTrack(track === t ? null : t)}
+                className={cn(
+                  "min-h-8 rounded-md px-3 py-1 text-[length:var(--text-sm)]",
+                  "transition-colors duration-[var(--duration-fast)]",
+                  track === t
+                    ? "bg-[var(--color-surface-3)] font-medium text-[var(--color-ink)]"
+                    : "text-[var(--color-ink-3)] hover:text-[var(--color-ink-2)]",
+                )}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+          {track === null && !trackQuery.isPending && (
+            <span className="text-[length:var(--text-2xs)] text-[var(--color-ink-3)]">Atanmadı — tüm dersler görünüyor</span>
+          )}
+        </div>
+      )}
+      <div className={cn("grid gap-2", track === "LGS" ? "grid-cols-1" : "grid-cols-2")}>
         <SelectInput size="sm" aria-label="Ders" value={subject} onChange={(e) => setParam("ders", e.target.value)}>
           {subjects.map((s) => (
             <option key={s} value={s}>
@@ -108,14 +157,17 @@ export function TopicsScreen() {
             </option>
           ))}
         </SelectInput>
-        <SelectInput size="sm" aria-label="Sınav" value={exam ?? ""} onChange={(e) => setParam("sinav", e.target.value || null)}>
-          <option value="">Tüm sınavlar</option>
-          {EXAMS.map((x) => (
-            <option key={x} value={x}>
-              {x}
-            </option>
-          ))}
-        </SelectInput>
+        {/* LGS tek sınav: seçici gereksiz. YKS'de TYT / AYT. */}
+        {track !== "LGS" && (
+          <SelectInput size="sm" aria-label="Sınav" value={exam ?? ""} onChange={(e) => setParam("sinav", e.target.value || null)}>
+            <option value="">{track === "YKS" ? "TYT + AYT" : "Tüm sınavlar"}</option>
+            {examChoices.map((x) => (
+              <option key={x} value={x}>
+                {x}
+              </option>
+            ))}
+          </SelectInput>
+        )}
       </div>
 
       {!busy && stats.length > 0 && (
@@ -182,7 +234,9 @@ export function TopicsScreen() {
         <SkeletonList count={6} height={64} />
       ) : stats.length === 0 ? (
         <Card tone="sunken">
-          <p className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]">Bu derste konu yok.</p>
+          <p className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
+            {subjects.length === 0 ? "Bu sınav için konu listesi yok." : "Bu derste konu yok."}
+          </p>
         </Card>
       ) : visible.length === 0 ? (
         <Card tone="sunken">
