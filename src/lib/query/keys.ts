@@ -296,4 +296,7 @@ export const qk = {
   sourceResults: (studentId: string) => ["task-results", studentId, "sources"] as const,
 
   gapItems: () => ["gap-items"] as const,
+
+  /** Okul nerede (0040): konu başına okul durumu, etkin öğrenci için. */
+  schoolStatus: () => ["school-status"] as const,
 } as const;

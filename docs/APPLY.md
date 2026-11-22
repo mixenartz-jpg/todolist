@@ -23,6 +23,7 @@ Supabase → Database → Backups. Ayrıca SQL Editor'den CSV olarak dışa al:
 | 6 | `0037_student_routines.sql` | `routines.student_id`, `estimate_minutes`; günlük rutin görevi için kısmi unique index ve `insert_routine_tasks` (sunucuda doğrular, idempotent). |
 | 7 | `0038_plan_batches.sql` | Dağıtım kayıtları (`plan_batches`) ve `tasks.plan_batch_id` FK. |
 | 8 | `0039_multi_student.sql` | Birden çok öğrenci: `tasks`, `plan_goals`, `week_goals`, `period_notes` → `student_id`. Mevcut her şey koçun (ilk) öğrencisine yazılır, yani tek öğrencide hiçbir şey değişmez. Öğrenci artık yalnızca KENDİ görevlerini/kaynaklarını görür. Ayrıntı: [KOC-OGRENCI-KURULUM.md §2b](./KOC-OGRENCI-KURULUM.md#2b-ikinci-öğrenci). |
+| 9 | `0040_topic_school.sql` | Okul nerede: `topic_school_status` — konu başına okulun durumu (işleniyor / işlendi + tarih), öğrenci başına. Koç yazar, öğrenci yalnızca kendi satırını okur. **Kod yayınlanmadan önce çalıştırılmalı** (Ders takip ekranı bu tabloyu okur). |
 
 Hepsi yalnızca ekleme/kısıtlama yapar; satır silmez. (0039 istisna: `period_notes`'un birincil
 anahtarı öğrenci başına tekil kısıtla değişir; satır silinmez.) Geri almak için `.down.sql`

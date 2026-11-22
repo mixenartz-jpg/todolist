@@ -197,6 +197,29 @@ export function PlanlamaScreen() {
     setPlacing(null);
   }
 
+  /*
+   * Havuzdan iş seçmek "bir güne koy" kipini açar; koyma hedefleri
+   * (＋ … gününe koy) yalnızca HAFTA görünümünde var. Gün ve ay
+   * görünümünde seçim yapılınca o günün/ayın haftasına geçilir —
+   * yoksa "gün seç" yazar ama seçilecek gün çıkmazdı.
+   */
+  function selectBacklog(id: string | null) {
+    setPlacing(id === null ? null : { kind: "task", id });
+    if (id !== null && view !== "week") setView("week");
+  }
+
+  const backlogButton = (
+    <PlanBacklogButton
+      tasks={range.backlog}
+      categoryById={categories.categoryById}
+      selectedId={isPlacingTask(placing) ? placing.id : null}
+      addPending={actions.addPending}
+      onSelect={selectBacklog}
+      onAdd={actions.addBacklog}
+      onError={toast.show}
+    />
+  );
+
   const openDayTasks =
     openDay === null
       ? []
@@ -220,15 +243,7 @@ export function PlanlamaScreen() {
               <PlanScaleToggle value={view} onChange={setView} />
               <CatalogToggle />
               <DistributeButton />
-          <PlanBacklogButton
-            tasks={range.backlog}
-            categoryById={categories.categoryById}
-            selectedId={isPlacingTask(placing) ? placing.id : null}
-            addPending={actions.addPending}
-            onSelect={(id) => setPlacing(id === null ? null : { kind: "task", id })}
-            onAdd={actions.addBacklog}
-            onError={toast.show}
-          />
+              {backlogButton}
             </>
           }
         />
@@ -284,7 +299,8 @@ export function PlanlamaScreen() {
         <div className="flex flex-wrap items-center gap-2">
           <PlanScaleToggle value={view} onChange={setView} />
           <CatalogToggle />
-              <DistributeButton />
+          <DistributeButton />
+          {backlogButton}
           <CategoryFilterMenu
             categories={categories.active}
             value={category}

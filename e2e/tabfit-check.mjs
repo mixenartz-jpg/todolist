@@ -2,7 +2,7 @@
  *
  * İKİ çubuk ölçülür:
  *  1. Alt gezinme (AppShell) — beş sekme, eşit bölüşüm, kaydırma YOK
- *  2. Planlama alt sekmeleri — ÜÇ sekme, sabit dolgu
+ *  2. Planlama alt sekmeleri — DÖRT sekme, sabit dolgu
  *
  * Sekme SAYISI sabit kalsa da kadro değişti: F8'de Panel eklendi ve
  * Rutinler çubuktan çıkıp Tablo başlığına taşındı. Beşte kalmak
@@ -34,7 +34,7 @@ const MIN_WIDTH = 320;
 const NAV_TABS = ["Panel", "Bugün", "Plan", "Tablo", "İstat."];
 
 /** PlanlamaTabs.tsx'teki TABS dizisiyle aynı sırada. */
-const PLAN_TABS = ["Plan", "Hedefler", "Özet"];
+const PLAN_TABS = ["Plan", "Kaynaklar", "Takip", "Ders takip"];
 
 const page = (body, extraCss = "") => `<!doctype html><html lang="tr"
 style="--font-inter:Inter"><head><meta charset="utf-8"><style>${css}
@@ -63,7 +63,7 @@ const planHtml = page(
   ".probe{padding:0 1rem}",
 );
 
-const b = await chromium.launch();
+const b = await chromium.launch({ executablePath: process.env.PW_CHROMIUM });
 let failed = false;
 
 /**

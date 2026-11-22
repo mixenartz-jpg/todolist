@@ -11,10 +11,13 @@ import { QuickPanel } from "@/features/quickpanel/QuickPanel";
 import { ZenProvider } from "@/features/zen/ZenProvider";
 import {
   ArchiveIcon,
+  BookIcon,
   ChartIcon,
   CheckIcon,
   HomeIcon,
+  ListIcon,
   PersonIcon,
+  PulseIcon,
   TargetIcon,
 } from "@/components/icons";
 import "./nav-bar.css";
@@ -35,6 +38,12 @@ interface NavItem {
    * "Diğer" menüsünün içinde. Ana yüzey (Planlama) üstte tek başına.
    */
   secondary?: boolean;
+  /**
+   * Alt bağlantılar: masaüstünde ebeveynin ALTINDA girintili; mobilde
+   * "Diğer" menüsünün en üstünde, ebeveynin adıyla başlıklı. Sekme
+   * çubuğuna girmezler — beş sekme sınırı korunur.
+   */
+  children?: NavItem[];
 }
 
 /*
@@ -57,6 +66,16 @@ const COACH_NAV: NavItem[] = [
     label: "Planlama",
     shortLabel: "Plan",
     icon: <TargetIcon />,
+    /*
+     * Planlama'nın altında direkt erişim: kütüphane, onun tempo
+     * görünümü ve ders/konu takibi (okul nerede dahil). Üçü de
+     * Planlama'nın sekme çubuğunda da var; burası tek tıkla gitmek için.
+     */
+    children: [
+      { href: "/koc/planlama/kaynaklar", label: "Kaynaklar", icon: <BookIcon /> },
+      { href: "/koc/planlama/kaynak-takip", label: "Kaynak takip", icon: <PulseIcon /> },
+      { href: "/koc/konular", label: "Ders takip", icon: <ListIcon /> },
+    ],
   },
   { href: "/koc/panel", label: "Panel", icon: <HomeIcon />, secondary: true },
   { href: "/koc/ogrenci", label: "Öğrenci", icon: <PersonIcon />, secondary: true },
@@ -156,11 +175,23 @@ function NavRail({ role }: { role: ShellRole }) {
       <ul className="flex flex-col gap-0.5">
         {nav
           .filter((item) => !item.secondary)
-          .map((item) => (
-            <li key={item.href}>
-              <RailLink item={item} active={isActive(pathname, item.href)} />
-            </li>
-          ))}
+          .map((item) => {
+            const childActive = item.children?.some((c) => isActive(pathname, c.href)) ?? false;
+            return (
+              <li key={item.href}>
+                <RailLink item={item} active={!childActive && isActive(pathname, item.href)} />
+                {item.children && (
+                  <ul aria-label={`${item.label} alt bağlantıları`} className="mt-0.5 ml-4 flex flex-col gap-0.5 border-l border-[var(--color-line)] pl-2">
+                    {item.children.map((c) => (
+                      <li key={c.href}>
+                        <RailLink item={c} active={isActive(pathname, c.href)} small />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
       </ul>
 
       <div className="mt-auto flex flex-col gap-1 px-1">
@@ -243,6 +274,7 @@ function MobileTabBar({ role }: { role: ShellRole }) {
   const moreOpen = openOn === pathname;
   const setMoreOpen = (open: boolean) => setOpenOn(open ? pathname : null);
   const moreActive = secondary.some((item) => isActive(pathname, item.href));
+  const subLinks = primary.filter((item) => item.children && item.children.length > 0);
 
   const itemClass = (active: boolean) =>
     cn(
@@ -271,6 +303,20 @@ function MobileTabBar({ role }: { role: ShellRole }) {
             className="glassChrome fixed inset-x-3 z-[var(--z-sticky)] flex flex-col gap-0.5 rounded-xl border border-[var(--color-line)] p-2 md:hidden"
             style={{ bottom: "calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 0.5rem)" }}
           >
+            {subLinks.map((parent) => (
+              <li key={parent.href} className="mb-1 border-b border-[var(--color-line)] pb-1">
+                <p className="px-2.5 pt-1 pb-0.5 text-[length:var(--text-2xs)] font-medium uppercase tracking-[0.06em] text-[var(--color-ink-3)]">
+                  {parent.label}
+                </p>
+                <ul className="flex flex-col gap-0.5">
+                  {parent.children!.map((c) => (
+                    <li key={c.href}>
+                      <RailLink item={c} active={isActive(pathname, c.href)} />
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
             {secondary.map((item) => (
               <li key={item.href}>
                 <RailLink item={item} active={isActive(pathname, item.href)} />
@@ -284,7 +330,8 @@ function MobileTabBar({ role }: { role: ShellRole }) {
         className="tabBar glassChrome glassChrome--bottom flex fixed inset-x-0 bottom-0 z-[var(--z-sticky)] pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         {primary.map((item) => {
-          const active = isActive(pathname, item.href);
+          const active =
+            isActive(pathname, item.href) || (item.children?.some((c) => isActive(pathname, c.href)) ?? false);
           return (
             <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={itemClass(active)}>
               {item.icon}
