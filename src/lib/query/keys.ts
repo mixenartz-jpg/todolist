@@ -299,4 +299,6 @@ export const qk = {
 
   /** Okul nerede (0040): konu başına okul durumu, etkin öğrenci için. */
   schoolStatus: () => ["school-status"] as const,
+  /** Öğrencinin sınavı (0041): LGS / YKS. */
+  examTrack: (studentId: string) => ["exam-track", studentId] as const,
 } as const;
