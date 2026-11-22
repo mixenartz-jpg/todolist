@@ -604,3 +604,15 @@ export interface GapItemRow {
   closed_at: string | null;
   created_at: string;
 }
+
+// ───────────────────────── 0040: okul nerede ────────────────────────
+
+export interface TopicSchoolStatusRow {
+  id: string;
+  coach_id: string;
+  student_id: string | null;
+  topic_id: string;
+  status: "current" | "done";
+  covered_on: string | null;
+  updated_at: string;
+}

@@ -164,3 +164,32 @@ export function PersonIcon({ size = 16 }: IconProps) {
     </svg>
   );
 }
+
+/** Kaynaklar — kitap. */
+export function BookIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...svgProps(size)}>
+      <path
+        d="M2.5 3.2c1.8-.6 3.6-.5 5.5.6v9.4c-1.9-1.1-3.7-1.2-5.5-.6V3.2zM13.5 3.2c-1.8-.6-3.6-.5-5.5.6v9.4c1.9-1.1 3.7-1.2 5.5-.6V3.2z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Kaynak takip — tempo çizgisi. */
+export function PulseIcon({ size = 16 }: IconProps) {
+  return (
+    <svg {...svgProps(size)}>
+      <path
+        d="M1.5 8.5h3l1.5-4 3 7 1.5-3h4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

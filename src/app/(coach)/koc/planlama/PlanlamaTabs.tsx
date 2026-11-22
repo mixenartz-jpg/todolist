@@ -23,12 +23,14 @@ const TABS = [
    * adresleri çalışır, geri açmak bu iki satırı geri koymak.
    */
   { href: "/koc/planlama/kaynaklar", label: "Kaynaklar", filters: false },
+  /* Kaynakların tempo görünümü: kalan, son 14 gün, tahmini bitiş. */
+  { href: "/koc/planlama/kaynak-takip", label: "Takip", filters: false },
   /*
    * Konu takibi kendi rotasında (`/koc/konular`) ama ana menüye
    * girmez — beş sekme sınırı (AppShell). Kaynaklarla karşılıklı
    * bağlı olduğu için onun yanında durur.
    */
-  { href: "/koc/konular", label: "Konular", filters: false },
+  { href: "/koc/konular", label: "Ders takip", filters: false },
 ] as const;
 
 /** Kategori filtresinin sorgu parametresi (usePlanlamaSurface ile aynı). */
